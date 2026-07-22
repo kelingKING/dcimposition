@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Home</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 48px;
+    background: #f5f6f8;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #1f2430;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  h1 {
+    font-size: 22px;
+    font-weight: 600;
+    margin: 0 0 28px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 24px;
+    max-width: 900px;
+    width: 100%;
+    justify-content: center;
+  }
+  .card {
+    position: relative;
+    background: #ffffff;
+    border: 1px solid #eaeaea;
+    border-radius: 12px;
+    padding: 32px 20px 24px;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+  }
+  .card:hover {
+    box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+    transform: translateY(-2px);
+  }
+  .star {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 18px;
+    height: 18px;
+    color: #c9cbd1;
+  }
+  .icon-circle {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+  }
+  .icon-circle svg {
+    width: 28px;
+    height: 28px;
+  }
+  .card h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 6px;
+  }
+  .card p {
+    font-size: 13px;
+    color: #6b7280;
+    line-height: 1.5;
+    margin: 0;
+  }
+  a.card {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+  .impose  { background: #EEEDFE; }
+  .impose  svg { stroke: #534AB7; }
+  .rename  { background: #E1F5EE; }
+  .rename  svg { stroke: #0F6E56; }
+  .compare { background: #FAECE7; }
+  .compare svg { stroke: #993C1D; }
+</style>
+</head>
+<body>
+
+  <h1>kelingKING space</h1>
+
+  <div class="grid">
+
+    <a class="card" href="imposition.html">
+      <svg class="star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="12 2 15 9 22 9.5 17 14.5 18.5 22 12 18 5.5 22 7 14.5 2 9.5 9 9"/>
+      </svg>
+      <div class="icon-circle impose">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="4" width="9" height="9" rx="1.5"/>
+          <rect x="11" y="11" width="9" height="9" rx="1.5"/>
+        </svg>
+      </div>
+      <h3>Impose</h3>
+      <p>Arrange pages into print-ready sheets</p>
+    </a>
+
+    <a class="card" href="renametool.html">
+      <svg class="star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="12 2 15 9 22 9.5 17 14.5 18.5 22 12 18 5.5 22 7 14.5 2 9.5 9 9"/>
+      </svg>
+      <div class="icon-circle rename">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 20h4L18.5 9.5a2 2 0 0 0-3-3L5 17v3z"/>
+          <path d="M13.5 6.5l3 3"/>
+        </svg>
+      </div>
+      <h3>Rename</h3>
+      <p>Rename files and orders in bulk</p>
+    </a>
+
+    <a class="card" href="compare.html">
+      <svg class="star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="12 2 15 9 22 9.5 17 14.5 18.5 22 12 18 5.5 22 7 14.5 2 9.5 9 9"/>
+      </svg>
+      <div class="icon-circle compare">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 3v14"/>
+          <path d="M15 21V7"/>
+          <path d="M9 3l-4 4"/>
+          <path d="M9 3l4 4"/>
+          <path d="M15 21l4-4"/>
+          <path d="M15 21l-4-4"/>
+        </svg>
+      </div>
+      <h3>Compare</h3>
+      <p>Compare files side by side for differences</p>
+    </a>
+
+  </div>
+
+</body>
+</html>

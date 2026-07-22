@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Batch Rename — no install</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root{
+  --bg:#0E1A2B;
+  --panel:#122238;
+  --panel-2:#0E1F33;
+  --ink:#E7F1F6;
+  --ink-dim:#8FA6BC;
+  --accent:#E2A33D;
+  --accent-dim:#8A6A2C;
+  --cyan:#6FA8C9;
+  --danger:#E2604D;
+  --border:rgba(255,255,255,0.14);
+  --grid:rgba(111,168,201,0.09);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  -webkit-user-select:none;
+  -moz-user-select:none;
+  user-select:none;
+}
+input, select, textarea{
+  -webkit-user-select:text;
+  -moz-user-select:text;
+  user-select:text;
+}
+body{
+  background:
+    linear-gradient(var(--grid) 1px, transparent 1px) 0 0/28px 28px,
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0/28px 28px,
+    var(--bg);
+  color:var(--ink);
+  font-family:'Space Grotesk', sans-serif;
+  min-height:100vh;
+  padding:32px 20px 60px;
+}
+.wrap{max-width:960px;margin:0 auto;}
+
+.title-row{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:4px;}
+h1{font-size:26px;font-weight:700;margin:0;letter-spacing:0.2px;}
+.tag{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;color:var(--accent);
+  border:1px solid var(--accent-dim);
+  padding:2px 8px;border-radius:3px;
+  letter-spacing:0.5px;
+}
+.sub{color:var(--ink-dim);font-size:14px;margin:6px 0 28px;line-height:1.5;max-width:640px;}
+.sub b{color:var(--ink);font-weight:500;}
+
+.unsupported{
+  border:1px solid var(--danger);
+  background:rgba(226,96,77,0.08);
+  border-radius:6px;
+  padding:16px 18px;
+  font-size:14px;
+  line-height:1.6;
+  display:none;
+}
+.unsupported b{color:var(--danger);}
+
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:22px;}
+@media(max-width:760px){.grid{grid-template-columns:1fr;}}
+
+.panel{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:18px 18px 20px;
+}
+.panel h2{
+  font-size:12px;text-transform:uppercase;letter-spacing:1.2px;
+  color:var(--cyan);margin:0 0 14px;font-weight:600;
+}
+
+.folder-btn{
+  flex:1;
+  background:var(--panel-2);
+  border:1px dashed var(--border);
+  color:var(--ink);
+  font-family:'Space Grotesk',sans-serif;
+  font-size:14px;
+  padding:14px;
+  border-radius:5px;
+  cursor:pointer;
+  transition:border-color .15s;
+}
+.folder-btn:hover{border-color:var(--cyan);}
+.btn-row{display:flex;gap:10px;}
+.dropzone{
+  margin-top:12px;
+  border:1.5px dashed var(--border);
+  border-radius:6px;
+  padding:22px 14px;
+  text-align:center;
+  font-size:12.5px;
+  color:var(--ink-dim);
+  font-family:'JetBrains Mono',monospace;
+  transition:border-color .15s, background .15s;
+}
+.dropzone.dragover{border-color:var(--accent);background:rgba(226,163,61,0.06);color:var(--ink);}
+.folder-info{
+  font-family:'JetBrains Mono',monospace;
+  font-size:12px;color:var(--ink-dim);
+  margin-top:10px;min-height:18px;
+  display:flex;justify-content:space-between;align-items:center;gap:8px;
+}
+.clear-link{
+  background:none;border:none;color:var(--cyan);
+  font-family:'JetBrains Mono',monospace;font-size:11.5px;
+  cursor:pointer;text-decoration:underline;padding:0;
+}
+
+.file-list{
+  margin-top:12px;
+  max-height:220px;
+  overflow-y:auto;
+  border-top:1px solid var(--border);
+}
+.file-row{
+  font-family:'JetBrains Mono',monospace;
+  font-size:12.5px;
+  padding:6px 2px;
+  border-bottom:1px solid rgba(255,255,255,0.06);
+  color:var(--ink-dim);
+  display:flex;justify-content:space-between;gap:8px;
+}
+.file-row span.ext{color:var(--accent);}
+.file-row span.tag-warn{color:var(--danger);font-size:10.5px;}
+
+.field{margin-bottom:14px;}
+.field label{
+  display:block;font-size:11.5px;color:var(--ink-dim);
+  margin-bottom:5px;letter-spacing:0.3px;
+}
+.field input[type=text], .field select{
+  width:100%;
+  background:var(--panel-2);
+  border:1px solid var(--border);
+  color:var(--ink);
+  font-family:'JetBrains Mono',monospace;
+  font-size:13px;
+  padding:8px 10px;
+  border-radius:4px;
+}
+.field input[type=text]:focus, .field select:focus{outline:1px solid var(--cyan);border-color:var(--cyan);}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.checkline{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-dim);margin:10px 0;}
+.checkline input{accent-color:var(--accent);width:15px;height:15px;}
+.hint{font-size:11px;color:var(--ink-dim);opacity:0.8;margin-top:4px;}
+
+.preview-panel{grid-column:1/-1;margin-top:18px;}
+.preview-empty{color:var(--ink-dim);font-size:13px;font-style:italic;padding:8px 0;}
+.preview-row{
+  display:grid;
+  grid-template-columns:26px 1fr 22px 1fr;
+  align-items:center;
+  gap:10px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:12.5px;
+  padding:8px 4px;
+  border-bottom:1px solid rgba(255,255,255,0.06);
+}
+.preview-row .idx{color:var(--accent);font-weight:700;}
+.preview-row .old{color:var(--ink-dim);text-decoration:line-through;text-decoration-color:var(--danger);text-decoration-thickness:1px;overflow-wrap:anywhere;}
+.preview-row .arrow{color:var(--cyan);text-align:center;}
+.preview-row .new{color:var(--ink);overflow-wrap:anywhere;}
+.preview-row.unchanged .new{color:var(--ink-dim);}
+.preview-row.collision .new{color:var(--danger);}
+
+.actions{display:flex;gap:12px;align-items:center;margin-top:18px;flex-wrap:wrap;}
+button.primary{
+  background:var(--accent);
+  color:#1B1200;
+  border:none;
+  font-family:'Space Grotesk',sans-serif;
+  font-weight:700;
+  font-size:14px;
+  padding:11px 22px;
+  border-radius:5px;
+  cursor:pointer;
+}
+button.primary:disabled{background:var(--accent-dim);color:#7a6a4a;cursor:not-allowed;}
+button.secondary{
+  background:transparent;
+  border:1px solid var(--border);
+  color:var(--ink);
+  font-family:'Space Grotesk',sans-serif;
+  font-size:13px;
+  padding:10px 18px;
+  border-radius:5px;
+  cursor:pointer;
+}
+button.secondary:hover{border-color:var(--cyan);}
+.status{font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--ink-dim);margin-top:6px;min-height:16px;}
+.status.ok{color:#7FBF8F;}
+.status.err{color:var(--danger);}
+
+::-webkit-scrollbar{width:8px;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="title-row">
+    <h1>Batch Rename</h1>
+    <span class="tag">NO INSTALL</span>
+  </div>
+  <p class="sub">Pick a folder, set your rules, preview every change, then apply. Files are renamed <b>directly on your computer</b> — nothing uploads anywhere. Works in <b>Chrome or Edge</b> (desktop).</p>
+
+  <div class="unsupported" id="unsupported">
+    <b>Your browser can't do this.</b><br>
+    This tool needs the File System Access API, which only desktop Chrome and Edge support. Firefox and Safari don't have it yet. Open this page in Chrome or Edge to continue.
+  </div>
+
+  <div id="app">
+    <div class="panel">
+      <h2>01 — Files or Folder</h2>
+      <div class="btn-row">
+        <button class="folder-btn" id="pickFolder">Choose a folder…</button>
+      </div>
+      <div class="dropzone" id="dropzone">…or drag a folder here</div>
+      <div class="folder-info">
+        <span id="folderInfo">No files selected yet.</span>
+        <button class="clear-link" id="clearBtn" style="display:none;">Clear</button>
+      </div>
+      <div class="file-list" id="fileList"></div>
+    </div>
+
+    <div class="grid">
+      <div class="panel">
+        <h2>02 — Find &amp; Replace</h2>
+        <div class="checkline"><input type="checkbox" id="enableFindReplace"><label for="enableFindReplace">Edit find &amp; replace</label></div>
+        <div class="hint" style="margin:-6px 0 12px;">Applied by default. Check the box above to change these values.</div>
+        <div class="field">
+          <label>Find</label>
+          <input type="text" id="findText" placeholder="e.g. IMG or a regex" value="_[^_]+$" disabled>
+        </div>
+        <div class="field">
+          <label>Replace with</label>
+          <input type="text" id="replaceText" placeholder="e.g. Photo (leave blank to remove)" value="" disabled>
+        </div>
+        <div class="checkline"><input type="checkbox" id="useRegex" checked disabled><label for="useRegex">Treat "Find" as a regular expression</label></div>
+
+        <div class="field" style="margin-top:16px;">
+          <label>Prefix</label>
+          <input type="text" id="prefixText" placeholder="e.g. vacation_">
+        </div>
+        <div class="field">
+          <label>Suffix/Version</label>
+          <input type="text" id="suffixText" placeholder="e.g. _final">
+        </div>
+        <div class="field">
+          <label>Suffix separator</label>
+          <input type="text" id="suffixSep" value="_" placeholder="e.g. _ or -">
+        </div>
+        <div class="field">
+          <label>Change case</label>
+          <select id="caseSelect">
+            <option value="">No change</option>
+            <option value="lower">lowercase</option>
+            <option value="upper">UPPERCASE</option>
+            <option value="title">Title Case</option>
+            <option value="capitalize">Capitalize first letter</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>03 — Numbering &amp; Filter</h2>
+        <div class="checkline"><input type="checkbox" id="useNumber" checked><label for="useNumber">Add sequential numbering</label></div>
+        <div class="row2">
+          <div class="field">
+            <label>Digits</label>
+            <input type="text" id="digits" value="2">
+          </div>
+          <div class="field">
+            <label>Start at</label>
+            <input type="text" id="startNum" value="1">
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label>Position</label>
+            <select id="numPosition">
+              <option value="suffix">After name</option>
+              <option value="prefix">Before name</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Separator</label>
+            <input type="text" id="numSep" value="_">
+          </div>
+        </div>
+
+        <div class="field" style="margin-top:16px;">
+          <label>Only include extensions (comma-separated, blank = all)</label>
+          <input type="text" id="extFilter" placeholder="e.g. jpg, png">
+        </div>
+        <div class="field">
+          <label>New extension (blank = keep original)</label>
+          <input type="text" id="newExt" placeholder="e.g. txt">
+        </div>
+        <div class="hint">Preview updates automatically as you type.</div>
+      </div>
+
+      <div class="panel preview-panel">
+        <h2>04 — Preview</h2>
+        <div id="previewBody"><div class="preview-empty">Choose files or a folder to see planned renames here.</div></div>
+
+        <div class="actions">
+          <button class="primary" id="applyBtn" disabled>Apply renames</button>
+          <button class="secondary" id="undoBtn" disabled>Undo last batch</button>
+        </div>
+        <div class="status" id="statusLine"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  // Disable right-click, save, and copy shortcuts outside of form fields.
+  document.addEventListener('contextmenu', e => e.preventDefault());
+  document.addEventListener('keydown', e => {
+    const key = e.key.toLowerCase();
+    const mod = e.ctrlKey || e.metaKey;
+    const inField = ['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName);
+    if(mod && key === 's'){ e.preventDefault(); }
+    if(mod && (key === 'c' || key === 'x' || key === 'u' || key === 'p') && !inField){ e.preventDefault(); }
+  });
+  document.addEventListener('copy', e => {
+    const inField = ['INPUT','SELECT','TEXTAREA'].includes(document.activeElement && document.activeElement.tagName);
+    if(!inField) e.preventDefault();
+  });
+})();
+</script>
+<script>
+(function(){
+  const supported = 'showDirectoryPicker' in window;
+  if(!supported){
+    document.getElementById('unsupported').style.display = 'block';
+    document.getElementById('app').style.display = 'none';
+    return;
+  }
+
+  let items = []; // {name, handle, parentDir} — parentDir is a directory handle or null
+  let lastBatch = []; // {item, oldName, newName, method} for undo, most recent apply only
+
+  const el = id => document.getElementById(id);
+  const pickFolderBtn = el('pickFolder');
+  const dropzone = el('dropzone');
+  const clearBtn = el('clearBtn');
+  const folderInfo = el('folderInfo');
+  const fileListEl = el('fileList');
+  const previewBody = el('previewBody');
+  const applyBtn = el('applyBtn');
+  const undoBtn = el('undoBtn');
+  const statusLine = el('statusLine');
+
+  const inputs = ['findText','replaceText','useRegex','enableFindReplace','prefixText','suffixText','suffixSep','caseSelect',
+    'useNumber','digits','startNum','numPosition','numSep','extFilter','newExt'].map(el);
+  inputs.forEach(inp => inp.addEventListener('input', updatePreview));
+
+  const enableFindReplace = el('enableFindReplace');
+  function syncFindReplaceEnabled(){
+    const on = enableFindReplace.checked;
+    el('findText').disabled = !on;
+    el('replaceText').disabled = !on;
+    el('useRegex').disabled = !on;
+  }
+  enableFindReplace.addEventListener('change', () => { syncFindReplaceEnabled(); updatePreview(); });
+  syncFindReplaceEnabled();
+
+  function canRename(item){
+    return typeof item.handle.move === 'function' || !!item.parentDir;
+  }
+
+  function addItem(name, handle, parentDir){
+    if(items.some(it => it.name === name && it.parentDir === parentDir)) return;
+    items.push({ name, handle, parentDir });
+  }
+
+  async function addDirectoryEntries(dirHandle){
+    for await (const [name, handle] of dirHandle.entries()){
+      if(handle.kind === 'file') addItem(name, handle, dirHandle);
+    }
+  }
+
+  function refreshUI(){
+    items.sort((a,b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+    renderFileList();
+    folderInfo.textContent = items.length ? (items.length + ' file(s) selected') : 'No files selected yet.';
+    clearBtn.style.display = items.length ? 'inline' : 'none';
+    updatePreview();
+  }
+
+  pickFolderBtn.addEventListener('click', async () => {
+    try{
+      const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+      folderInfo.textContent = 'Reading "' + dirHandle.name + '"…';
+      await addDirectoryEntries(dirHandle);
+      refreshUI();
+    }catch(e){
+      if(e.name !== 'AbortError'){
+        statusLine.textContent = 'Could not open folder: ' + e.message;
+        statusLine.className = 'status err';
+      }
+    }
+  });
+
+  clearBtn.addEventListener('click', () => {
+    items = [];
+    refreshUI();
+    previewBody.innerHTML = '<div class="preview-empty">Choose a folder or files to see planned renames here.</div>';
+    applyBtn.disabled = true;
+  });
+
+  const dragCapable = window.DataTransferItem && 'getAsFileSystemHandle' in DataTransferItem.prototype;
+
+  ['dragenter','dragover'].forEach(evt => dropzone.addEventListener(evt, e => {
+    e.preventDefault();
+    dropzone.classList.add('dragover');
+  }));
+  ['dragleave','dragend'].forEach(evt => dropzone.addEventListener(evt, e => {
+    dropzone.classList.remove('dragover');
+  }));
+
+  dropzone.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('dragover');
+
+    if(!dragCapable){
+      statusLine.textContent = 'Drag-and-drop renaming needs Chrome or Edge — try the buttons above instead.';
+      statusLine.className = 'status err';
+      return;
+    }
+
+    const dtItems = Array.from(e.dataTransfer.items).filter(i => i.kind === 'file');
+    // Must call getAsFileSystemHandle() on every item synchronously, in this same
+    // event tick — awaiting one at a time invalidates the drag data store after
+    // the first item, silently dropping the rest.
+    const handlePromises = dtItems.map(i => i.getAsFileSystemHandle());
+    const handles = await Promise.all(handlePromises);
+
+    const folders = handles.filter(h => h && h.kind === 'directory');
+    const looseFiles = handles.filter(h => h && h.kind === 'file');
+
+    for(const folder of folders){
+      try{ await addDirectoryEntries(folder); }catch(err){ /* skip unreadable folder */ }
+    }
+    refreshUI();
+
+    if(looseFiles.length && !folders.length){
+      statusLine.textContent = 'This drop zone only accepts folders — drag the folder containing your files instead.';
+      statusLine.className = 'status err';
+    } else if(looseFiles.length){
+      statusLine.textContent = folders.length + ' folder(s) added — ' + looseFiles.length + ' loose file(s) were skipped (folders only).';
+      statusLine.className = 'status err';
+    }
+  });
+
+  async function ensureWritePermission(handle){
+    if(!handle.queryPermission) return true;
+    if((await handle.queryPermission({ mode: 'readwrite' })) === 'granted') return true;
+    if((await handle.requestPermission({ mode: 'readwrite' })) === 'granted') return true;
+    return false;
+  }
+
+  function renderFileList(){
+    fileListEl.innerHTML = '';
+    items.forEach(f => {
+      const dot = f.name.lastIndexOf('.');
+      const ext = dot > 0 ? f.name.slice(dot+1) : '';
+      const row = document.createElement('div');
+      row.className = 'file-row';
+      const warn = canRename(f) ? '' : '<span class="tag-warn">read-only</span>';
+      row.innerHTML = '<span>' + escapeHtml(f.name) + '</span>' + warn + '<span class="ext">' + escapeHtml(ext) + '</span>';
+      fileListEl.appendChild(row);
+    });
+  }
+
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function splitExt(name){
+    const dot = name.lastIndexOf('.');
+    if(dot <= 0) return [name, ''];
+    return [name.slice(0,dot), name.slice(dot)];
+  }
+
+  function applyCase(stem, mode){
+    if(mode === 'lower') return stem.toLowerCase();
+    if(mode === 'upper') return stem.toUpperCase();
+    if(mode === 'title') return stem.replace(/\w\S*/g, w => w[0].toUpperCase()+w.slice(1).toLowerCase());
+    if(mode === 'capitalize') return stem.charAt(0).toUpperCase() + stem.slice(1).toLowerCase();
+    return stem;
+  }
+
+  function buildNewName(name, index, opts){
+    let [stem, ext] = splitExt(name);
+
+    if(opts.find){
+      try{
+        if(opts.regex){
+          const re = new RegExp(opts.find, 'g');
+          stem = stem.replace(re, opts.replace || '');
+        } else {
+          stem = stem.split(opts.find).join(opts.replace || '');
+        }
+      }catch(e){ /* invalid regex, skip find/replace */ }
+    }
+
+    if(opts.caseMode) stem = applyCase(stem, opts.caseMode);
+    if(opts.prefix) stem = opts.prefix + stem;
+
+    if(opts.number){
+      const num = String(index).padStart(opts.digits, '0');
+      stem = opts.numPosition === 'prefix' ? (num + opts.numSep + stem) : (stem + opts.numSep + num);
+    }
+
+    if(opts.suffix) stem = stem + (opts.suffixSep || '') + opts.suffix;
+
+    let newExt = opts.newExt ? (opts.newExt.startsWith('.') ? opts.newExt : '.' + opts.newExt) : ext;
+    return stem + newExt;
+  }
+
+  function getOptions(){
+    const digits = parseInt(el('digits').value, 10);
+    const startNum = parseInt(el('startNum').value, 10);
+    return {
+      find: el('findText').value,
+      replace: el('replaceText').value,
+      regex: el('useRegex').checked,
+      prefix: el('prefixText').value,
+      suffix: el('suffixText').value,
+      suffixSep: el('suffixSep').value,
+      caseMode: el('caseSelect').value,
+      number: el('useNumber').checked,
+      digits: isNaN(digits) ? 3 : digits,
+      start: isNaN(startNum) ? 1 : startNum,
+      numPosition: el('numPosition').value,
+      numSep: el('numSep').value,
+      extFilter: el('extFilter').value.split(',').map(s=>s.trim().toLowerCase().replace(/^\./,'')).filter(Boolean),
+      newExt: el('newExt').value.trim()
+    };
+  }
+
+  let currentPlan = [];
+
+  function updatePreview(){
+    if(items.length === 0) return;
+    const opts = getOptions();
+
+    let candidates = items;
+    if(opts.extFilter.length){
+      candidates = items.filter(f => {
+        const [,ext] = splitExt(f.name);
+        return opts.extFilter.includes(ext.replace(/^\./,'').toLowerCase());
+      });
+    }
+
+    const hasOp = opts.find || opts.prefix || opts.suffix || opts.caseMode || opts.number || opts.newExt;
+    if(!hasOp){
+      previewBody.innerHTML = '<div class="preview-empty">Set at least one rule above to see a preview.</div>';
+      applyBtn.disabled = true;
+      currentPlan = [];
+      return;
+    }
+
+    const usedNames = new Set(items.map(f => f.name));
+    const plan = [];
+    let idx = opts.start;
+
+    candidates.forEach(f => {
+      let newName = buildNewName(f.name, idx, opts);
+      idx++;
+      let collision = false;
+      if(newName !== f.name){
+        let base = newName;
+        let n = 1;
+        while(usedNames.has(newName) && newName !== f.name){
+          const [stem, ext] = splitExt(base);
+          newName = stem + ' (' + n + ')' + ext;
+          n++;
+          collision = true;
+        }
+      }
+      usedNames.delete(f.name);
+      usedNames.add(newName);
+      plan.push({ item: f, oldName: f.name, newName, collision });
+    });
+
+    currentPlan = plan.filter(p => p.newName !== p.oldName);
+
+    if(currentPlan.length === 0){
+      previewBody.innerHTML = '<div class="preview-empty">No changes — names would stay the same.</div>';
+      applyBtn.disabled = true;
+      return;
+    }
+
+    previewBody.innerHTML = '';
+    currentPlan.forEach((p, i) => {
+      const row = document.createElement('div');
+      row.className = 'preview-row' + (p.collision ? ' collision' : '');
+      row.innerHTML =
+        '<span class="idx">' + String(i+1).padStart(2,'0') + '</span>' +
+        '<span class="old">' + escapeHtml(p.oldName) + '</span>' +
+        '<span class="arrow">→</span>' +
+        '<span class="new">' + escapeHtml(p.newName) + '</span>';
+      previewBody.appendChild(row);
+    });
+
+    applyBtn.disabled = false;
+  }
+
+  async function renameItem(item, newName){
+    if(typeof item.handle.move === 'function'){
+      const ok = await ensureWritePermission(item.handle);
+      if(!ok) throw new Error('Permission denied');
+      await item.handle.move(newName);
+      item.name = newName;
+      return 'move';
+    } else if(item.parentDir){
+      const ok = await ensureWritePermission(item.parentDir);
+      if(!ok) throw new Error('Permission denied');
+      const file = await item.handle.getFile();
+      const newHandle = await item.parentDir.getFileHandle(newName, { create: true });
+      const writable = await newHandle.createWritable();
+      await writable.write(file);
+      await writable.close();
+      await item.parentDir.removeEntry(item.name);
+      item.handle = newHandle;
+      item.name = newName;
+      return 'copy';
+    } else {
+      throw new Error('No folder context — pick the containing folder instead');
+    }
+  }
+
+  applyBtn.addEventListener('click', async () => {
+    if(currentPlan.length === 0) return;
+    applyBtn.disabled = true;
+    statusLine.textContent = 'Renaming ' + currentPlan.length + ' file(s)…';
+    statusLine.className = 'status';
+
+    let done = 0, errors = 0;
+    const batch = [];
+
+    for(const p of currentPlan){
+      try{
+        const method = await renameItem(p.item, p.newName);
+        batch.push({ item: p.item, oldName: p.oldName, newName: p.newName, method });
+        done++;
+      }catch(e){
+        errors++;
+      }
+    }
+
+    lastBatch = batch;
+    undoBtn.disabled = batch.length === 0;
+
+    refreshUI();
+    statusLine.textContent = done + ' renamed, ' + errors + ' error(s).';
+    statusLine.className = errors ? 'status err' : 'status ok';
+  });
+
+  undoBtn.addEventListener('click', async () => {
+    if(lastBatch.length === 0) return;
+    undoBtn.disabled = true;
+    statusLine.textContent = 'Undoing ' + lastBatch.length + ' rename(s)…';
+    statusLine.className = 'status';
+
+    let done = 0, errors = 0;
+    for(const entry of [...lastBatch].reverse()){
+      try{
+        if(entry.method === 'move'){
+          await entry.item.handle.move(entry.oldName);
+          entry.item.name = entry.oldName;
+        } else if(entry.method === 'copy' && entry.item.parentDir){
+          const file = await entry.item.handle.getFile();
+          const oldHandle = await entry.item.parentDir.getFileHandle(entry.oldName, { create: true });
+          const writable = await oldHandle.createWritable();
+          await writable.write(file);
+          await writable.close();
+          await entry.item.parentDir.removeEntry(entry.newName);
+          entry.item.handle = oldHandle;
+          entry.item.name = entry.oldName;
+        }
+        done++;
+      }catch(e){
+        errors++;
+      }
+    }
+    lastBatch = [];
+
+    refreshUI();
+    statusLine.textContent = 'Undo: ' + done + ' reverted, ' + errors + ' error(s).';
+    statusLine.className = errors ? 'status err' : 'status ok';
+  });
+
+})();
+</script>
+</body>
+</html>

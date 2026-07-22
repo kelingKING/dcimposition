@@ -1,0 +1,2442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Redline — PDF Visual Compare</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+<style>
+  :root{
+    --bg-deep:#10151A;
+    --bg-panel:#1A2129;
+    --bg-panel-2:#212A33;
+    --line: rgba(45,212,191,0.14);
+    --ink:#E9EDF1;
+    --ink-muted:#8A96A3;
+    --ink-faint:#5B6672;
+    --teal:#2DD4BF;
+    --amber:#F2A93B;
+    --crimson:#E2504F;
+    --mint:#3ECF8E;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg-deep);color:var(--ink);
+    font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased;}
+
+  /* blueprint grid backdrop */
+  body{
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  .app{ max-width:1360px; margin:0 auto; padding:22px 22px 60px; }
+
+  /* ---------- Header ---------- */
+  header{ display:flex; align-items:center; justify-content:space-between; gap:16px;
+    padding-bottom:18px; margin-bottom:18px; border-bottom:1px solid rgba(255,255,255,0.08); }
+  .brand{ display:flex; align-items:center; gap:12px; }
+  .brand .mark{ width:34px; height:34px; position:relative; flex:none; }
+  .brand .mark svg{ width:100%; height:100%; }
+  .brand h1{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:20px;
+    letter-spacing:0.01em; margin:0; }
+  .brand .tag{ font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--ink-faint);
+    letter-spacing:0.06em; text-transform:uppercase; margin-top:2px;}
+  .status{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--ink-muted);
+    display:flex; gap:18px; align-items:center; }
+  .status .dot{ width:7px; height:7px; border-radius:50%; display:inline-block; margin-right:6px;
+    background:var(--ink-faint); }
+  .status .dot.ready{ background:var(--mint); box-shadow:0 0 8px var(--mint); }
+
+  /* ---------- Upload row ---------- */
+  .uploads{ display:grid; grid-template-columns:1fr auto 1fr; gap:14px; align-items:stretch; margin-bottom:18px; }
+  .dropzone{
+    background:var(--bg-panel); border:1.5px dashed rgba(255,255,255,0.14); border-radius:10px;
+    padding:16px 18px; display:flex; align-items:center; gap:14px; cursor:pointer;
+    transition:border-color .15s ease, background .15s ease;
+    position:relative; overflow:hidden;
+  }
+  .dropzone:hover{ border-color:var(--teal); }
+  .dropzone.drag{ border-color:var(--teal); background:var(--bg-panel-2); }
+  .dropzone.filled{ border-style:solid; border-color:rgba(45,212,191,0.35); }
+  .dz-icon{ width:38px; height:38px; flex:none; border-radius:8px; display:flex; align-items:center;
+    justify-content:center; background:rgba(45,212,191,0.08); border:1px solid rgba(45,212,191,0.25); }
+  .dz-icon svg{ width:18px; height:18px; stroke:var(--teal); }
+  .dz-meta{ min-width:0; flex:1; }
+  .dz-label{ font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.08em;
+    text-transform:uppercase; color:var(--ink-faint); margin-bottom:3px; }
+  .dz-name{ font-size:13.5px; font-weight:500; color:var(--ink); white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis; }
+  .dz-sub{ font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--ink-muted); margin-top:2px;}
+  input[type=file]{ display:none; }
+
+  .swap-btn{ align-self:center; width:38px; height:38px; border-radius:50%;
+    background:var(--bg-panel); border:1px solid rgba(255,255,255,0.12); color:var(--ink-muted);
+    cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; }
+  .swap-btn:hover{ color:var(--teal); border-color:var(--teal); transform:rotate(180deg); }
+  .swap-btn svg{ width:16px; height:16px; }
+
+  /* ---------- Toolbar ---------- */
+  .toolbar{ display:flex; align-items:center; justify-content:space-between; gap:14px;
+    background:var(--bg-panel); border:1px solid rgba(255,255,255,0.08); border-radius:10px;
+    padding:10px 14px; margin-bottom:16px; flex-wrap:wrap; }
+  .modes{ display:flex; gap:4px; background:var(--bg-deep); border-radius:8px; padding:3px; }
+  .mode-btn{ font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.03em;
+    padding:7px 12px; border-radius:6px; border:none; background:transparent; color:var(--ink-muted);
+    cursor:pointer; text-transform:uppercase; transition:all .15s; }
+  .mode-btn.active{ background:var(--teal); color:#06201C; font-weight:600; }
+  .mode-btn:not(.active):hover{ color:var(--ink); }
+
+  .pager{ display:flex; align-items:center; gap:10px; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--ink-muted);}
+  .pager button{ width:28px; height:28px; border-radius:6px; border:1px solid rgba(255,255,255,0.12);
+    background:var(--bg-deep); color:var(--ink); cursor:pointer; display:flex; align-items:center; justify-content:center;}
+  .pager button:disabled{ opacity:.3; cursor:default; }
+  .pager button:not(:disabled):hover{ border-color:var(--teal); color:var(--teal); }
+
+  .zoom{ display:flex; align-items:center; gap:8px; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--ink-muted);}
+  .zoom button{ width:26px; height:26px; border-radius:6px; border:1px solid rgba(255,255,255,0.12);
+    background:var(--bg-deep); color:var(--ink); cursor:pointer; }
+  .zoom button:hover{ border-color:var(--teal); color:var(--teal); }
+
+  .align-picker{ display:flex; align-items:center; gap:8px; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--ink-muted); }
+  .align-picker label{ text-transform:uppercase; letter-spacing:.04em; font-size:10px; color:var(--ink-faint); }
+  .align-picker select{ background:var(--bg-deep); color:var(--ink); border:1px solid rgba(255,255,255,0.14);
+    border-radius:6px; padding:5px 8px; font-family:'JetBrains Mono',monospace; font-size:11px; cursor:pointer; }
+  .align-picker select:hover{ border-color:var(--teal); }
+
+  .run-btn{ font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:13px;
+    background:var(--teal); color:#06201C; border:none; border-radius:7px; padding:9px 18px;
+    cursor:pointer; letter-spacing:.01em; transition:filter .15s; }
+  .run-btn:hover{ filter:brightness(1.08); }
+  .run-btn:disabled{ background:var(--bg-panel-2); color:var(--ink-faint); cursor:default; }
+  .run-btn.ghost{ background:transparent; color:var(--teal); border:1px solid rgba(45,212,191,0.4); }
+  .run-btn.ghost:hover{ background:rgba(45,212,191,0.08); }
+  .run-btn.ghost:disabled{ color:var(--ink-faint); border-color:rgba(255,255,255,0.1); background:transparent; }
+
+  /* ---------- Stage ---------- */
+  .stage-wrap{ position:relative; }
+  .stage{ position:relative; background:var(--bg-panel); border:1px solid rgba(255,255,255,0.08);
+    border-radius:12px; overflow:hidden; min-height:420px; display:flex; align-items:center; justify-content:center; }
+  .empty-state{ text-align:center; padding:60px 20px; color:var(--ink-faint); }
+  .empty-state svg{ width:46px; height:46px; stroke:var(--ink-faint); margin-bottom:14px; }
+  .empty-state p{ font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:.02em; max-width:340px; margin:0 auto; line-height:1.6;}
+
+  .canvas-scroll{ width:100%; overflow:auto; padding:26px; display:flex; justify-content:center; }
+  .canvas-holder{ position:relative; box-shadow:0 12px 40px rgba(0,0,0,0.45); flex:none; }
+  .canvas-holder canvas{ display:block; }
+
+  /* registration crosshairs on corners */
+  .crosshair{ position:absolute; width:18px; height:18px; pointer-events:none; opacity:.65; }
+  .crosshair::before, .crosshair::after{ content:''; position:absolute; background:var(--teal); }
+  .crosshair::before{ width:100%; height:1px; top:50%; }
+  .crosshair::after{ width:1px; height:100%; left:50%; }
+  .crosshair-circle{ position:absolute; inset:2px; border:1px solid var(--teal); border-radius:50%; }
+  .cx-tl{ top:-9px; left:-9px; } .cx-tr{ top:-9px; right:-9px; }
+  .cx-bl{ bottom:-9px; left:-9px; } .cx-br{ bottom:-9px; right:-9px; }
+
+  /* side by side */
+  .sbs-grid{ display:flex; gap:18px; align-items:flex-start; }
+  .sbs-pane{ text-align:center; }
+  .sbs-label{ font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--ink-faint); margin-bottom:8px; }
+
+  /* swipe */
+  .swipe-container{ position:relative; }
+  .swipe-top{ position:absolute; top:0; left:0; overflow:hidden; height:100%; }
+  .swipe-handle{ position:absolute; top:0; bottom:0; width:0; cursor:ew-resize; z-index:5; }
+  .swipe-line{ position:absolute; top:0; bottom:0; width:2px; background:var(--teal); left:0;
+    box-shadow:0 0 12px var(--teal); }
+  .swipe-grip{ position:absolute; top:50%; left:0; transform:translate(-50%,-50%);
+    width:34px; height:34px; border-radius:50%; background:var(--bg-deep); border:2px solid var(--teal);
+    display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 6px rgba(45,212,191,0.12); }
+  .swipe-grip::before{ content:''; width:0; height:0; border-top:5px solid transparent;
+    border-bottom:5px solid transparent; border-right:6px solid var(--teal); margin-right:3px; }
+  .swipe-grip::after{ content:''; width:0; height:0; border-top:5px solid transparent;
+    border-bottom:5px solid transparent; border-left:6px solid var(--teal); margin-left:3px; }
+
+  /* ---------- Stats bar ---------- */
+  .statsbar{ display:flex; gap:0; margin-top:16px; background:var(--bg-panel);
+    border:1px solid rgba(255,255,255,0.08); border-radius:10px; overflow:hidden; }
+  .stat{ flex:1; padding:14px 18px; border-right:1px solid rgba(255,255,255,0.07); }
+  .stat:last-child{ border-right:none; }
+  .stat-label{ font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:.09em;
+    text-transform:uppercase; color:var(--ink-faint); margin-bottom:6px; }
+  .stat-value{ font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:600; }
+  .stat-value.mint{ color:var(--mint); } .stat-value.crimson{ color:var(--crimson); }
+  .stat-value.amber{ color:var(--amber); } .stat-value.teal{ color:var(--teal); }
+
+  .legend{ display:flex; gap:20px; align-items:center; margin-top:14px; font-family:'JetBrains Mono',monospace;
+    font-size:11px; color:var(--ink-muted); flex-wrap:wrap; }
+  .legend span{ display:flex; align-items:center; gap:7px; }
+  .swatch{ width:11px; height:11px; border-radius:3px; display:inline-block; }
+
+  footer{ margin-top:26px; text-align:center; font-family:'JetBrains Mono',monospace; font-size:10.5px;
+    color:var(--ink-faint); letter-spacing:.03em; }
+
+  .scan-note{ font-family:'JetBrains Mono',monospace; font-size:12px; padding:11px 16px; border-radius:9px;
+    margin-bottom:16px; display:flex; align-items:center; gap:9px; }
+  .scan-note.ok{ background:rgba(62,207,142,0.1); border:1px solid rgba(62,207,142,0.35); color:var(--mint); }
+  .scan-note.warn{ background:rgba(242,169,59,0.1); border:1px solid rgba(242,169,59,0.35); color:var(--amber); }
+  .scan-note.info{ background:rgba(45,212,191,0.08); border:1px solid rgba(45,212,191,0.3); color:var(--teal); }
+
+  /* ---------- Report panel ---------- */
+  .report{ margin-top:16px; background:var(--bg-panel); border:1px solid rgba(255,255,255,0.08);
+    border-radius:10px; padding:16px 18px 8px; }
+  .report-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:12px; }
+  .report-title{ font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:14px; color:var(--ink); }
+  .report-sub{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--ink-muted); margin-top:3px; }
+  .report-progress{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--teal); }
+
+  .report-row{ display:grid; grid-template-columns:80px 1fr 18px;
+    align-items:center; gap:12px; padding:11px 6px; border-radius:6px; cursor:pointer;
+    border-bottom:1px solid rgba(255,255,255,0.05); transition:background .12s; }
+  .report-row:last-child{ border-bottom:none; }
+  .report-row:hover{ background:rgba(255,255,255,0.03); }
+  .report-row.current{ background:rgba(45,212,191,0.08); }
+  .rr-page{ font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--ink-muted); }
+  .rr-bar-track{ height:7px; border-radius:4px; background:rgba(255,255,255,0.06); overflow:hidden; position:relative; }
+  .rr-bar-fill{ height:100%; border-radius:4px; }
+  .rr-pct{ font-family:'JetBrains Mono',monospace; font-size:11.5px; text-align:right; color:var(--ink); }
+  .rr-badge{ font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase;
+    padding:6px 12px; border-radius:20px; text-align:center; white-space:nowrap; justify-self:start; }
+  .rr-badge.identical{ background:rgba(255,255,255,0.06); color:var(--ink-faint); }
+  .rr-badge.modified{ background:rgba(242,169,59,0.14); color:var(--amber); }
+  .rr-badge.added{ background:rgba(62,207,142,0.14); color:var(--mint); }
+  .rr-badge.removed{ background:rgba(226,80,79,0.14); color:var(--crimson); }
+  .rr-arrow{ color:var(--ink-faint); font-size:13px; }
+  .report-row:hover .rr-arrow{ color:var(--teal); }
+
+  .report-empty{ font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--ink-faint);
+    padding:16px 6px; text-align:center; }
+
+  /* ---------- Structural comparison (page boxes / alignment) ---------- */
+  .structural{ margin-top:16px; }
+  .struct-section{ background:var(--bg-panel); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:16px 18px; }
+  .struct-title{ font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:13.5px; color:var(--ink); margin-bottom:12px;
+    display:flex; align-items:center; gap:8px; }
+  .struct-title .n{ font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--ink-faint); font-weight:400; }
+
+  table.box-table{ width:100%; border-collapse:collapse; font-family:'JetBrains Mono',monospace; font-size:11px; }
+  table.box-table th{ text-align:left; color:var(--ink-faint); font-weight:500; text-transform:uppercase; letter-spacing:.05em;
+    font-size:9px; padding:0 8px 8px 0; border-bottom:1px solid rgba(255,255,255,0.08); }
+  table.box-table td{ padding:8px 8px 8px 0; border-bottom:1px solid rgba(255,255,255,0.045); vertical-align:top; color:var(--ink-muted); }
+  table.box-table tr:last-child td{ border-bottom:none; }
+  table.box-table td.box-name{ color:var(--ink); font-weight:600; white-space:nowrap; }
+  table.box-table tr.mismatch td.box-name{ color:var(--amber); }
+  table.box-table tr.used{ background:rgba(45,212,191,0.06); }
+  table.box-table tr.used td.box-name{ color:var(--teal); }
+  .box-used-dot{ width:7px; height:7px; border-radius:50%; background:var(--teal); box-shadow:0 0 6px var(--teal);
+    display:inline-block; }
+  .box-match-icon{ display:inline-block; }
+  .box-match-icon.ok{ color:var(--mint); } .box-match-icon.bad{ color:var(--amber); }
+  .struct-note{ font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--ink-faint); margin-top:12px; line-height:1.6;
+    padding-top:12px; border-top:1px dashed rgba(255,255,255,0.1); }
+  .struct-note.ok{ color:var(--mint); }
+  .struct-note.warn{ color:var(--amber); }
+
+  /* ---------- Output Preview (channel list + isolated render) ---------- */
+  .channel-list{ display:flex; flex-direction:column; border-radius:8px; overflow:hidden;
+    border:1px solid rgba(255,255,255,0.06); }
+  .channel-row{ display:flex; align-items:center; gap:10px; padding:8px 12px; background:var(--bg-deep);
+    border-bottom:1px solid rgba(255,255,255,0.05); transition:background .12s; }
+  .channel-row:last-child{ border-bottom:none; }
+  .channel-row:hover{ background:rgba(255,255,255,0.04); }
+  .channel-row.off .ch-name{ color:var(--ink-faint); text-decoration:line-through; text-decoration-color:rgba(255,255,255,0.25); }
+
+  .ch-check{ background:none; border:1.4px solid rgba(255,255,255,0.3); border-radius:3px; padding:0;
+    width:15px; height:15px; flex:none; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; color:var(--teal); transition:border-color .12s; }
+  .ch-check:hover{ border-color:var(--teal); }
+  .ch-check svg{ width:11px; height:11px; fill:none; stroke:currentColor; stroke-width:2.6;
+    stroke-linecap:round; stroke-linejoin:round; opacity:0; transform:scale(.6); transition:all .1s; }
+  .ch-check.checked svg{ opacity:1; transform:scale(1); }
+  .ch-check.checked{ border-color:var(--teal); background:rgba(45,212,191,0.12); }
+
+  .ch-name{ font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--ink); flex:1; }
+  .ch-tag{ font-family:'JetBrains Mono',monospace; font-size:9px; text-transform:uppercase; letter-spacing:.04em;
+    padding:3px 8px; border-radius:10px; flex:none; }
+  .ch-tag.both{ background:rgba(255,255,255,0.08); color:var(--ink-muted); }
+  .ch-tag.added{ background:rgba(62,207,142,0.15); color:var(--mint); }
+  .ch-tag.removed{ background:rgba(226,80,79,0.15); color:var(--crimson); }
+  .ch-process-tag{ font-size:8.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-faint);
+    background:rgba(255,255,255,0.06); padding:1px 5px; border-radius:8px; margin-left:4px; }
+  .ch-empty{ font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--ink-faint); padding:12px; text-align:center; }
+
+  .channel-row-wrap{ border-bottom:1px solid rgba(255,255,255,0.05); }
+  .channel-row-wrap:last-child{ border-bottom:none; }
+  .channel-row-wrap .channel-row{ border-bottom:none; }
+  .channel-row.expanded{ background:rgba(45,212,191,0.06); }
+  .ch-name[data-role="expand"]{ cursor:pointer; }
+  .ch-name[data-role="expand"]:hover{ color:var(--teal); }
+  .ch-expand-arrow{ font-size:10px; color:var(--ink-faint); cursor:pointer; flex:none; width:12px; text-align:center; }
+  .channel-row.expanded .ch-expand-arrow{ color:var(--teal); }
+
+  .channel-compare{ display:flex; flex-wrap:wrap; gap:10px; padding:10px 12px 14px; background:var(--bg-deep); }
+  .cc-pane{ flex:1; min-width:0; }
+  .cc-label{ font-family:'JetBrains Mono',monospace; font-size:9px; text-transform:uppercase; letter-spacing:.05em;
+    color:var(--ink-faint); margin-bottom:5px; }
+  .cc-canvas{ border:1px solid rgba(255,255,255,0.1); border-radius:5px; overflow:hidden; background:#fff;
+    display:flex; align-items:center; justify-content:center; min-height:50px; }
+  .cc-canvas canvas{ display:block; max-width:100%; height:auto; }
+  .cc-canvas .ch-empty{ color:#999; }
+  .cc-loading{ font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--ink-faint); padding:10px 12px; }
+  .cc-stat{ flex-basis:100%; font-family:'JetBrains Mono',monospace; font-size:10.5px; margin-top:8px; }
+  .cc-stat.ok{ color:var(--mint); }
+  .cc-stat.warn{ color:var(--amber); }
+
+
+
+  .rr-reasons{ font-family:'JetBrains Mono',monospace; font-size:9.5px; color:var(--ink-faint); margin-top:3px; }
+
+  @media (max-width:760px){
+    .uploads{ grid-template-columns:1fr; }
+    .swap-btn{ display:none; }
+    .toolbar{ flex-direction:column; align-items:stretch; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="brand">
+      <div class="mark">
+        <svg viewBox="0 0 34 34" fill="none">
+          <circle cx="17" cy="17" r="15.5" stroke="#2DD4BF" stroke-width="1.4"/>
+          <line x1="17" y1="1" x2="17" y2="9" stroke="#2DD4BF" stroke-width="1.4"/>
+          <line x1="17" y1="25" x2="17" y2="33" stroke="#2DD4BF" stroke-width="1.4"/>
+          <line x1="1" y1="17" x2="9" y2="17" stroke="#2DD4BF" stroke-width="1.4"/>
+          <line x1="25" y1="17" x2="33" y2="17" stroke="#2DD4BF" stroke-width="1.4"/>
+          <circle cx="17" cy="17" r="4" stroke="#F2A93B" stroke-width="1.4"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Redline</h1>
+        <div class="tag">PDF Visual Compare</div>
+      </div>
+    </div>
+    <div class="status">
+      <span class="dot" id="statusDot"></span><span id="statusText">Awaiting two files</span>
+    </div>
+  </header>
+
+  <div class="uploads">
+    <div class="dropzone" id="dzA">
+      <div class="dz-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 19h16"/></svg></div>
+      <div class="dz-meta">
+        <div class="dz-label">File A · Original</div>
+        <div class="dz-name" id="nameA">Drop or click — PDF, JPG, or PNG</div>
+        <div class="dz-sub" id="subA">—</div>
+      </div>
+      <input type="file" id="inputA" accept="application/pdf,image/jpeg,image/png">
+    </div>
+
+    <button class="swap-btn" id="swapBtn" title="Swap A/B">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+    </button>
+
+    <div class="dropzone" id="dzB">
+      <div class="dz-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 19h16"/></svg></div>
+      <div class="dz-meta">
+        <div class="dz-label">File B · Revised</div>
+        <div class="dz-name" id="nameB">Drop or click — PDF, JPG, or PNG</div>
+        <div class="dz-sub" id="subB">—</div>
+      </div>
+      <input type="file" id="inputB" accept="application/pdf,image/jpeg,image/png">
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="modes">
+      <button class="mode-btn active" data-mode="sbs">Side by side</button>
+      <button class="mode-btn" data-mode="swipe">Swipe</button>
+      <button class="mode-btn" data-mode="diff">Difference</button>
+    </div>
+    <div class="pager">
+      <button id="prevPage">‹</button>
+      <span id="pageLabel">PAGE 1 / 1</span>
+      <button id="nextPage">›</button>
+    </div>
+    <div class="zoom">
+      <button id="zoomOut">−</button>
+      <span id="zoomLabel">100%</span>
+      <button id="zoomIn">+</button>
+    </div>
+    <div class="align-picker">
+      <label for="alignSelect">Align by</label>
+      <select id="alignSelect">
+        <option value="trim" selected>TrimBox</option>
+        <option value="bleed">BleedBox</option>
+        <option value="crop">CropBox</option>
+        <option value="media">MediaBox</option>
+        <option value="dieline">Dieline (spot color)</option>
+      </select>
+    </div>
+    <div class="align-picker">
+      <label for="sizeModeSelect">If sizes differ</label>
+      <select id="sizeModeSelect">
+        <option value="fit" selected>Scale to fit</option>
+        <option value="original">Keep original size (center)</option>
+      </select>
+    </div>
+    <button class="run-btn" id="runBtn" disabled>Compare pages</button>
+  </div>
+
+  <div class="scan-note" id="scanNote" style="display:none;"></div>
+  <div class="scan-note" id="sizeModeNote" style="display:none;"></div>
+
+  <div class="stage-wrap">
+    <div class="stage" id="stage">
+      <div class="empty-state" id="emptyState">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="18" rx="1"/><rect x="13" y="3" width="8" height="18" rx="1"/><path d="M7 8h0M7 12h0M7 16h0"/></svg>
+        <p>Load a File A and File B above (PDF, JPG, or PNG), then run a comparison.<br>Pages render at matched scale so every shift, added mark, or missing element is caught pixel-for-pixel.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="statsbar" id="statsbar" style="display:none;">
+    <div class="stat"><div class="stat-label">Pages A / B</div><div class="stat-value teal" id="statPages">—</div></div>
+    <div class="stat"><div class="stat-label">Pixels changed</div><div class="stat-value amber" id="statChanged">—</div></div>
+    <div class="stat"><div class="stat-label">Added content</div><div class="stat-value mint" id="statAdded">—</div></div>
+    <div class="stat"><div class="stat-label">Removed content</div><div class="stat-value crimson" id="statRemoved">—</div></div>
+  </div>
+
+  <div class="legend" id="legend" style="display:none;">
+    <span><span class="swatch" style="background:#3ECF8E"></span> Added in B</span>
+    <span><span class="swatch" style="background:#E2504F"></span> Removed from A</span>
+    <span><span class="swatch" style="background:#F2A93B"></span> Shifted, modified, or color/hue shift</span>
+  </div>
+
+  <div class="structural" id="structuralPanel" style="display:none;">
+    <div class="struct-section">
+      <div class="struct-title">Page boxes <span class="n" id="boxPageNum"></span></div>
+      <table class="box-table" id="boxTable">
+        <thead><tr><th></th><th>Box</th><th>File A (mm)</th><th>File B (mm)</th><th></th></tr></thead>
+        <tbody id="boxTableBody"></tbody>
+      </table>
+      <div class="struct-note" id="boxNote"></div>
+    </div>
+  </div>
+
+  <div class="structural" id="outputPreviewPanel" style="display:none;">
+    <div class="struct-section">
+      <div class="struct-title">Output preview <span class="n" id="channelPageNum"></span></div>
+      <div class="channel-list" id="channelList"></div>
+      <div class="struct-note">Lists every channel actually used on the page — CMYK process plates and spot colors alike, including CMYK content inside placed raster images. Uncheck a channel to knock it out of the artwork above (best-effort: paints its own paths white, so it can't reconstruct other ink genuinely overprinted beneath it). Click a channel's name to isolate and diff it directly against the same channel in the other file. Note: for vector content this is exact; for a CMYK <em>image</em> we can only detect its position/size, not its individual pixels, so it shows as a flat gray placeholder — real per-pixel photo content isn't compared at that level.</div>
+    </div>
+  </div>
+
+  <div class="report" id="reportPanel" style="display:none;">
+    <div class="report-head">
+      <div>
+        <div class="report-title">Pages that differ</div>
+        <div class="report-sub" id="reportSub">—</div>
+      </div>
+    </div>
+    <div class="report-list" id="reportList"></div>
+  </div>
+
+  <footer>Runs entirely in your browser — no file is uploaded anywhere. · Redline doesn't simulate overprint — for overprint-accurate comparisons, flatten with overprint simulation in Acrobat/your RIP first, then compare those outputs here. · Redline</footer>
+</div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+// ---------------------------------------------------------------
+// JPG/PNG support: rather than teach every function in this file a
+// second code path, a loaded image is wrapped in two tiny adapters that
+// expose just enough of pdf.js's and pdf-lib's own APIs for the existing
+// PDF pipeline (alignment, knockout, diffing, the stage view) to treat a
+// single image as if it were a one-page PDF. There's no real PDF
+// structure behind it, so PDF-only features — page boxes beyond the full
+// image bounds, spot colors, CMYK detection, dielines — correctly find
+// nothing for an image, rather than being reimplemented separately.
+// Image pixels are treated as 1:1 with internal "points" for geometry
+// purposes; this only matters for consistency within a single comparison,
+// not as a claim about real-world physical size.
+// ---------------------------------------------------------------
+function makeFakePdfDoc(bitmap){
+  const page = {
+    getViewport(opts){
+      opts = opts || {};
+      const scale = opts.scale !== undefined ? opts.scale : 1;
+      const offsetX = opts.offsetX || 0;
+      const offsetY = opts.offsetY || 0;
+      return { width: bitmap.width*scale, height: bitmap.height*scale, scale, offsetX, offsetY };
+    },
+    render({canvasContext, viewport}){
+      const promise = (async () => {
+        canvasContext.save();
+        canvasContext.setTransform(viewport.scale, 0, 0, viewport.scale, viewport.offsetX, viewport.offsetY);
+        canvasContext.drawImage(bitmap, 0, 0);
+        canvasContext.restore();
+      })();
+      return { promise };
+    }
+  };
+  return {
+    numPages: 1,
+    async getPage(n){ return page; }
+  };
+}
+
+function makeFakePdfLibDoc(bitmap){
+  const box = { x:0, y:0, width:bitmap.width, height:bitmap.height };
+  // Harmless no-op stand-in for a real PDFPageLeaf's low-level dict
+  // access, so spot-color/CMYK/dieline lookups find nothing and bail out
+  // through their own normal "not found" paths instead of throwing.
+  const fakeNode = { Resources(){ return undefined; }, get(){ return undefined; }, lookupMaybe(){ return undefined; } };
+  const fakePage = {
+    getMediaBox(){ return {...box}; },
+    getCropBox(){ return {...box}; },
+    getTrimBox(){ return {...box}; },
+    getBleedBox(){ return {...box}; },
+    node: fakeNode
+  };
+  return {
+    getPages(){ return [fakePage]; },
+    context: null
+  };
+}
+
+async function loadImageBitmapSafe(file){
+  if(typeof createImageBitmap === 'function'){
+    try{ return await createImageBitmap(file); }
+    catch(e){ console.warn('[Redline] createImageBitmap failed, falling back to <img>', e); }
+  }
+  // fallback for environments without createImageBitmap
+  const url = URL.createObjectURL(file);
+  try{
+    const img = await new Promise((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = reject;
+      el.src = url;
+    });
+    return img; // drawImage accepts an HTMLImageElement just as well as an ImageBitmap
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+
+const state = {
+  pdfA:null, pdfB:null,
+  pdfLibA:null, pdfLibB:null,
+  fileA:null, fileB:null,
+  page:1, maxPages:1,
+  zoom:1,
+  mode:'sbs',
+  lastRender:null, // {canvasA, canvasB, diffCanvas}
+  pageReport:null, // [{page, pct, kind}]
+  alignBox:'trim', // which box (media/crop/trim/bleed) pages are aligned to before diffing
+  sizeMode:'fit', // 'fit' = normalize both files to the same pixel width; 'original' = shared physical scale, centered
+  hiddenChannels: new Set(), // lowercased colorant names currently knocked out of the render
+  expandedChannel: null // lowercased colorant name currently shown in the isolated channel-vs-channel compare
+};
+
+const el = id => document.getElementById(id);
+const stage = el('stage');
+const emptyState = el('emptyState');
+
+function fmtSize(bytes){
+  if(bytes < 1024) return bytes + ' B';
+  if(bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/1024/1024).toFixed(2) + ' MB';
+}
+
+function setStatus(){
+  const dot = el('statusDot');
+  const txt = el('statusText');
+  const ready = !!(state.pdfA && state.pdfB);
+  dot.classList.toggle('ready', ready);
+  if(ready){
+    txt.textContent = 'Ready — ' + state.pdfA.numPages + ' vs ' + state.pdfB.numPages + ' pages';
+  } else if(state.pdfA || state.pdfB){
+    txt.textContent = 'Waiting on second file…';
+  } else {
+    txt.textContent = 'Awaiting two files';
+  }
+  el('runBtn').disabled = !ready;
+  console.log('[Redline] status', {hasA: !!state.pdfA, hasB: !!state.pdfB, ready});
+}
+
+async function loadFile(file, slot){
+  console.log('[Redline] loading', slot, file.name);
+  try{
+    const isImage = /^image\/(jpeg|png)$/i.test(file.type) || /\.(jpe?g|png)$/i.test(file.name);
+    let pdf, pdfLibDoc;
+
+    if(isImage){
+      const bitmap = await loadImageBitmapSafe(file);
+      pdf = makeFakePdfDoc(bitmap);
+      pdfLibDoc = makeFakePdfLibDoc(bitmap);
+    } else {
+      const [bufForJs, bufForLib] = await Promise.all([file.arrayBuffer(), file.arrayBuffer()]);
+      const pdfPromise = pdfjsLib.getDocument({data:bufForJs}).promise;
+      const pdfLibPromise = (typeof PDFLib !== 'undefined')
+        ? PDFLib.PDFDocument.load(bufForLib, {ignoreEncryption:true, updateMetadata:false}).catch(err=>{
+            console.warn('[Redline] pdf-lib could not parse', slot, err);
+            return null;
+          })
+        : Promise.resolve(null);
+      [pdf, pdfLibDoc] = await Promise.all([pdfPromise, pdfLibPromise]);
+    }
+
+    if(slot === 'A'){
+      state.pdfA = pdf; state.pdfLibA = pdfLibDoc; state.fileA = file;
+      el('nameA').textContent = file.name;
+      el('subA').textContent = pdf.numPages + ' page' + (pdf.numPages>1?'s':'') + ' · ' + fmtSize(file.size) + (isImage ? ' · image' : '');
+      el('dzA').classList.add('filled');
+    } else {
+      state.pdfB = pdf; state.pdfLibB = pdfLibDoc; state.fileB = file;
+      el('nameB').textContent = file.name;
+      el('subB').textContent = pdf.numPages + ' page' + (pdf.numPages>1?'s':'') + ' · ' + fmtSize(file.size) + (isImage ? ' · image' : '');
+      el('dzB').classList.add('filled');
+    }
+    if(state.pdfA && state.pdfB){
+      state.maxPages = Math.max(state.pdfA.numPages, state.pdfB.numPages);
+      state.page = 1;
+      updatePager();
+    }
+    state.pageReport = null;
+    el('reportPanel').style.display = 'none';
+    el('reportList').innerHTML = '';
+    el('structuralPanel').style.display = 'none';
+    el('outputPreviewPanel').style.display = 'none';
+    state.hiddenChannels.clear();
+    state.expandedChannel = null;
+    el('scanNote').style.display = 'none';
+    console.log('[Redline] loaded', slot, 'pages:', pdf.numPages, 'pdf-lib ok:', !!pdfLibDoc, 'isImage:', isImage);
+  } catch(err){
+    console.error('[Redline] failed to load', slot, err);
+    const nameField = slot === 'A' ? el('nameA') : el('nameB');
+    const subField = slot === 'A' ? el('subA') : el('subB');
+    nameField.textContent = 'Could not open this file';
+    subField.textContent = (err && err.message) ? err.message : 'File may be corrupted or an unsupported format';
+  } finally {
+    setStatus();
+  }
+}
+
+function wireDropzone(dzId, inputId, slot){
+  const dz = el(dzId), input = el(inputId);
+  // Guard: input.click() dispatches its own click event which bubbles back up
+  // to dz and would otherwise re-trigger this same listener (opening/cancelling
+  // the file dialog a second time and breaking selection on some browsers).
+  dz.addEventListener('click', (e)=>{
+    if(e.target === input) return;
+    input.click();
+  });
+  input.addEventListener('change', e=>{
+    const f = e.target.files && e.target.files[0];
+    if(f) loadFile(f, slot);
+    // allow re-selecting the exact same file later and still fire 'change'
+    e.target.value = '';
+  });
+  ['dragenter','dragover'].forEach(evt=> dz.addEventListener(evt, e=>{ e.preventDefault(); dz.classList.add('drag'); }));
+  ['dragleave','drop'].forEach(evt=> dz.addEventListener(evt, e=>{ e.preventDefault(); dz.classList.remove('drag'); }));
+  dz.addEventListener('drop', e=>{
+    const f = e.dataTransfer.files[0];
+    if(f && /^(application\/pdf|image\/jpeg|image\/png)$/i.test(f.type)) loadFile(f, slot);
+  });
+}
+wireDropzone('dzA','inputA','A');
+wireDropzone('dzB','inputB','B');
+
+el('swapBtn').addEventListener('click', ()=>{
+  [state.pdfA, state.pdfB] = [state.pdfB, state.pdfA];
+  [state.pdfLibA, state.pdfLibB] = [state.pdfLibB, state.pdfLibA];
+  [state.fileA, state.fileB] = [state.fileB, state.fileA];
+  const an = el('nameA').textContent, as = el('subA').textContent;
+  el('nameA').textContent = el('nameB').textContent; el('subA').textContent = el('subB').textContent;
+  el('nameB').textContent = an; el('subB').textContent = as;
+  const af = el('dzA').classList.contains('filled'), bf = el('dzB').classList.contains('filled');
+  el('dzA').classList.toggle('filled', bf); el('dzB').classList.toggle('filled', af);
+  el('structuralPanel').style.display = 'none';
+  el('outputPreviewPanel').style.display = 'none';
+  state.lastRender = null;
+  setStatus();
+});
+
+function updatePager(){
+  el('pageLabel').textContent = 'PAGE ' + state.page + ' / ' + state.maxPages;
+  el('prevPage').disabled = state.page <= 1;
+  el('nextPage').disabled = state.page >= state.maxPages;
+}
+el('prevPage').addEventListener('click', ()=>{ if(state.page>1){ state.page--; updatePager(); runCompare(); }});
+el('nextPage').addEventListener('click', ()=>{ if(state.page<state.maxPages){ state.page++; updatePager(); runCompare(); }});
+
+document.querySelectorAll('.mode-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    state.mode = btn.dataset.mode;
+    if(state.lastRender) renderStage();
+  });
+});
+
+el('zoomIn').addEventListener('click', ()=>{ state.zoom = Math.min(state.zoom+0.15, 2.5); el('zoomLabel').textContent = Math.round(state.zoom*100)+'%'; if(state.lastRender) renderStage(); });
+el('zoomOut').addEventListener('click', ()=>{ state.zoom = Math.max(state.zoom-0.15, 0.4); el('zoomLabel').textContent = Math.round(state.zoom*100)+'%'; if(state.lastRender) renderStage(); });
+
+el('alignSelect').addEventListener('change', (e)=>{
+  state.alignBox = e.target.value;
+  if(state.pdfA && state.pdfB && state.lastRender) compareAndScan(); // re-run so the new alignment is reflected everywhere
+});
+
+el('sizeModeSelect').addEventListener('change', (e)=>{
+  state.sizeMode = e.target.value;
+  updateSizeModeNote();
+  if(state.pdfA && state.pdfB && state.lastRender) compareAndScan();
+});
+
+function updateSizeModeNote(){
+  const note = el('sizeModeNote');
+  if(state.sizeMode === 'original'){
+    note.className = 'scan-note info';
+    note.style.display = 'flex';
+    note.textContent = 'Both files render at one shared physical scale (set by whichever file\'s aligned box is larger) and are centered together — a genuinely smaller artwork will show up smaller, rather than being stretched to match.';
+  } else {
+    note.style.display = 'none';
+  }
+}
+
+el('runBtn').addEventListener('click', compareAndScan);
+
+async function compareAndScan(){
+  await runCompare();
+  await scanAllPages();
+}
+
+async function scanAllPages(){
+  if(!state.pdfA || !state.pdfB) return;
+  el('runBtn').disabled = true;
+  el('scanNote').style.display = 'none';
+  el('reportPanel').style.display = 'none';
+
+  const scanWidth = 320; // lower res for speed across many pages
+  const results = [];
+
+  for(let p = 1; p <= state.maxPages; p++){
+    el('runBtn').textContent = 'Scanning ' + p + ' / ' + state.maxPages + '…';
+    const inA = p <= state.pdfA.numPages;
+    const inB = p <= state.pdfB.numPages;
+
+    if(inA && !inB){
+      results.push({page:p, pct:100, kind:'removed', reasons:[]});
+    } else if(!inA && inB){
+      results.push({page:p, pct:100, kind:'added', reasons:[]});
+    } else {
+      const { canvasA: cA, canvasB: cB } = await getComparisonCanvasesForPage(p, scanWidth);
+      const diff = computeDiff(cA, cB);
+      const pct = (diff.changed / diff.total) * 100;
+      let kind = pct < 0.05 ? 'identical' : 'modified';
+      const reasons = [];
+
+      const boxesA = getPageBoxes(state.pdfLibA, p-1);
+      const boxesB = getPageBoxes(state.pdfLibB, p-1);
+      if(boxesA && boxesB){
+        const cropDiffers = !boxesEqual(boxesA.crop, boxesB.crop);
+        const trimDiffers = !boxesEqual(boxesA.trim, boxesB.trim);
+        if(state.alignBox !== 'crop' && cropDiffers && !trimDiffers){
+          reasons.push('CropBox differs, ' + state.alignBox + ' matches — ignored');
+        } else if(trimDiffers && state.alignBox !== 'media'){
+          reasons.push('TrimBox position differs');
+          kind = 'modified';
+        }
+      }
+
+      results.push({page:p, pct, kind, reasons});
+    }
+    await new Promise(r => setTimeout(r, 0)); // let UI breathe
+  }
+
+  state.pageReport = results;
+  const diffs = results.filter(r => r.kind !== 'identical');
+  const note = el('scanNote');
+  if(diffs.length === 0){
+    note.className = 'scan-note ok';
+    note.textContent = '✓ No differences found — all ' + results.length + ' page(s) match.';
+    note.style.display = 'flex';
+  } else {
+    note.className = 'scan-note warn';
+    note.textContent = '⚠ Differences found on ' + diffs.length + ' of ' + results.length + ' page(s) — see below.';
+    note.style.display = 'flex';
+  }
+  renderReport();
+
+  el('runBtn').textContent = 'Compare pages';
+  el('runBtn').disabled = false;
+}
+
+function renderReport(){
+  const results = state.pageReport;
+  if(!results || !results.length){
+    el('reportPanel').style.display = 'none';
+    return;
+  }
+  const diffs = results.filter(r => r.kind !== 'identical');
+
+  if(diffs.length === 0){
+    // Nothing to report — hide the panel entirely
+    el('reportPanel').style.display = 'none';
+    return;
+  }
+
+  el('reportPanel').style.display = 'block';
+  el('reportSub').textContent = diffs.length + ' of ' + results.length + ' page(s) checked differ';
+
+  el('reportList').innerHTML = '';
+  diffs.forEach(r => {
+    const label = r.kind === 'added' ? 'ADDED PAGE' : r.kind === 'removed' ? 'REMOVED PAGE' : 'DIFFERENT';
+    const row = document.createElement('div');
+    row.className = 'report-row' + (r.page === state.page ? ' current' : '');
+    row.innerHTML = `
+      <div class="rr-page">PAGE ${r.page}</div>
+      <div>
+        <div class="rr-badge ${r.kind}">${label}</div>
+        ${r.reasons && r.reasons.length ? `<div class="rr-reasons">${r.reasons.join(' · ')}</div>` : ''}
+      </div>
+      <div class="rr-arrow">→</div>
+    `;
+    row.addEventListener('click', ()=>{
+      state.page = r.page;
+      updatePager();
+      runCompare();
+      document.querySelectorAll('.report-row').forEach(el=>el.classList.remove('current'));
+      row.classList.add('current');
+      el('stage').scrollIntoView({behavior:'smooth', block:'center'});
+    });
+    el('reportList').appendChild(row);
+  });
+}
+
+async function renderPageAtScale(pdf, pageNum, scale){
+  if(!pdf || pageNum > pdf.numPages) return null;
+  const page = await pdf.getPage(pageNum);
+  const viewport = page.getViewport({scale});
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.ceil(viewport.width);
+  canvas.height = Math.ceil(viewport.height);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  // Note: pdf.js does not simulate PDF overprint (OP/op/OPM) — it paints
+  // each object opaquely, full stop. An earlier attempt to work around
+  // that by setting the canvas blend mode to "darken" before rendering
+  // was removed: pdf.js manages its own canvas state internally and very
+  // likely resets compositing to source-over as soon as it starts
+  // drawing, making that a no-op rather than a real approximation. There
+  // is no reliable way to inject overprint behavior into pdf.js's
+  // rendering from the outside — see the footer note for the actual
+  // workflow (pre-flatten with overprint simulation upstream).
+  await page.render({canvasContext:ctx, viewport}).promise;
+  return canvas;
+}
+
+async function renderPageToCanvas(pdf, pageNum, targetWidth){
+  if(!pdf || pageNum > pdf.numPages) return null;
+  const page = await pdf.getPage(pageNum);
+  const baseViewport = page.getViewport({scale:1});
+  const scale = targetWidth / baseViewport.width;
+  return renderPageAtScale(pdf, pageNum, scale);
+}
+
+function computeDiff(canvasA, canvasB, ignoreMask){
+  const w = Math.max(canvasA ? canvasA.width : 0, canvasB ? canvasB.width : 0);
+  const h = Math.max(canvasA ? canvasA.height : 0, canvasB ? canvasB.height : 0);
+  const diffCanvas = document.createElement('canvas');
+  diffCanvas.width = w; diffCanvas.height = h;
+  const dctx = diffCanvas.getContext('2d');
+  dctx.fillStyle = '#ffffff';
+  dctx.fillRect(0,0,w,h);
+
+  const getData = (c) => {
+    if(!c) return null;
+    const tmp = document.createElement('canvas');
+    tmp.width = w; tmp.height = h;
+    const tctx = tmp.getContext('2d');
+    tctx.fillStyle = '#ffffff'; tctx.fillRect(0,0,w,h);
+    tctx.drawImage(c,0,0);
+    return tctx.getImageData(0,0,w,h);
+  };
+
+  const dataA = getData(canvasA);
+  const dataB = getData(canvasB);
+  const maskData = ignoreMask ? getData(ignoreMask) : null; // white = ignored region
+  const out = dctx.createImageData(w,h);
+
+  let changed=0, added=0, removed=0, ignored=0, total=w*h;
+
+  for(let i=0;i<dataA.data.length;i+=4){
+    if(maskData && maskData.data[i] > 128){
+      // pixel belongs to a channel the user toggled off — don't count it
+      // toward the diff at all, and paint it distinctly so it's obvious
+      // this area was deliberately excluded rather than "clean".
+      ignored++;
+      out.data[i]=205; out.data[i+1]=214; out.data[i+2]=224; out.data[i+3]=255;
+      continue;
+    }
+    const rA=dataA.data[i], gA=dataA.data[i+1], bA=dataA.data[i+2];
+    const rB=dataB.data[i], gB=dataB.data[i+1], bB=dataB.data[i+2];
+    const lumA = (rA+gA+bA)/3, lumB=(rB+gB+bB)/3;
+    const darkA = lumA < 235, darkB = lumB < 235;
+
+    // Compare full RGB, not just luminance — a pure hue/color shift (e.g. a
+    // spot color swapped for a similar-brightness process build) can have
+    // near-identical luminance but very different R/G/B channel values.
+    const channelDelta = Math.max(Math.abs(rA-rB), Math.abs(gA-gB), Math.abs(bA-bB));
+    const colorShift = darkA && darkB && channelDelta > 18; // both have ink, but color differs
+
+    if(channelDelta > 24 || colorShift){
+      changed++;
+      if(darkB && !darkA){ // ink present only in B -> added
+        added++;
+        out.data[i]=62; out.data[i+1]=207; out.data[i+2]=142; out.data[i+3]=255;
+      } else if(darkA && !darkB){ // ink present only in A -> removed
+        removed++;
+        out.data[i]=226; out.data[i+1]=80; out.data[i+2]=79; out.data[i+3]=255;
+      } else { // both have ink but differ (shifted, modified, or color/hue shift)
+        out.data[i]=242; out.data[i+1]=169; out.data[i+2]=59; out.data[i+3]=255;
+      }
+    } else {
+      // faint background from A for context
+      const g = 246;
+      out.data[i]=g; out.data[i+1]=g; out.data[i+2]=g; out.data[i+3]=255;
+    }
+  }
+  dctx.putImageData(out,0,0);
+  const activeTotal = total - ignored;
+  return { canvas: diffCanvas, changed, added, removed, ignored, total: activeTotal || 1 };
+}
+
+// ---------------------------------------------------------------
+// Structural comparison: page boxes (Media/Crop/Trim/Bleed), used
+// both to show alignment info and to crop each rendered page to a
+// chosen reference box before diffing pixels — so a pure CropBox
+// offset (e.g. different export margins) doesn't get flagged as a
+// difference when the actual artwork (TrimBox) lines up.
+// ---------------------------------------------------------------
+function boxToObj(box){
+  if(!box) return null;
+  return { x0: box.x, y0: box.y, x1: box.x + box.width, y1: box.y + box.height,
+           width: box.width, height: box.height };
+}
+function safeCall(fn){ try{ return fn(); } catch(e){ return null; } }
+
+// ---------------------------------------------------------------
+// Dieline alignment: some packaging PDFs don't carry a TrimBox at
+// all (or carry an unreliable one) and instead define the cut path
+// as vector artwork painted in a spot color named "Cut", "Dieline",
+// "Diecut", or "CutContour". To align on that, we decode the page's
+// own content stream and trace path-construction operators while
+// that spot color is the active fill/stroke color, accumulating a
+// bounding box. This is a best-effort content-stream interpreter —
+// it covers the page's own top-level content (not nested Form
+// XObjects) and only decodes FlateDecode-compressed streams, which
+// covers the vast majority of real-world PDFs.
+// ---------------------------------------------------------------
+const DIELINE_NAME_RE = /^(cut|dieline|die[\s-]?cut|cutcontour|cut[\s-]?contour)$/i;
+
+function pdfTextOf(obj){
+  if(obj == null) return null;
+  try{ if(typeof obj.decodeText === 'function') return obj.decodeText(); }catch(e){}
+  try{
+    if(typeof obj.asString === 'function'){
+      let s = obj.asString();
+      if(s.startsWith('/')) s = s.slice(1);
+      return s;
+    }
+  }catch(e){}
+  return null;
+}
+function pdfResolve(context, obj){
+  try{ if(obj instanceof PDFLib.PDFRef) return context.lookup(obj); }catch(e){}
+  return obj;
+}
+// Defensive numeric extraction: tries every accessor pattern pdf-lib's
+// PDFNumber might expose, so a wrong assumption about the exact method
+// name can't silently break ICC profile (/N) or Matrix number reads —
+// which would otherwise make the most common real-world case (CMYK
+// tagged via an ICCBased profile, rather than bare /DeviceCMYK) fail to
+// resolve as CMYK at all.
+function pdfNumberValue(obj){
+  if(obj == null) return null;
+  if(typeof obj === 'number') return obj;
+  try{ if(typeof obj.asNumber === 'function') return obj.asNumber(); }catch(e){}
+  try{ if(typeof obj.value === 'function') return obj.value(); }catch(e){}
+  try{ if(typeof obj.value === 'number') return obj.value; }catch(e){}
+  try{ if(typeof obj.numberValue === 'number') return obj.numberValue; }catch(e){}
+  const n = Number(obj);
+  return isNaN(n) ? null : n;
+}
+function getInheritedResources(page){
+  try{
+    const res = page.node.Resources();
+    if(res) return res;
+  } catch(e){ /* fall through */ }
+  try{
+    return page.node.lookupMaybe(PDFLib.PDFName.of('Resources'), PDFLib.PDFDict) || null;
+  } catch(e){ return null; }
+}
+
+// Which /ColorSpace resource names (e.g. "CS3") on this page point at a
+// Separation/DeviceN colorant matching our dieline name pattern.
+function findDielineColorSpaceNames(context, resources){
+  const names = [];
+  try{
+    const csDict = resources && resources.lookupMaybe(PDFLib.PDFName.of('ColorSpace'), PDFLib.PDFDict);
+    if(!csDict) return names;
+    for(const [key, rawVal] of csDict.entries()){
+      try{
+        const csObj = pdfResolve(context, rawVal);
+        if(!(csObj instanceof PDFLib.PDFArray)) continue;
+        const family = pdfTextOf(pdfResolve(context, csObj.get(0)));
+        let colorantName = null;
+        if(family === 'Separation'){
+          colorantName = pdfTextOf(pdfResolve(context, csObj.get(1)));
+        } else if(family === 'DeviceN'){
+          const arr = pdfResolve(context, csObj.get(1));
+          if(arr instanceof PDFLib.PDFArray && arr.size() === 1){
+            colorantName = pdfTextOf(pdfResolve(context, arr.get(0)));
+          }
+        }
+        if(colorantName && DIELINE_NAME_RE.test(colorantName.trim())){
+          names.push(pdfTextOf(key));
+        }
+      } catch(e){ /* skip malformed entry */ }
+    }
+  } catch(e){ /* ignore */ }
+  return names;
+}
+
+function bytesToLatin1(bytes){
+  let s = '';
+  const chunk = 0x8000;
+  for(let i=0;i<bytes.length;i+=chunk){
+    s += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(i+chunk, bytes.length)));
+  }
+  return s;
+}
+
+function inflateIfNeeded(rawStream){
+  const bytes = rawStream.getContents ? rawStream.getContents() : null;
+  if(!bytes) return null;
+  let filter = null;
+  try{
+    const f = rawStream.dict.lookup(PDFLib.PDFName.of('Filter'));
+    if(f instanceof PDFLib.PDFArray) filter = pdfTextOf(f.get(0));
+    else filter = pdfTextOf(f);
+  } catch(e){ /* no filter */ }
+
+  if(!filter) return bytesToLatin1(bytes);
+  if(filter === 'FlateDecode'){
+    try{
+      const inflated = pako.inflate(bytes);
+      return bytesToLatin1(inflated);
+    } catch(e){
+      console.warn('[Redline] FlateDecode failed for content stream', e);
+      return null;
+    }
+  }
+  // Other filters (DCTDecode/CCITT for images, ASCII85, etc.) aren't
+  // expected on a content stream — bail out gracefully.
+  return null;
+}
+
+function getPageContentText(pdfLibDoc, page){
+  try{
+    const context = pdfLibDoc.context;
+    const contentsRaw = page.node.get(PDFLib.PDFName.of('Contents'));
+    const contents = pdfResolve(context, contentsRaw);
+    if(!contents) return null;
+    if(contents instanceof PDFLib.PDFArray){
+      const parts = [];
+      for(let i=0;i<contents.size();i++){
+        const streamObj = pdfResolve(context, contents.get(i));
+        if(streamObj){
+          const txt = inflateIfNeeded(streamObj);
+          if(txt) parts.push(txt);
+        }
+      }
+      return parts.length ? parts.join('\n') : null;
+    }
+    return inflateIfNeeded(contents);
+  } catch(e){
+    console.warn('[Redline] getPageContentText failed', e);
+    return null;
+  }
+}
+
+function tokenizeContentStream(str){
+  const tokens = [];
+  const len = str.length;
+  let i = 0;
+  while(i < len){
+    const c = str[i];
+    if(c === ' ' || c === '\t' || c === '\r' || c === '\n' || c === '\f' || c === '\0'){ i++; continue; }
+    if(c === '%'){ while(i<len && str[i] !== '\n' && str[i] !== '\r') i++; continue; }
+    if(c === '/'){
+      let j = i+1;
+      while(j<len && !/[\s\/\[\]<>()%]/.test(str[j])) j++;
+      tokens.push({t:'name', v: str.slice(i+1,j)});
+      i = j; continue;
+    }
+    if(c === '('){
+      let depth=1, j=i+1;
+      while(j<len && depth>0){
+        if(str[j]==='\\'){ j+=2; continue; }
+        if(str[j]==='(') depth++;
+        else if(str[j]===')') depth--;
+        j++;
+      }
+      tokens.push({t:'other'}); i=j; continue;
+    }
+    if(c === '<'){
+      if(str[i+1] === '<'){ tokens.push({t:'other'}); i+=2; continue; }
+      let j=i+1; while(j<len && str[j] !== '>') j++;
+      tokens.push({t:'other'}); i=j+1; continue;
+    }
+    if(c === '>'){ if(str[i+1] === '>'){ tokens.push({t:'other'}); i+=2; continue; } i++; continue; }
+    if(c === '[' || c === ']' || c === '{' || c === '}'){ tokens.push({t:'other'}); i++; continue; }
+    if(/[0-9+\-.]/.test(c)){
+      let j=i+1;
+      while(j<len && /[0-9+\-.eE]/.test(str[j])) j++;
+      const num = parseFloat(str.slice(i,j));
+      if(!isNaN(num)){ tokens.push({t:'num', v:num}); i=j; continue; }
+    }
+    let j=i;
+    while(j<len && !/[\s\/\[\]<>()%{}]/.test(str[j])) j++;
+    if(j===i) j=i+1;
+    tokens.push({t:'op', v:str.slice(i,j)});
+    i=j;
+  }
+  return tokens;
+}
+
+function matMultiply(m, ctm){
+  const [a1,b1,c1,d1,e1,f1] = m;
+  const [a2,b2,c2,d2,e2,f2] = ctm;
+  return [
+    a1*a2 + b1*c2, a1*b2 + b1*d2,
+    c1*a2 + d1*c2, c1*b2 + d1*d2,
+    e1*a2 + f1*c2 + e2, e1*b2 + f1*d2 + f2
+  ];
+}
+
+const FILL_PAINT_OPS = new Set(['f','F','f*','B','B*','b','b*']);
+const STROKE_PAINT_OPS = new Set(['S','s','B','B*','b','b*']);
+const ANY_PAINT_OPS = new Set(['f','F','f*','S','s','B','B*','b','b*','n']);
+
+function traceDielineBBox(tokens, dielineNames){
+  const csSet = new Set(dielineNames);
+  if(csSet.size === 0) return null;
+
+  let stack = [];
+  let gsStack = [];
+  let ctm = [1,0,0,1,0,0];
+  let fillCS = null, strokeCS = null;
+  let curX=0, curY=0, startX=0, startY=0;
+  let pathPts = [];
+  let bbox = null;
+  const MAX_TOKENS = 400000; // safety cap for pathological files
+
+  const expand = (x,y) => {
+    if(!bbox) bbox = {x0:x,y0:y,x1:x,y1:y};
+    else {
+      if(x<bbox.x0) bbox.x0=x; if(x>bbox.x1) bbox.x1=x;
+      if(y<bbox.y0) bbox.y0=y; if(y>bbox.y1) bbox.y1=y;
+    }
+  };
+  const transform = (x,y) => {
+    const [a,b,c,d,e,f] = ctm;
+    return [a*x+c*y+e, b*x+d*y+f];
+  };
+  const nums = () => stack.filter(s=>s.t==='num').map(s=>s.v);
+  const lastName = () => { for(let k=stack.length-1;k>=0;k--){ if(stack[k].t==='name') return stack[k].v; } return null; };
+
+  for(let ti=0; ti<tokens.length && ti<MAX_TOKENS; ti++){
+    const tok = tokens[ti];
+    if(tok.t !== 'op'){ stack.push(tok); continue; }
+    const op = tok.v;
+
+    if(op === 'q'){ gsStack.push({ctm:ctm.slice(), fillCS, strokeCS}); }
+    else if(op === 'Q'){ if(gsStack.length){ const s=gsStack.pop(); ctm=s.ctm; fillCS=s.fillCS; strokeCS=s.strokeCS; } }
+    else if(op === 'cm'){ const n=nums(); if(n.length>=6) ctm = matMultiply(n.slice(-6), ctm); }
+    else if(op === 'cs'){ fillCS = lastName(); }
+    else if(op === 'CS'){ strokeCS = lastName(); }
+    else if(op === 'g' || op === 'rg' || op === 'k'){ fillCS = null; }
+    else if(op === 'G' || op === 'RG' || op === 'K'){ strokeCS = null; }
+    else if(op === 'm'){ const n=nums(); if(n.length>=2){ const [x,y]=n.slice(-2); pathPts.push(transform(x,y)); curX=x; curY=y; startX=x; startY=y; } }
+    else if(op === 'l'){ const n=nums(); if(n.length>=2){ const [x,y]=n.slice(-2); pathPts.push(transform(x,y)); curX=x; curY=y; } }
+    else if(op === 'c'){ const n=nums(); if(n.length>=6){ const [x1,y1,x2,y2,x3,y3]=n.slice(-6); [[x1,y1],[x2,y2],[x3,y3]].forEach(([x,y])=>pathPts.push(transform(x,y))); curX=x3; curY=y3; } }
+    else if(op === 'v'){ const n=nums(); if(n.length>=4){ const [x2,y2,x3,y3]=n.slice(-4); [[x2,y2],[x3,y3]].forEach(([x,y])=>pathPts.push(transform(x,y))); curX=x3; curY=y3; } }
+    else if(op === 'y'){ const n=nums(); if(n.length>=4){ const [x1,y1,x3,y3]=n.slice(-4); [[x1,y1],[x3,y3]].forEach(([x,y])=>pathPts.push(transform(x,y))); curX=x3; curY=y3; } }
+    else if(op === 're'){ const n=nums(); if(n.length>=4){ const [x,y,w,h]=n.slice(-4); [[x,y],[x+w,y],[x+w,y+h],[x,y+h]].forEach(([px,py])=>pathPts.push(transform(px,py))); curX=x; curY=y; startX=x; startY=y; } }
+    else if(op === 'h'){ curX=startX; curY=startY; }
+    else if(ANY_PAINT_OPS.has(op)){
+      const useFill = FILL_PAINT_OPS.has(op) && fillCS && csSet.has(fillCS);
+      const useStroke = STROKE_PAINT_OPS.has(op) && strokeCS && csSet.has(strokeCS);
+      if(useFill || useStroke) pathPts.forEach(([x,y]) => expand(x,y));
+      pathPts = [];
+    }
+    stack = [];
+  }
+  return bbox;
+}
+
+function computeDielineBoxUncached(pdfLibDoc, pageIndex){
+  try{
+    const pages = pdfLibDoc.getPages();
+    if(pageIndex >= pages.length) return null;
+    const page = pages[pageIndex];
+    const context = pdfLibDoc.context;
+    const resources = getInheritedResources(page);
+    if(!resources) return null;
+    const dielineNames = findDielineColorSpaceNames(context, resources);
+    if(dielineNames.length === 0) return null;
+    const contentText = getPageContentText(pdfLibDoc, page);
+    if(!contentText) return null;
+    const tokens = tokenizeContentStream(contentText);
+    const bbox = traceDielineBBox(tokens, dielineNames);
+    if(!bbox) return null;
+    return { x0:bbox.x0, y0:bbox.y0, x1:bbox.x1, y1:bbox.y1,
+             width: bbox.x1-bbox.x0, height: bbox.y1-bbox.y0 };
+  } catch(err){
+    console.warn('[Redline] computeDielineBoxUncached failed', err);
+    return null;
+  }
+}
+
+const dielineCache = new WeakMap();
+function getDielineBox(pdfLibDoc, pageIndex){
+  if(!pdfLibDoc || typeof pako === 'undefined') return null;
+  let perDoc = dielineCache.get(pdfLibDoc);
+  if(!perDoc){ perDoc = new Map(); dielineCache.set(pdfLibDoc, perDoc); }
+  if(perDoc.has(pageIndex)) return perDoc.get(pageIndex);
+  const result = computeDielineBoxUncached(pdfLibDoc, pageIndex);
+  perDoc.set(pageIndex, result);
+  return result;
+}
+
+// ---------------------------------------------------------------
+// Output Preview: list every spot channel (Separation / single-
+// colorant DeviceN) on a page, and render an isolated preview of
+// any one of them — showing only the paths painted with that ink,
+// as black-on-white. This is what surfaces the case that a flat
+// composite diff can't: File A carrying an extra unprinted plate
+// (UV, Varnish, Dieline, a brand spot color, etc.) that File B
+// doesn't have at all, without that plate's real content getting
+// buried in — or falsely inflating — the overall pixel diff.
+// ---------------------------------------------------------------
+
+// Every /ColorSpace resource entry that resolves to a Separation or a
+// single-colorant DeviceN, regardless of name (unlike the dieline-only
+// finder above).
+function findAllSpotColorNames(context, resources){
+  const results = [];
+  try{
+    const csDict = resources && resources.lookupMaybe(PDFLib.PDFName.of('ColorSpace'), PDFLib.PDFDict);
+    if(!csDict) return results;
+    for(const [key, rawVal] of csDict.entries()){
+      try{
+        const csObj = pdfResolve(context, rawVal);
+        if(!(csObj instanceof PDFLib.PDFArray)) continue;
+        const family = pdfTextOf(pdfResolve(context, csObj.get(0)));
+        let colorantName = null;
+        if(family === 'Separation'){
+          colorantName = pdfTextOf(pdfResolve(context, csObj.get(1)));
+        } else if(family === 'DeviceN'){
+          const arr = pdfResolve(context, csObj.get(1));
+          if(arr instanceof PDFLib.PDFArray && arr.size() === 1){
+            colorantName = pdfTextOf(pdfResolve(context, arr.get(0)));
+          }
+        }
+        if(colorantName && !/^(none|all)$/i.test(colorantName.trim())){
+          results.push({ resourceName: pdfTextOf(key), colorantName: colorantName.trim() });
+        }
+      } catch(e){ /* skip malformed entry */ }
+    }
+  } catch(e){ /* ignore */ }
+  return results;
+}
+
+// Same walk as traceDielineBBox, but records actual drawable path
+// geometry (as Canvas2D-ready move/line/curve/close segments, already
+// transformed through the content stream's CTM into default page-user
+// space) for paths painted with one of the target /ColorSpace resource
+// names, instead of only expanding a bounding box.
+function traceChannelShapes(tokens, context, resources, targetResourceNames){
+  const targets = new Set(targetResourceNames);
+  if(!targets.size) return [];
+  const shapes = [];
+  interpretChannelTokens(tokens, context, resources, [1,0,0,1,0,0], { fillCS:null, strokeCS:null, lineWidth:1 }, shapes, targets, 0);
+  return shapes;
+}
+
+// Same recursion rationale as interpretCMYKTokens: without following Do
+// calls into Form XObjects, grouped/nested spot-color artwork (a common
+// Illustrator/InDesign export pattern) would be invisible to the trace.
+function interpretChannelTokens(tokens, context, resources, initialCTM, initialColor, shapes, targets, depth){
+  if(depth > 8) return;
+
+  let gsStack = [];
+  let ctm = initialCTM;
+  let fillCS = initialColor.fillCS, strokeCS = initialColor.strokeCS, lineWidth = initialColor.lineWidth;
+  let curX=0, curY=0, startX=0, startY=0;
+  let lastPt = [0,0];
+  let subpaths = [];
+  let currentSub = [];
+  const MAX_TOKENS = 400000;
+
+  const transform = (x,y) => { const [a,b,c,d,e,f]=ctm; return [a*x+c*y+e, b*x+d*y+f]; };
+  const ctmScale = () => { const [a,b,c,d]=ctm; return Math.sqrt(Math.abs(a*d-b*c)) || 1; };
+  const nums = (stack) => stack.filter(s=>s.t==='num').map(s=>s.v);
+  const lastName = (stack) => { for(let k=stack.length-1;k>=0;k--){ if(stack[k].t==='name') return stack[k].v; } return null; };
+  const flushSub = () => { if(currentSub.length) subpaths.push(currentSub); currentSub = []; };
+
+  let stack = [];
+  for(let ti=0; ti<tokens.length && ti<MAX_TOKENS; ti++){
+    const tok = tokens[ti];
+    if(tok.t !== 'op'){ stack.push(tok); continue; }
+    const op = tok.v;
+
+    if(op === 'q'){ gsStack.push({ctm:ctm.slice(), fillCS, strokeCS, lineWidth}); }
+    else if(op === 'Q'){ if(gsStack.length){ const s=gsStack.pop(); ctm=s.ctm; fillCS=s.fillCS; strokeCS=s.strokeCS; lineWidth=s.lineWidth; } }
+    else if(op === 'cm'){ const n=nums(stack); if(n.length>=6) ctm = matMultiply(n.slice(-6), ctm); }
+    else if(op === 'w'){ const n=nums(stack); if(n.length>=1) lineWidth = n[n.length-1]; }
+    else if(op === 'cs'){ fillCS = lastName(stack); }
+    else if(op === 'CS'){ strokeCS = lastName(stack); }
+    else if(op === 'g' || op === 'rg' || op === 'k'){ fillCS = null; }
+    else if(op === 'G' || op === 'RG' || op === 'K'){ strokeCS = null; }
+    else if(op === 'm'){
+      const n=nums(stack); if(n.length>=2){
+        flushSub(); const [x,y]=n.slice(-2); const p=transform(x,y);
+        currentSub.push({cmd:'M', pts:[p]}); lastPt=p; curX=x;curY=y;startX=x;startY=y;
+      }
+    }
+    else if(op === 'l'){
+      const n=nums(stack); if(n.length>=2){
+        const [x,y]=n.slice(-2); const p=transform(x,y);
+        currentSub.push({cmd:'L', pts:[p]}); lastPt=p; curX=x;curY=y;
+      }
+    }
+    else if(op === 'c'){
+      const n=nums(stack); if(n.length>=6){
+        const [x1,y1,x2,y2,x3,y3]=n.slice(-6);
+        const p1=transform(x1,y1), p2=transform(x2,y2), p3=transform(x3,y3);
+        currentSub.push({cmd:'C', pts:[p1,p2,p3]}); lastPt=p3; curX=x3;curY=y3;
+      }
+    }
+    else if(op === 'v'){
+      const n=nums(stack); if(n.length>=4){
+        const [x2,y2,x3,y3]=n.slice(-4);
+        const p2=transform(x2,y2), p3=transform(x3,y3);
+        currentSub.push({cmd:'C', pts:[lastPt,p2,p3]}); lastPt=p3; curX=x3;curY=y3;
+      }
+    }
+    else if(op === 'y'){
+      const n=nums(stack); if(n.length>=4){
+        const [x1,y1,x3,y3]=n.slice(-4);
+        const p1=transform(x1,y1), p3=transform(x3,y3);
+        currentSub.push({cmd:'C', pts:[p1,p3,p3]}); lastPt=p3; curX=x3;curY=y3;
+      }
+    }
+    else if(op === 're'){
+      const n=nums(stack); if(n.length>=4){
+        flushSub();
+        const [x,y,w,h]=n.slice(-4);
+        const p0=transform(x,y), p1=transform(x+w,y), p2=transform(x+w,y+h), p3=transform(x,y+h);
+        subpaths.push([{cmd:'M',pts:[p0]},{cmd:'L',pts:[p1]},{cmd:'L',pts:[p2]},{cmd:'L',pts:[p3]},{cmd:'Z'}]);
+        curX=x;curY=y;startX=x;startY=y;
+      }
+    }
+    else if(op === 'h'){ if(currentSub.length) currentSub.push({cmd:'Z'}); curX=startX; curY=startY; }
+    else if(ANY_PAINT_OPS.has(op)){
+      flushSub();
+      const useFill = FILL_PAINT_OPS.has(op) && fillCS && targets.has(fillCS);
+      const useStroke = STROKE_PAINT_OPS.has(op) && strokeCS && targets.has(strokeCS);
+      if((useFill || useStroke) && subpaths.length){
+        shapes.push({ fill:useFill, stroke:useStroke, subpaths, lineWidthPts: lineWidth * ctmScale() });
+      }
+      subpaths = [];
+    }
+    else if(op === 'Do'){
+      const nm = lastName(stack);
+      if(nm && depth < 8){
+        try{
+          const xDict = resources && resources.lookupMaybe(PDFLib.PDFName.of('XObject'), PDFLib.PDFDict);
+          const xRef = xDict ? xDict.get(PDFLib.PDFName.of(nm)) : null;
+          const xObj = xRef ? pdfResolve(context, xRef) : null;
+          if(xObj && xObj.dict){
+            const subtype = pdfTextOf(pdfResolve(context, xObj.dict.get(PDFLib.PDFName.of('Subtype'))));
+            if(subtype === 'Form'){
+              let formMatrix = [1,0,0,1,0,0];
+              try{
+                const matrixArr = xObj.dict.lookupMaybe(PDFLib.PDFName.of('Matrix'), PDFLib.PDFArray);
+                if(matrixArr && matrixArr.size() === 6){
+                  formMatrix = [];
+                  for(let mi=0; mi<6; mi++){
+                    const v = pdfResolve(context, matrixArr.get(mi));
+                    const nv = pdfNumberValue(v); formMatrix.push(nv !== null ? nv : (mi===0||mi===3?1:0));
+                  }
+                }
+              } catch(e){ /* default identity matrix */ }
+              const formCTM = matMultiply(formMatrix, ctm);
+
+              let formResources = resources;
+              try{
+                const fr = xObj.dict.lookupMaybe(PDFLib.PDFName.of('Resources'), PDFLib.PDFDict);
+                if(fr) formResources = fr;
+              } catch(e){ /* keep parent resources */ }
+
+              try{
+                const formText = inflateIfNeeded(xObj);
+                if(formText){
+                  const formTokens = tokenizeContentStream(formText);
+                  interpretChannelTokens(
+                    formTokens, context, formResources, formCTM,
+                    { fillCS, strokeCS, lineWidth }, shapes, targets, depth+1
+                  );
+                }
+              } catch(e){ /* skip unreadable form content */ }
+            }
+          }
+        } catch(e){ /* skip unreadable XObject */ }
+      }
+    }
+    stack = [];
+  }
+}
+
+// ---------------------------------------------------------------
+// Process channels (Cyan/Magenta/Yellow/Black). Same walk as
+// traceChannelShapes, but tracks the *device color model* in effect
+// (via g/rg/k operators, or cs/CS naming DeviceGray/DeviceRGB/DeviceCMYK/
+// ICCBased) instead of spot colorant names, and records each CMYK
+// component's tint value as an intensity rather than a boolean match —
+// so the isolated preview can show partial ink coverage, not just
+// present/absent.
+// ---------------------------------------------------------------
+function resolveDeviceColorModel(context, resources, name){
+  if(!name) return null;
+  if(name === 'DeviceGray') return 'gray';
+  if(name === 'DeviceRGB') return 'rgb';
+  if(name === 'DeviceCMYK') return 'cmyk';
+  if(name === 'Pattern') return null;
+  try{
+    const csDict = resources && resources.lookupMaybe(PDFLib.PDFName.of('ColorSpace'), PDFLib.PDFDict);
+    if(!csDict) return null;
+    const entry = pdfResolve(context, csDict.get(PDFLib.PDFName.of(name)));
+    if(entry instanceof PDFLib.PDFName){
+      const n = pdfTextOf(entry);
+      if(n === 'DeviceGray') return 'gray';
+      if(n === 'DeviceRGB') return 'rgb';
+      if(n === 'DeviceCMYK') return 'cmyk';
+      return null;
+    }
+    if(entry instanceof PDFLib.PDFArray){
+      const family = pdfTextOf(pdfResolve(context, entry.get(0)));
+      if(family === 'ICCBased'){
+        try{
+          const streamObj = pdfResolve(context, entry.get(1));
+          const nObj = streamObj && streamObj.dict ? pdfResolve(context, streamObj.dict.get(PDFLib.PDFName.of('N'))) : null;
+          const nVal = pdfNumberValue(nObj);
+          if(nVal === 1) return 'gray';
+          if(nVal === 3) return 'rgb';
+          if(nVal === 4) return 'cmyk';
+        } catch(e){ /* unknown ICC N */ }
+        return null;
+      }
+      if(family === 'CalRGB') return 'rgb';
+      if(family === 'CalGray') return 'gray';
+      if(family === 'Indexed'){
+        const baseObj = pdfResolve(context, entry.get(1));
+        if(baseObj instanceof PDFLib.PDFName) return resolveDeviceColorModel(context, resources, pdfTextOf(baseObj));
+        return null;
+      }
+    }
+  } catch(e){ /* ignore */ }
+  return null;
+}
+
+// Resolves the effective color model of an Image XObject's /ColorSpace,
+// including the common indirections: a plain device name, an ICCBased
+// stream (via its /N component count), or an Indexed space (whose real
+// printed color comes from its base space).
+function resolveImageColorModel(context, resources, imgDict){
+  try{
+    const csObj = pdfResolve(context, imgDict.get(PDFLib.PDFName.of('ColorSpace')));
+    if(csObj instanceof PDFLib.PDFName){
+      return resolveDeviceColorModel(context, resources, pdfTextOf(csObj));
+    }
+    if(csObj instanceof PDFLib.PDFArray){
+      const family = pdfTextOf(pdfResolve(context, csObj.get(0)));
+      const iccN = (streamRef) => {
+        try{
+          const streamObj = pdfResolve(context, streamRef);
+          const nObj = streamObj && streamObj.dict ? pdfResolve(context, streamObj.dict.get(PDFLib.PDFName.of('N'))) : null;
+          const nVal = pdfNumberValue(nObj);
+          if(nVal === 1) return 'gray';
+          if(nVal === 3) return 'rgb';
+          if(nVal === 4) return 'cmyk';
+        } catch(e){ /* ignore */ }
+        return null;
+      };
+      if(family === 'ICCBased') return iccN(csObj.get(1));
+      if(family === 'Indexed'){
+        const baseObj = pdfResolve(context, csObj.get(1));
+        if(baseObj instanceof PDFLib.PDFName) return resolveDeviceColorModel(context, resources, pdfTextOf(baseObj));
+        if(baseObj instanceof PDFLib.PDFArray){
+          const baseFamily = pdfTextOf(pdfResolve(context, baseObj.get(0)));
+          if(baseFamily === 'ICCBased') return iccN(baseObj.get(1));
+          if(baseFamily === 'DeviceCMYK') return 'cmyk';
+          if(baseFamily === 'DeviceRGB') return 'rgb';
+          if(baseFamily === 'DeviceGray') return 'gray';
+        }
+        return null;
+      }
+      if(family === 'DeviceCMYK') return 'cmyk';
+      if(family === 'DeviceRGB') return 'rgb';
+      if(family === 'DeviceGray') return 'gray';
+    }
+  } catch(e){ /* ignore */ }
+  return null;
+}
+
+// Returns { used, shapes } where shapes = [cyanShapes, magentaShapes,
+// yellowShapes, blackShapes], each shape carrying an `intensity` (0-1)
+// alongside the same drawable subpaths traceChannelShapes produces.
+function traceCMYKChannels(tokens, context, resources){
+  const shapes = [];
+  const usedRef = { used:false };
+  interpretCMYKTokens(
+    tokens, context, resources, [1,0,0,1,0,0],
+    { fillModel:null, fillComp:[], strokeModel:null, strokeComp:[], lineWidth:1 },
+    shapes, usedRef, 0
+  );
+  return { used: usedRef.used, shapes };
+}
+
+// Roughly how much ink/darkness a device color represents, regardless of
+// which color model it's expressed in — used only to fade the isolated
+// preview, not for the knockout (which always removes fully).
+function estimateInkIntensity(model, comp){
+  try{
+    if(model === 'gray' && comp.length >= 1) return Math.max(0, Math.min(1, 1 - comp[0]));
+    if(model === 'rgb' && comp.length >= 3) return Math.max(0, Math.min(1, 1 - (comp[0]+comp[1]+comp[2])/3));
+    if(model === 'cmyk' && comp.length >= 4) return Math.max(0, Math.min(1, Math.max(comp[0],comp[1],comp[2],comp[3])));
+  } catch(e){ /* ignore */ }
+  return 0.5;
+}
+
+// Walks one content stream's tokens, recursing into Form XObjects (via Do)
+// so grouped/nested artwork isn't invisible to the trace. This matters a
+// lot in practice: Illustrator and InDesign routinely wrap objects and
+// whole groups in Form XObjects (for clipping, opacity, or just grouping),
+// so a page's top-level content stream can easily contain almost nothing
+// but a handful of Do calls, with all the actual fill/stroke/color
+// operators living inside those nested forms.
+//
+// Matches ANY device color model (DeviceGray/DeviceRGB/DeviceCMYK, or an
+// ICCBased/CalRGB/CalGray equivalent) as "process ink" — not just literal
+// CMYK. A lot of real-world "print-ready" PDFs actually carry their color
+// artwork as RGB or Indexed-RGB internally even though the job is meant
+// for CMYK output; restricting detection to bare DeviceCMYK missed all of
+// that and made the toggle only ever catch pure black text/rules drawn
+// with `k`.
+function interpretCMYKTokens(tokens, context, resources, initialCTM, initialColor, shapes, usedRef, depth){
+  if(depth > 8) return;
+
+  let gsStack = [];
+  let ctm = initialCTM;
+  let fillModel = initialColor.fillModel, fillComp = initialColor.fillComp.slice();
+  let strokeModel = initialColor.strokeModel, strokeComp = initialColor.strokeComp.slice();
+  let lineWidth = initialColor.lineWidth;
+  let curX=0, curY=0, startX=0, startY=0, lastPt=[0,0];
+  let subpaths = [], currentSub = [];
+  const MAX_TOKENS = 400000;
+
+  const transform = (x,y) => { const [a,b,c,d,e,f]=ctm; return [a*x+c*y+e, b*x+d*y+f]; };
+  const ctmScale = () => { const [a,b,c,d]=ctm; return Math.sqrt(Math.abs(a*d-b*c)) || 1; };
+  const nums = (stack) => stack.filter(s=>s.t==='num').map(s=>s.v);
+  const lastName = (stack) => { for(let k=stack.length-1;k>=0;k--){ if(stack[k].t==='name') return stack[k].v; } return null; };
+  const flushSub = () => { if(currentSub.length) subpaths.push(currentSub); currentSub = []; };
+
+  let stack = [];
+  for(let ti=0; ti<tokens.length && ti<MAX_TOKENS; ti++){
+    const tok = tokens[ti];
+    if(tok.t !== 'op'){ stack.push(tok); continue; }
+    const op = tok.v;
+
+    if(op === 'q'){ gsStack.push({ctm:ctm.slice(), fillModel, fillComp:fillComp.slice(), strokeModel, strokeComp:strokeComp.slice(), lineWidth}); }
+    else if(op === 'Q'){ if(gsStack.length){ const s=gsStack.pop(); ctm=s.ctm; fillModel=s.fillModel; fillComp=s.fillComp; strokeModel=s.strokeModel; strokeComp=s.strokeComp; lineWidth=s.lineWidth; } }
+    else if(op === 'cm'){ const n=nums(stack); if(n.length>=6) ctm = matMultiply(n.slice(-6), ctm); }
+    else if(op === 'w'){ const n=nums(stack); if(n.length>=1) lineWidth = n[n.length-1]; }
+    else if(op === 'g'){ const n=nums(stack); if(n.length>=1){ fillModel='gray'; fillComp=[n[n.length-1]]; usedRef.used=true; } }
+    else if(op === 'G'){ const n=nums(stack); if(n.length>=1){ strokeModel='gray'; strokeComp=[n[n.length-1]]; usedRef.used=true; } }
+    else if(op === 'rg'){ const n=nums(stack); if(n.length>=3){ fillModel='rgb'; fillComp=n.slice(-3); usedRef.used=true; } }
+    else if(op === 'RG'){ const n=nums(stack); if(n.length>=3){ strokeModel='rgb'; strokeComp=n.slice(-3); usedRef.used=true; } }
+    else if(op === 'k'){ const n=nums(stack); if(n.length>=4){ fillModel='cmyk'; fillComp=n.slice(-4); usedRef.used=true; } }
+    else if(op === 'K'){ const n=nums(stack); if(n.length>=4){ strokeModel='cmyk'; strokeComp=n.slice(-4); usedRef.used=true; } }
+    else if(op === 'cs'){ fillModel = resolveDeviceColorModel(context, resources, lastName(stack)); fillComp=[]; }
+    else if(op === 'CS'){ strokeModel = resolveDeviceColorModel(context, resources, lastName(stack)); strokeComp=[]; }
+    else if(op === 'sc' || op === 'scn'){ const n=nums(stack); if(n.length){ fillComp=n; if(fillModel) usedRef.used=true; } }
+    else if(op === 'SC' || op === 'SCN'){ const n=nums(stack); if(n.length){ strokeComp=n; if(strokeModel) usedRef.used=true; } }
+    else if(op === 'm'){
+      const n=nums(stack); if(n.length>=2){ flushSub(); const [x,y]=n.slice(-2); const p=transform(x,y); currentSub.push({cmd:'M',pts:[p]}); lastPt=p; curX=x;curY=y;startX=x;startY=y; }
+    }
+    else if(op === 'l'){
+      const n=nums(stack); if(n.length>=2){ const [x,y]=n.slice(-2); const p=transform(x,y); currentSub.push({cmd:'L',pts:[p]}); lastPt=p; curX=x;curY=y; }
+    }
+    else if(op === 'c'){
+      const n=nums(stack); if(n.length>=6){ const [x1,y1,x2,y2,x3,y3]=n.slice(-6); const p1=transform(x1,y1),p2=transform(x2,y2),p3=transform(x3,y3); currentSub.push({cmd:'C',pts:[p1,p2,p3]}); lastPt=p3; curX=x3;curY=y3; }
+    }
+    else if(op === 'v'){
+      const n=nums(stack); if(n.length>=4){ const [x2,y2,x3,y3]=n.slice(-4); const p2=transform(x2,y2),p3=transform(x3,y3); currentSub.push({cmd:'C',pts:[lastPt,p2,p3]}); lastPt=p3; curX=x3;curY=y3; }
+    }
+    else if(op === 'y'){
+      const n=nums(stack); if(n.length>=4){ const [x1,y1,x3,y3]=n.slice(-4); const p1=transform(x1,y1),p3=transform(x3,y3); currentSub.push({cmd:'C',pts:[p1,p3,p3]}); lastPt=p3; curX=x3;curY=y3; }
+    }
+    else if(op === 're'){
+      const n=nums(stack); if(n.length>=4){ flushSub(); const [x,y,w,h]=n.slice(-4); const p0=transform(x,y),p1=transform(x+w,y),p2=transform(x+w,y+h),p3=transform(x,y+h); subpaths.push([{cmd:'M',pts:[p0]},{cmd:'L',pts:[p1]},{cmd:'L',pts:[p2]},{cmd:'L',pts:[p3]},{cmd:'Z'}]); curX=x;curY=y;startX=x;startY=y; }
+    }
+    else if(op === 'h'){ if(currentSub.length) currentSub.push({cmd:'Z'}); curX=startX; curY=startY; }
+    else if(ANY_PAINT_OPS.has(op)){
+      flushSub();
+      if(subpaths.length){
+        const fillLenOk = (fillModel==='gray'&&fillComp.length>=1)||(fillModel==='rgb'&&fillComp.length>=3)||(fillModel==='cmyk'&&fillComp.length>=4);
+        if(FILL_PAINT_OPS.has(op) && fillModel && fillLenOk){
+          const val = estimateInkIntensity(fillModel, fillComp);
+          if(val > 0.02) shapes.push({ fill:true, stroke:false, subpaths, intensity:val, lineWidthPts:0, model:fillModel });
+        }
+        const strokeLenOk = (strokeModel==='gray'&&strokeComp.length>=1)||(strokeModel==='rgb'&&strokeComp.length>=3)||(strokeModel==='cmyk'&&strokeComp.length>=4);
+        if(STROKE_PAINT_OPS.has(op) && strokeModel && strokeLenOk){
+          const val = estimateInkIntensity(strokeModel, strokeComp);
+          const strokeW = lineWidth * ctmScale();
+          if(val > 0.02) shapes.push({ fill:false, stroke:true, subpaths, intensity:val, lineWidthPts:strokeW, model:strokeModel });
+        }
+      }
+      subpaths = [];
+    }
+    else if(op === 'Do'){
+      const nm = lastName(stack);
+      if(nm){
+        try{
+          const xDict = resources && resources.lookupMaybe(PDFLib.PDFName.of('XObject'), PDFLib.PDFDict);
+          const xRef = xDict ? xDict.get(PDFLib.PDFName.of(nm)) : null;
+          const xObj = xRef ? pdfResolve(context, xRef) : null;
+          if(xObj && xObj.dict){
+            const subtype = pdfTextOf(pdfResolve(context, xObj.dict.get(PDFLib.PDFName.of('Subtype'))));
+            if(subtype === 'Image'){
+              // Vector fills/strokes only get us so far — a lot of real-world
+              // artwork carries its color content as a placed raster image
+              // (a background photo, a full-bleed graphic) rather than
+              // vector paths. We can't sample individual pixels here, but
+              // we can detect that a color image exists (Gray/RGB/CMYK
+              // alike) and where it sits, flagged as approximate rather
+              // than pretending pixel-level accuracy we don't have.
+              const model = resolveImageColorModel(context, resources, xObj.dict);
+              if(model === 'gray' || model === 'rgb' || model === 'cmyk'){
+                usedRef.used = true;
+                const corners = [[0,0],[1,0],[1,1],[0,1]].map(([x,y]) => transform(x,y));
+                shapes.push({
+                  fill:true, stroke:false, intensity:0.5, lineWidthPts:0, approx:true, model,
+                  subpaths:[[
+                    {cmd:'M',pts:[corners[0]]},
+                    {cmd:'L',pts:[corners[1]]},
+                    {cmd:'L',pts:[corners[2]]},
+                    {cmd:'L',pts:[corners[3]]},
+                    {cmd:'Z'}
+                  ]]
+                });
+              }
+            } else if(subtype === 'Form' && depth < 8){
+              let formMatrix = [1,0,0,1,0,0];
+              try{
+                const matrixArr = xObj.dict.lookupMaybe(PDFLib.PDFName.of('Matrix'), PDFLib.PDFArray);
+                if(matrixArr && matrixArr.size() === 6){
+                  formMatrix = [];
+                  for(let mi=0; mi<6; mi++){
+                    const v = pdfResolve(context, matrixArr.get(mi));
+                    const nv = pdfNumberValue(v); formMatrix.push(nv !== null ? nv : (mi===0||mi===3?1:0));
+                  }
+                }
+              } catch(e){ /* default identity matrix */ }
+              const formCTM = matMultiply(formMatrix, ctm);
+
+              let formResources = resources; // PDF spec: fall back to the resources in effect at invocation
+              try{
+                const fr = xObj.dict.lookupMaybe(PDFLib.PDFName.of('Resources'), PDFLib.PDFDict);
+                if(fr) formResources = fr;
+              } catch(e){ /* keep parent resources */ }
+
+              try{
+                const formText = inflateIfNeeded(xObj);
+                console.log('[Redline] Form XObject', nm, 'content decoded length:', formText ? formText.length : 0);
+                if(formText){
+                  const formTokens = tokenizeContentStream(formText);
+                  const beforeCounts = shapes.map(s => s.length);
+                  interpretCMYKTokens(
+                    formTokens, context, formResources, formCTM,
+                    { fillModel, fillComp:fillComp.slice(), strokeModel, strokeComp:strokeComp.slice(), lineWidth },
+                    shapes, usedRef, depth+1
+                  );
+                  console.log('[Redline] Form XObject', nm, 'shape counts before/after:', beforeCounts, shapes.map(s => s.length));
+                }
+              } catch(e){ console.warn('[Redline] Form XObject content read failed', nm, e); }
+            } else {
+              console.log('[Redline] Do XObject has unhandled subtype', subtype, 'name:', nm);
+            }
+          } else {
+            console.warn('[Redline] Do operator name did not resolve to an XObject', { name: nm, hasXDict: !!xDict, hasXRef: !!xRef });
+          }
+        } catch(e){ console.warn('[Redline] Do operator handling threw', e); }
+      }
+    }
+    stack = [];
+  }
+}
+
+function paintIntensityShapes(ctx, shapes, geo){
+  const toDevice = (x,y) => [ (x-geo.cropBox.x0)*geo.scale - geo.sx, (geo.cropBox.y1-y)*geo.scale - geo.sy ];
+  ctx.save();
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  for(const shape of shapes){
+    ctx.beginPath();
+    for(const sub of shape.subpaths){
+      for(const seg of sub){
+        if(seg.cmd === 'M'){ const [x,y]=toDevice(seg.pts[0][0],seg.pts[0][1]); ctx.moveTo(x,y); }
+        else if(seg.cmd === 'L'){ const [x,y]=toDevice(seg.pts[0][0],seg.pts[0][1]); ctx.lineTo(x,y); }
+        else if(seg.cmd === 'C'){
+          const [x1,y1]=toDevice(seg.pts[0][0],seg.pts[0][1]);
+          const [x2,y2]=toDevice(seg.pts[1][0],seg.pts[1][1]);
+          const [x3,y3]=toDevice(seg.pts[2][0],seg.pts[2][1]);
+          ctx.bezierCurveTo(x1,y1,x2,y2,x3,y3);
+        }
+        else if(seg.cmd === 'Z') ctx.closePath();
+      }
+    }
+    const a = Math.min(1, Math.max(0, shape.intensity));
+    if(shape.fill){ ctx.fillStyle = `rgba(0,0,0,${a})`; ctx.fill('nonzero'); }
+    if(shape.stroke){ ctx.strokeStyle = `rgba(0,0,0,${a})`; ctx.lineWidth = Math.max(1, shape.lineWidthPts * geo.scale); ctx.stroke(); }
+  }
+  ctx.restore();
+}
+
+function getProcessColorUsed(pdfLibDoc, pageIndex){
+  if(!pdfLibDoc) return false;
+  try{
+    const pages = pdfLibDoc.getPages();
+    if(pageIndex >= pages.length) return false;
+    const page = pages[pageIndex];
+    const resources = getInheritedResources(page);
+    const contentText = getPageContentText(pdfLibDoc, page);
+    if(!resources || !contentText) return false;
+    const tokens = tokenizeContentStream(contentText);
+    const { shapes } = traceCMYKChannels(tokens, pdfLibDoc.context, resources);
+    return shapes.length > 0;
+  } catch(err){
+    console.warn('[Redline] getProcessColorUsed failed', err);
+    return false;
+  }
+}
+
+async function renderIsolatedProcessChannelCanvas(pdfLibDoc, pageIndex, targetWidth, alignKey){
+  if(!pdfLibDoc) return null;
+  try{
+    const geo = computeAlignGeometry(pdfLibDoc, pageIndex, targetWidth, alignKey);
+    if(!geo) return null;
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(geo.sw));
+    canvas.height = Math.max(1, Math.round(geo.sh));
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    const pages = pdfLibDoc.getPages();
+    if(pageIndex >= pages.length) return canvas;
+    const page = pages[pageIndex];
+    const resources = getInheritedResources(page);
+    const contentText = getPageContentText(pdfLibDoc, page);
+    if(!resources || !contentText) return canvas;
+    const tokens = tokenizeContentStream(contentText);
+    const { shapes } = traceCMYKChannels(tokens, pdfLibDoc.context, resources);
+    if(shapes.length) paintIntensityShapes(ctx, shapes, geo);
+    return canvas;
+  } catch(err){
+    console.warn('[Redline] renderIsolatedProcessChannelCanvas failed', err);
+    return null;
+  }
+}
+
+// Full knockout (not intensity-faded) for a process channel — used when the
+// user unchecks Cyan/Magenta/Yellow/Black in Output Preview, same idea as
+// applyChannelKnockout but keyed by CMYK index instead of a spot name.
+// Full knockout (not intensity-faded) for the process-color group — used
+// when the user unchecks "CMYK" in Output Preview. Matches any device
+// color model (Gray/RGB/CMYK), not just literal CMYK — see
+// interpretCMYKTokens for why that broader match matters in practice.
+async function applyProcessChannelKnockout(canvas, pdfLibDoc, pageIndex, geo, enabled){
+  if(!canvas || !pdfLibDoc || !geo || !enabled) return canvas;
+  try{
+    const pages = pdfLibDoc.getPages();
+    if(pageIndex >= pages.length) return canvas;
+    const page = pages[pageIndex];
+    const resources = getInheritedResources(page);
+    const contentText = getPageContentText(pdfLibDoc, page);
+    if(!resources || !contentText) return canvas;
+    const tokens = tokenizeContentStream(contentText);
+    const { shapes } = traceCMYKChannels(tokens, pdfLibDoc.context, resources);
+    console.log('[Redline] process-color knockout —', shapes.length, 'shape(s) found to remove');
+    if(!shapes.length) return canvas;
+    const solidShapes = shapes.map(s => ({ ...s, intensity:1 }));
+    paintChannelShapes(canvas.getContext('2d'), solidShapes, geo, '#ffffff');
+    return canvas;
+  } catch(err){
+    console.warn('[Redline] applyProcessChannelKnockout failed', err);
+    return canvas;
+  }
+}
+
+// Shared alignment math used by both the composite render (renderAlignedCanvas)
+// and the channel knockout (applyChannelKnockout), so the two coordinate
+// systems always agree exactly.
+function computeAlignGeometry(pdfLibDoc, pageIndex, targetWidth, alignKey, forcedScale){
+  try{
+    const boxes = getPageBoxes(pdfLibDoc, pageIndex);
+    const cropBox = boxes && boxes.crop;
+    const targetBox = boxes && boxes[alignKey];
+    if(!cropBox || !targetBox || targetBox.width <= 0) return null;
+    const scale = (forcedScale !== undefined && forcedScale !== null) ? forcedScale : (targetWidth / targetBox.width);
+    const sx = (targetBox.x0 - cropBox.x0) * scale;
+    const sy = (cropBox.y1 - targetBox.y1) * scale;
+    const sw = targetBox.width * scale;
+    const sh = targetBox.height * scale;
+    return { cropBox, targetBox, scale, sx, sy, sw, sh };
+  } catch(e){ return null; }
+}
+
+// Shared path-drawing routine: replays traced shapes onto a 2D context in
+// device space, using the same alignment geometry as the main render.
+function paintChannelShapes(ctx, shapes, geo, color){
+  const toDevice = (x,y) => [ (x-geo.cropBox.x0)*geo.scale - geo.sx, (geo.cropBox.y1-y)*geo.scale - geo.sy ];
+  ctx.save();
+  // Defensive: force normal painting regardless of whatever compositing
+  // mode was active before, so a white knockout fill can never silently
+  // become a no-op.
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = color;
+  ctx.strokeStyle = color;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  for(const shape of shapes){
+    ctx.beginPath();
+    for(const sub of shape.subpaths){
+      for(const seg of sub){
+        if(seg.cmd === 'M'){ const [x,y]=toDevice(seg.pts[0][0],seg.pts[0][1]); ctx.moveTo(x,y); }
+        else if(seg.cmd === 'L'){ const [x,y]=toDevice(seg.pts[0][0],seg.pts[0][1]); ctx.lineTo(x,y); }
+        else if(seg.cmd === 'C'){
+          const [x1,y1]=toDevice(seg.pts[0][0],seg.pts[0][1]);
+          const [x2,y2]=toDevice(seg.pts[1][0],seg.pts[1][1]);
+          const [x3,y3]=toDevice(seg.pts[2][0],seg.pts[2][1]);
+          ctx.bezierCurveTo(x1,y1,x2,y2,x3,y3);
+        }
+        else if(seg.cmd === 'Z') ctx.closePath();
+      }
+    }
+    if(shape.fill) ctx.fill('nonzero');
+    if(shape.stroke){ ctx.lineWidth = Math.max(1, shape.lineWidthPts * geo.scale); ctx.stroke(); }
+  }
+  ctx.restore();
+}
+
+function getChannelShapesForDoc(pdfLibDoc, pageIndex, colorantNameLower){
+  const pages = pdfLibDoc.getPages();
+  if(pageIndex >= pages.length) return null;
+  const page = pages[pageIndex];
+  const resources = getInheritedResources(page);
+  if(!resources) return null;
+  const allNames = findAllSpotColorNames(pdfLibDoc.context, resources);
+  const resNames = allNames.filter(n => n.colorantName.toLowerCase() === colorantNameLower).map(n => n.resourceName);
+  if(!resNames.length) return { present:false, shapes:[] };
+  const contentText = getPageContentText(pdfLibDoc, page);
+  if(!contentText) return { present:true, shapes:[] };
+  const tokens = tokenizeContentStream(contentText);
+  return { present:true, shapes: traceChannelShapes(tokens, pdfLibDoc.context, resources, resNames) };
+}
+
+// Paints white over every path on this page painted with one of the given
+// spot channels, directly on an already-rendered composite canvas — i.e.
+// simulates that plate not printing. This is a real (not merely visual)
+// knockout of that channel's own ink: where nothing else was printed under
+// it, the result is correctly blank paper; it can't reconstruct other ink
+// that was genuinely overprinted beneath it, since that's already baked
+// into the flattened composite raster by the time we get to it.
+async function applyChannelKnockout(canvas, pdfLibDoc, pageIndex, geo, hiddenNamesLower){
+  if(!canvas || !pdfLibDoc || !geo || !hiddenNamesLower || hiddenNamesLower.size === 0) return canvas;
+  try{
+    const pages = pdfLibDoc.getPages();
+    if(pageIndex >= pages.length) return canvas;
+    const page = pages[pageIndex];
+    const resources = getInheritedResources(page);
+    if(!resources) return canvas;
+    const allNames = findAllSpotColorNames(pdfLibDoc.context, resources);
+    const matchResNames = allNames
+      .filter(n => hiddenNamesLower.has(n.colorantName.toLowerCase()))
+      .map(n => n.resourceName);
+    if(!matchResNames.length) return canvas;
+
+    const contentText = getPageContentText(pdfLibDoc, page);
+    if(!contentText) return canvas;
+    const tokens = tokenizeContentStream(contentText);
+    const shapes = traceChannelShapes(tokens, pdfLibDoc.context, resources, matchResNames);
+    if(!shapes.length) return canvas;
+
+    paintChannelShapes(canvas.getContext('2d'), shapes, geo, '#ffffff');
+    return canvas;
+  } catch(err){
+    console.warn('[Redline] applyChannelKnockout failed', err);
+    return canvas;
+  }
+}
+
+// Renders ONE channel in isolation (black ink on white), independently for
+// a single file. Unlike knockout, this doesn't touch or need the composite
+// at all — so comparing two files' isolated renders of the same channel
+// directly answers "does this plate itself match?" without any assumption
+// about what else is printed underneath it.
+async function renderIsolatedChannelCanvas(pdfLibDoc, pageIndex, targetWidth, alignKey, colorantNameLower){
+  if(!pdfLibDoc) return null;
+  try{
+    const geo = computeAlignGeometry(pdfLibDoc, pageIndex, targetWidth, alignKey);
+    if(!geo) return null;
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(geo.sw));
+    canvas.height = Math.max(1, Math.round(geo.sh));
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    const found = getChannelShapesForDoc(pdfLibDoc, pageIndex, colorantNameLower);
+    if(found && found.shapes.length) paintChannelShapes(ctx, found.shapes, geo, '#111111');
+    return canvas;
+  } catch(err){
+    console.warn('[Redline] renderIsolatedChannelCanvas failed', err);
+    return null;
+  }
+}
+
+function getPageBoxes(pdfLibDoc, pageIndex){
+  if(!pdfLibDoc) return null;
+  try{
+    const pages = pdfLibDoc.getPages();
+    if(pageIndex >= pages.length) return null;
+    const page = pages[pageIndex];
+    return {
+      media: boxToObj(safeCall(()=>page.getMediaBox())),
+      crop:  boxToObj(safeCall(()=>page.getCropBox())),
+      trim:  boxToObj(safeCall(()=>page.getTrimBox())),
+      bleed: boxToObj(safeCall(()=>page.getBleedBox())),
+      dieline: safeCall(()=>getDielineBox(pdfLibDoc, pageIndex)),
+    };
+  } catch(err){
+    console.warn('[Redline] getPageBoxes failed', err);
+    return null;
+  }
+}
+
+function boxesEqual(a, b, tol=0.5){
+  if(!a && !b) return true;
+  if(!a || !b) return false;
+  return Math.abs(a.x0-b.x0)<=tol && Math.abs(a.y0-b.y0)<=tol &&
+         Math.abs(a.x1-b.x1)<=tol && Math.abs(a.y1-b.y1)<=tol;
+}
+
+// Renders a page cropped to the chosen alignment box, in a single native
+// render pass — no post-hoc drawImage/resample step. Earlier this rendered
+// a full-page canvas then cropped it with drawImage() using fractional
+// (sub-pixel) source coordinates; browsers resample/interpolate whenever
+// drawImage's source rect isn't pixel-aligned, and since A and B typically
+// land on *different* fractional offsets, each got a slightly different
+// blur — a faint, uniform diff even on genuinely identical artwork. Using
+// pdf.js's own offsetX/offsetY shifts the page during the real vector
+// render instead, so the canvas is rasterized once, directly at the exact
+// target pixel grid, for both files alike.
+async function renderAlignedCanvas(pdf, pdfLibDoc, pageNum, targetWidth, alignKey, forcedScale){
+  const geo = computeAlignGeometry(pdfLibDoc, pageNum-1, targetWidth, alignKey, forcedScale);
+
+  if(!geo){
+    // no usable box data — fall back to the plain per-file render
+    const canvas = await renderPageToCanvas(pdf, pageNum, targetWidth);
+    return { canvas, aligned:false };
+  }
+
+  try{
+    const page = await pdf.getPage(pageNum);
+    const viewport = page.getViewport({ scale: geo.scale, offsetX: -geo.sx, offsetY: -geo.sy });
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(geo.sw));
+    canvas.height = Math.max(1, Math.round(geo.sh));
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    // Note: no overprint simulation here — see renderPageAtScale for why
+    // that can't be reliably injected into pdf.js's rendering from outside.
+    // anything outside the canvas's own bounds is naturally clipped by the
+    // canvas element itself — no manual cropping/resampling needed
+    await page.render({canvasContext:ctx, viewport}).promise;
+    return { canvas, aligned:true, geo };
+  } catch(err){
+    console.warn('[Redline] renderAlignedCanvas failed, using unaligned render', err);
+    const canvas = await renderPageToCanvas(pdf, pageNum, targetWidth);
+    return { canvas, aligned:false };
+  }
+}
+
+// Applies both knockout types (spot + CMYK process group) to an already-
+// rendered result in place. Shared by both size modes below.
+async function applyKnockouts(res, pdfLibDoc, pageNum, hiddenNamesLower){
+  if(res.canvas && res.geo && hiddenNamesLower && hiddenNamesLower.size){
+    await applyChannelKnockout(res.canvas, pdfLibDoc, pageNum-1, res.geo, hiddenNamesLower);
+    if(hiddenNamesLower.has('cmyk')){
+      await applyProcessChannelKnockout(res.canvas, pdfLibDoc, pageNum-1, res.geo, true);
+    }
+  }
+  return res;
+}
+
+// Renders the aligned composite, then knocks out any channels the user has
+// unchecked in the Output Preview panel (spot colors and/or the whole CMYK
+// process group) — this is what both the main comparison view and the
+// full-document scan actually use in "Scale to fit" mode.
+async function getComparisonCanvas(pdf, pdfLibDoc, pageNum, targetWidth, alignKey, hiddenNamesLower){
+  const res = await renderAlignedCanvas(pdf, pdfLibDoc, pageNum, targetWidth, alignKey);
+  return applyKnockouts(res, pdfLibDoc, pageNum, hiddenNamesLower);
+}
+
+// Renders both files at ONE shared physical scale — derived from whichever
+// file's alignment box is larger — instead of independently normalizing
+// each file's box to the same pixel width. A genuinely smaller artwork
+// then actually renders smaller, rather than being invisibly stretched up
+// to match. Each render is then centered inside a common frame sized to
+// the larger of the two, so the comparison still lines up as two same-size
+// canvases the way computeDiff expects, without silently equalizing real
+// size differences the way "Scale to fit" does.
+async function getComparisonCanvasesOriginalSize(pageNum, targetWidth){
+  const pageIndex = pageNum - 1;
+  const boxesA = getPageBoxes(state.pdfLibA, pageIndex);
+  const boxesB = getPageBoxes(state.pdfLibB, pageIndex);
+  const targetBoxA = boxesA && boxesA[state.alignBox];
+  const targetBoxB = boxesB && boxesB[state.alignBox];
+
+  if(!targetBoxA || !targetBoxB || targetBoxA.width <= 0 || targetBoxB.width <= 0){
+    // no usable box data for one/both files — fall back to independent
+    // "fit" rendering rather than failing outright
+    console.warn('[Redline] original-size mode: missing box data, falling back to scale-to-fit');
+    const [resA, resB] = await Promise.all([
+      getComparisonCanvas(state.pdfA, state.pdfLibA, pageNum, targetWidth, state.alignBox, state.hiddenChannels),
+      getComparisonCanvas(state.pdfB, state.pdfLibB, pageNum, targetWidth, state.alignBox, state.hiddenChannels)
+    ]);
+    return { canvasA: resA.canvas, canvasB: resB.canvas };
+  }
+
+  const sharedScale = targetWidth / Math.max(targetBoxA.width, targetBoxB.width);
+
+  const [resA, resB] = await Promise.all([
+    renderAlignedCanvas(state.pdfA, state.pdfLibA, pageNum, targetWidth, state.alignBox, sharedScale),
+    renderAlignedCanvas(state.pdfB, state.pdfLibB, pageNum, targetWidth, state.alignBox, sharedScale)
+  ]);
+  await Promise.all([
+    applyKnockouts(resA, state.pdfLibA, pageNum, state.hiddenChannels),
+    applyKnockouts(resB, state.pdfLibB, pageNum, state.hiddenChannels)
+  ]);
+
+  const frameW = Math.max(resA.canvas ? resA.canvas.width : 0, resB.canvas ? resB.canvas.width : 0);
+  const frameH = Math.max(resA.canvas ? resA.canvas.height : 0, resB.canvas ? resB.canvas.height : 0);
+
+  const centerInFrame = (src) => {
+    if(!src) return null;
+    const out = document.createElement('canvas');
+    out.width = Math.max(1, frameW);
+    out.height = Math.max(1, frameH);
+    const ctx = out.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0,0,out.width,out.height);
+    const dx = Math.round((out.width - src.width) / 2);
+    const dy = Math.round((out.height - src.height) / 2);
+    ctx.drawImage(src, dx, dy);
+    return out;
+  };
+
+  return { canvasA: centerInFrame(resA.canvas), canvasB: centerInFrame(resB.canvas) };
+}
+
+// Single entry point both runCompare and scanAllPages use — picks the
+// right rendering strategy based on the "Different sizes" toggle.
+async function getComparisonCanvasesForPage(pageNum, targetWidth){
+  if(state.sizeMode === 'original'){
+    return getComparisonCanvasesOriginalSize(pageNum, targetWidth);
+  }
+  const [resA, resB] = await Promise.all([
+    getComparisonCanvas(state.pdfA, state.pdfLibA, pageNum, targetWidth, state.alignBox, state.hiddenChannels),
+    getComparisonCanvas(state.pdfB, state.pdfLibB, pageNum, targetWidth, state.alignBox, state.hiddenChannels)
+  ]);
+  return { canvasA: resA.canvas, canvasB: resB.canvas };
+}
+
+const BOX_LABELS = [['media','MediaBox'],['crop','CropBox'],['trim','TrimBox'],['bleed','BleedBox'],['dieline','Dieline']];
+
+// -- Rendering the structural panel --------------------------------
+function renderStructuralPanel(pageIndex){
+  const boxesA = getPageBoxes(state.pdfLibA, pageIndex);
+  const boxesB = getPageBoxes(state.pdfLibB, pageIndex);
+
+  el('structuralPanel').style.display = 'block';
+  el('boxPageNum').textContent = '· page ' + (pageIndex+1);
+
+  if(!boxesA && !boxesB){
+    el('boxTableBody').innerHTML = '<tr><td colspan="5" style="color:var(--ink-faint);">Box data unavailable for this file.</td></tr>';
+    el('boxNote').className = 'struct-note';
+    el('boxNote').textContent = 'pdf-lib could not parse box data for these files.';
+    return;
+  }
+
+  const PT_TO_MM = 25.4 / 72;
+  const dims = (b) => b ? ((b.width*PT_TO_MM).toFixed(1) + ' × ' + (b.height*PT_TO_MM).toFixed(1)
+    + '<br><span style="opacity:.6;">@ ' + (b.x0*PT_TO_MM).toFixed(1) + ',' + (b.y0*PT_TO_MM).toFixed(1) + '</span>') : '—';
+
+  el('boxTableBody').innerHTML = BOX_LABELS.map(([key,label]) => {
+    const a = boxesA && boxesA[key], b = boxesB && boxesB[key];
+    const match = boxesEqual(a,b);
+    const isUsed = key === state.alignBox;
+    return `
+      <tr class="${match ? '' : 'mismatch'} ${isUsed ? 'used' : ''}">
+        <td>${isUsed ? '<span class="box-used-dot" title="Used for alignment"></span>' : ''}</td>
+        <td class="box-name">${label}</td>
+        <td>${dims(a)}</td>
+        <td>${dims(b)}</td>
+        <td><span class="box-match-icon ${match ? 'ok' : 'bad'}">${match ? '✓' : '✗'}</span></td>
+      </tr>`;
+  }).join('');
+
+  // The note directly speaks to the crop-differs-but-trim-matches scenario
+  const cropMatch = boxesEqual(boxesA && boxesA.crop, boxesB && boxesB.crop);
+  const trimMatch = boxesEqual(boxesA && boxesA.trim, boxesB && boxesB.trim);
+  const usedLabel = BOX_LABELS.find(([k])=>k===state.alignBox)[1];
+  const note = el('boxNote');
+  const usedBoxA = boxesA && boxesA[state.alignBox];
+  const usedBoxB = boxesB && boxesB[state.alignBox];
+
+  if(state.alignBox === 'dieline' && (!usedBoxA || !usedBoxB)){
+    note.className = 'struct-note warn';
+    note.textContent = '⚠ No "Cut" / "Dieline" / "Diecut" / "CutContour" spot-color object found in ' +
+      (!usedBoxA && !usedBoxB ? 'either file' : !usedBoxA ? 'File A' : 'File B') +
+      ' — falling back to each file\'s own render (unaligned) for this page.';
+  } else if(!cropMatch && trimMatch && state.alignBox !== 'crop'){
+    note.className = 'struct-note ok';
+    note.textContent = '✓ CropBox differs between the files, but TrimBox matches — aligning by ' + usedLabel + ' means that crop-only offset won\'t be flagged as a difference.';
+  } else if(!boxesEqual(usedBoxA, usedBoxB)){
+    note.className = 'struct-note warn';
+    note.textContent = '⚠ ' + usedLabel + ' itself differs between the files — the pages are being compared at their own ' + usedLabel + ' origins, but sizes/positions don\'t match exactly.';
+  } else {
+    note.className = 'struct-note ok';
+    note.textContent = '✓ Pages are aligned by ' + usedLabel + ', which matches between both files.';
+  }
+}
+
+// -- Output Preview: channel list + isolated per-channel render -----
+function renderOutputPreviewList(pageIndex){
+  const panel = el('outputPreviewPanel');
+  const listEl = el('channelList');
+
+  if(!state.pdfLibA || !state.pdfLibB){
+    panel.style.display = 'none';
+    return;
+  }
+
+  let namesA = [], namesB = [];
+  try{
+    const pageA = state.pdfLibA.getPages()[pageIndex];
+    const resA = pageA ? getInheritedResources(pageA) : null;
+    if(resA) namesA = findAllSpotColorNames(state.pdfLibA.context, resA);
+  } catch(e){ /* ignore */ }
+  try{
+    const pageB = state.pdfLibB.getPages()[pageIndex];
+    const resB = pageB ? getInheritedResources(pageB) : null;
+    if(resB) namesB = findAllSpotColorNames(state.pdfLibB.context, resB);
+  } catch(e){ /* ignore */ }
+
+  panel.style.display = 'block';
+  el('channelPageNum').textContent = '· page ' + (pageIndex+1);
+
+  // union by colorant name (case-insensitive) — the hidden/shown state is
+  // tracked by name so toggling "Varnish" knocks it out of whichever file
+  // (or both) actually has a plate by that name.
+  const byName = new Map();
+  namesA.forEach(({colorantName}) => {
+    const key = colorantName.toLowerCase();
+    if(!byName.has(key)) byName.set(key, { colorantName, inA:false, inB:false, isProcess:false });
+    byName.get(key).inA = true;
+  });
+  namesB.forEach(({colorantName}) => {
+    const key = colorantName.toLowerCase();
+    if(!byName.has(key)) byName.set(key, { colorantName, inA:false, inB:false, isProcess:false });
+    byName.get(key).inB = true;
+  });
+
+  // CMYK as one combined process-color toggle — detected the same way (via
+  // g/rg/k operators, or any Gray/RGB/CMYK device color space actually
+  // used in the content, including inside raster images), not just
+  // assumed present.
+  const anyA = getProcessColorUsed(state.pdfLibA, pageIndex);
+  const anyB = getProcessColorUsed(state.pdfLibB, pageIndex);
+  if(anyA || anyB){
+    byName.set('cmyk', { colorantName:'CMYK', inA:anyA, inB:anyB, isProcess:true });
+  }
+
+  if(byName.size === 0){
+    listEl.innerHTML = '<div class="ch-empty">No channels detected on this page in either file.</div>';
+    return;
+  }
+
+  // CMYK first, then spot colors alphabetically
+  const entries = [...byName.values()].sort((a,b) => {
+    if(a.isProcess !== b.isProcess) return a.isProcess ? -1 : 1;
+    return a.colorantName.localeCompare(b.colorantName);
+  });
+
+  listEl.innerHTML = entries.map(entry => {
+    const status = (entry.inA && entry.inB) ? 'both' : entry.inB ? 'added' : 'removed';
+    const tag = status === 'both' ? 'Both' : status === 'added' ? 'B only' : 'A only';
+    const key = entry.colorantName.toLowerCase();
+    const isOn = !state.hiddenChannels.has(key);
+    const isExpanded = state.expandedChannel === key;
+    return `
+      <div class="channel-row-wrap">
+        <div class="channel-row ${isOn ? '' : 'off'} ${isExpanded ? 'expanded' : ''}" data-key="${key.replace(/"/g,'&quot;')}">
+          <button class="ch-check ${isOn ? 'checked' : ''}" type="button" aria-label="Toggle ${entry.colorantName}">
+            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+          <span class="ch-name" data-role="expand">${entry.colorantName}${entry.isProcess ? ' <span class="ch-process-tag">process</span>' : ''}</span>
+          <span class="ch-tag ${status}">${tag}</span>
+          <span class="ch-expand-arrow" data-role="expand">${isExpanded ? '▾' : '▸'}</span>
+        </div>
+        <div class="channel-compare" style="display:${isExpanded ? 'flex' : 'none'};"></div>
+      </div>`;
+  }).join('');
+
+  const wraps = listEl.querySelectorAll('.channel-row-wrap');
+  entries.forEach((entry, idx) => {
+    const wrap = wraps[idx];
+    const key = entry.colorantName.toLowerCase();
+
+    wrap.querySelector('.ch-check').addEventListener('click', (e) => {
+      e.stopPropagation();
+      if(state.hiddenChannels.has(key)) state.hiddenChannels.delete(key);
+      else state.hiddenChannels.add(key);
+      // re-run the full comparison so the knockout is reflected in the
+      // stage view, stats, and the page-by-page report alike
+      compareAndScan();
+    });
+
+    wrap.querySelectorAll('[data-role="expand"]').forEach(el2 => {
+      el2.addEventListener('click', () => {
+        state.expandedChannel = (state.expandedChannel === key) ? null : key;
+        renderOutputPreviewList(pageIndex);
+      });
+    });
+
+    if(state.expandedChannel === key){
+      populateChannelCompare(pageIndex, entry, wrap.querySelector('.channel-compare'));
+    }
+  });
+}
+
+// Isolates the selected channel independently in each file and diffs those
+// two isolated renders directly against each other — this is what actually
+// answers "does this plate itself match?" without assuming anything about
+// what's printed underneath it (unlike the checkbox knockout above, which
+// works on the flattened composite and can't see through other ink).
+async function populateChannelCompare(pageIndex, entry, container){
+  container.innerHTML = '<div class="cc-loading">Rendering channel…</div>';
+  const key = entry.colorantName.toLowerCase();
+  const targetWidth = 320;
+
+  const [canvasA, canvasB] = entry.isProcess
+    ? await Promise.all([
+        renderIsolatedProcessChannelCanvas(state.pdfLibA, pageIndex, targetWidth, state.alignBox),
+        renderIsolatedProcessChannelCanvas(state.pdfLibB, pageIndex, targetWidth, state.alignBox)
+      ])
+    : await Promise.all([
+        renderIsolatedChannelCanvas(state.pdfLibA, pageIndex, targetWidth, state.alignBox, key),
+        renderIsolatedChannelCanvas(state.pdfLibB, pageIndex, targetWidth, state.alignBox, key)
+      ]);
+  const diff = (canvasA && canvasB) ? computeDiff(canvasA, canvasB) : null;
+  const pct = diff ? (diff.changed / diff.total) * 100 : null;
+
+  container.innerHTML = `
+    <div class="cc-pane"><div class="cc-label">File A</div><div class="cc-canvas" data-slot="a"></div></div>
+    <div class="cc-pane"><div class="cc-label">File B</div><div class="cc-canvas" data-slot="b"></div></div>
+    <div class="cc-pane"><div class="cc-label">Difference</div><div class="cc-canvas" data-slot="d"></div></div>
+  `;
+  const slotA = container.querySelector('[data-slot="a"]');
+  const slotB = container.querySelector('[data-slot="b"]');
+  const slotD = container.querySelector('[data-slot="d"]');
+  if(canvasA) slotA.appendChild(canvasA); else slotA.innerHTML = '<span class="ch-empty">Not present</span>';
+  if(canvasB) slotB.appendChild(canvasB); else slotB.innerHTML = '<span class="ch-empty">Not present</span>';
+  if(diff) slotD.appendChild(diff.canvas); else slotD.innerHTML = '<span class="ch-empty">—</span>';
+
+  const stat = document.createElement('div');
+  stat.className = 'cc-stat ' + (diff ? (pct < 0.05 ? 'ok' : 'warn') : 'warn');
+  stat.textContent = diff
+    ? (pct < 0.05 ? '✓ This channel matches between both files.' : '⚠ This channel differs on ' + pct.toFixed(2) + '% of the aligned area.')
+    : 'Could not isolate this channel (missing alignment box data).';
+  container.appendChild(stat);
+}
+
+
+async function runCompare(){
+  if(!state.pdfA || !state.pdfB) return;
+  el('runBtn').disabled = true;
+
+  const targetWidth = 760;
+  const { canvasA, canvasB } = await getComparisonCanvasesForPage(state.page, targetWidth);
+
+  const diffResult = (canvasA && canvasB) ? computeDiff(canvasA, canvasB) : null;
+
+  state.lastRender = { canvasA, canvasB, diffResult };
+  renderStage();
+  updateStats(diffResult);
+  renderStructuralPanel(state.page - 1);
+  renderOutputPreviewList(state.page - 1);
+
+  el('runBtn').textContent = 'Compare pages';
+  el('runBtn').disabled = false;
+  if(state.pageReport && state.pageReport.length){
+    document.querySelectorAll('.report-row').forEach((row, idx)=>{
+      row.classList.toggle('current', state.pageReport[idx] && state.pageReport[idx].page === state.page);
+    });
+  }
+}
+
+function updateStats(diffResult){
+  el('statsbar').style.display = 'flex';
+  el('legend').style.display = 'flex';
+  el('statPages').textContent = state.pdfA.numPages + ' / ' + state.pdfB.numPages;
+  if(diffResult){
+    const pct = (n)=> ((n/diffResult.total)*100).toFixed(2)+'%';
+    el('statChanged').textContent = pct(diffResult.changed);
+    el('statAdded').textContent = pct(diffResult.added);
+    el('statRemoved').textContent = pct(diffResult.removed);
+  } else {
+    el('statChanged').textContent='—'; el('statAdded').textContent='—'; el('statRemoved').textContent='—';
+  }
+}
+
+function withCrosshairs(holder){
+  ['cx-tl','cx-tr','cx-bl','cx-br'].forEach(cls=>{
+    const c = document.createElement('div');
+    c.className = 'crosshair ' + cls;
+    holder.appendChild(c);
+  });
+}
+
+function renderStage(){
+  emptyState.style.display = 'none';
+  stage.innerHTML = '';
+  const { canvasA, canvasB, diffResult } = state.lastRender;
+  const scroll = document.createElement('div');
+  scroll.className = 'canvas-scroll';
+  stage.appendChild(scroll);
+
+  const zoomCanvas = (src) => {
+    if(!src) return null;
+    const c = document.createElement('canvas');
+    c.width = src.width * state.zoom;
+    c.height = src.height * state.zoom;
+    const ctx = c.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(src, 0,0,c.width,c.height);
+    return c;
+  };
+
+  if(state.mode === 'sbs'){
+    const grid = document.createElement('div');
+    grid.className = 'sbs-grid';
+    [['File A', canvasA],['File B', canvasB]].forEach(([label, c])=>{
+      const pane = document.createElement('div');
+      pane.className = 'sbs-pane';
+      const lbl = document.createElement('div');
+      lbl.className = 'sbs-label'; lbl.textContent = label;
+      pane.appendChild(lbl);
+      const holder = document.createElement('div');
+      holder.className = 'canvas-holder';
+      if(c) holder.appendChild(zoomCanvas(c));
+      withCrosshairs(holder);
+      pane.appendChild(holder);
+      grid.appendChild(pane);
+    });
+    scroll.appendChild(grid);
+
+  } else if(state.mode === 'swipe'){
+    const container = document.createElement('div');
+    container.className = 'swipe-container canvas-holder';
+    const cB = zoomCanvas(canvasB);
+    if(cB) container.appendChild(cB);
+
+    const topWrap = document.createElement('div');
+    topWrap.className = 'swipe-top';
+    const cA = zoomCanvas(canvasA);
+    if(cA){ topWrap.appendChild(cA); topWrap.style.width = cA.width+'px'; topWrap.style.height='100%'; }
+    container.appendChild(topWrap);
+
+    const line = document.createElement('div');
+    line.className = 'swipe-line';
+    container.appendChild(line);
+    const grip = document.createElement('div');
+    grip.className = 'swipe-grip';
+    container.appendChild(grip);
+
+    withCrosshairs(container);
+    scroll.appendChild(container);
+
+    let dragging = false;
+    let pos = (cA ? cA.width : 0) / 2;
+    const applyPos = () => {
+      topWrap.style.clipPath = `inset(0 ${ (cA?cA.width:0) - pos }px 0 0)`;
+      line.style.left = pos+'px';
+      grip.style.left = pos+'px';
+    };
+    applyPos();
+    const move = (clientX) => {
+      const rect = container.getBoundingClientRect();
+      pos = Math.min(Math.max(0, clientX - rect.left), cA ? cA.width : 0);
+      applyPos();
+    };
+    grip.addEventListener('mousedown', ()=> dragging = true);
+    line.addEventListener('mousedown', ()=> dragging = true);
+    window.addEventListener('mousemove', e=>{ if(dragging) move(e.clientX); });
+    window.addEventListener('mouseup', ()=> dragging = false);
+    grip.addEventListener('touchstart', ()=> dragging = true);
+    window.addEventListener('touchmove', e=>{ if(dragging && e.touches[0]) move(e.touches[0].clientX); });
+    window.addEventListener('touchend', ()=> dragging = false);
+
+  } else if(state.mode === 'diff'){
+    const holder = document.createElement('div');
+    holder.className = 'canvas-holder';
+    if(diffResult) holder.appendChild(zoomCanvas(diffResult.canvas));
+    withCrosshairs(holder);
+    scroll.appendChild(holder);
+  }
+}
+</script>
+</body>
+</html>
