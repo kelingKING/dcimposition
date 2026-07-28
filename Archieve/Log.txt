@@ -1,3 +1,4 @@
 23-7 Add Export and Import preset
 24-7 Auto uncheck guttermarks
 27-7 Overlay scale and preset
+28-7 Use pdf.js as preview viewer
