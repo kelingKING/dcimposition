@@ -2,3 +2,4 @@
 24-7 Auto uncheck guttermarks
 27-7 Overlay scale and preset
 28-7 Use pdf.js as preview viewer
+29-7 Change the UI
