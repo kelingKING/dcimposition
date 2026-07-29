@@ -3,3 +3,4 @@
 27-7 Overlay scale and preset
 28-7 Use pdf.js as preview viewer
 29-7 Change the UI
+30-7 Improve the UI
