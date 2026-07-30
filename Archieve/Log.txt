@@ -4,3 +4,4 @@
 28-7 Use pdf.js as preview viewer
 29-7 Change the UI
 30-7 Improve the UI
+31-7 Add auto fit
