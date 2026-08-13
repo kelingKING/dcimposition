@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home</title>
+<style>
+  :root{
+    --bg: #f5f6f8;
+    --ink: #1f2430;
+    --muted: #6b7280;
+    --card: #ffffff;
+    --border: #eaeaea;
+    --ring: rgba(83, 74, 183, 0.18);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 48px 24px 64px;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 15% 10%, rgba(83,74,183,0.06), transparent 40%),
+      radial-gradient(circle at 85% 90%, rgba(15,110,86,0.06), transparent 40%);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    min-height: 100vh;
+  }
+
+  h1 {
+    font-size: 22px;
+    font-weight: 600;
+    margin: 0 0 6px;
+    animation: fadeDown 0.5s ease both;
+  }
+
+  .subtitle {
+    font-size: 13.5px;
+    color: var(--muted);
+    margin: 0 0 28px;
+    animation: fadeDown 0.5s ease both 0.05s;
+  }
+
+  .toolbar {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 28px;
+    animation: fadeDown 0.5s ease both 0.1s;
+  }
+
+  .search-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 340px;
+  }
+
+  .search-wrap svg {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    stroke: var(--muted);
+    pointer-events: none;
+  }
+
+  #search {
+    width: 100%;
+    padding: 10px 14px 10px 38px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    font-size: 13.5px;
+    color: var(--ink);
+    outline: none;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+  }
+  #search:focus {
+    border-color: #b9b4ef;
+    box-shadow: 0 0 0 4px var(--ring);
+  }
+  #search::placeholder { color: #a3a7b0; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 24px;
+    max-width: 900px;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .card {
+    position: relative;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 32px 20px 24px;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease, opacity 0.25s ease;
+    transform-style: preserve-3d;
+    will-change: transform;
+    opacity: 0;
+    animation: cardIn 0.5s ease forwards;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(220px circle at var(--mx, 50%) var(--my, 0%), rgba(0,0,0,0.05), transparent 60%);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+  }
+  .card:hover::before { opacity: 1; }
+
+  .card:hover {
+    box-shadow: 0 14px 30px rgba(31,36,48,0.10);
+    border-color: #e2e2e8;
+  }
+
+  .card:active { transform: translateY(0) scale(0.98) !important; }
+
+  .card.hidden { display: none; }
+
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .icon-circle {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    transition: transform 0.25s cubic-bezier(.34,1.56,.64,1);
+    position: relative;
+    z-index: 2;
+  }
+  .card:hover .icon-circle {
+    transform: scale(1.08) rotate(-4deg);
+  }
+  .icon-circle svg {
+    width: 28px;
+    height: 28px;
+    transition: transform 0.25s ease;
+  }
+
+  .card h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 6px;
+    position: relative;
+    z-index: 2;
+  }
+  .card p {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+    margin: 0;
+    position: relative;
+    z-index: 2;
+  }
+
+  a.card {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+
+  .impose  { background: #EEEDFE; }
+  .impose  svg { stroke: #534AB7; }
+  .rename  { background: #E1F5EE; }
+  .rename  svg { stroke: #0F6E56; }
+  .compare { background: #FAECE7; }
+  .compare svg { stroke: #993C1D; }
+  .colorcount { background: #FDECF2; }
+  .colorcount svg { stroke: #B2295C; }
+  .vdp { background: #E8F0FE; }
+  .vdp svg { stroke: #1A56C4; }
+
+  .empty-state {
+    display: none;
+    color: var(--muted);
+    font-size: 13.5px;
+    margin-top: 12px;
+    animation: fadeDown 0.3s ease both;
+  }
+
+  .ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(31,36,48,0.12);
+    transform: scale(0);
+    animation: rippleAnim 0.5s ease-out forwards;
+    pointer-events: none;
+    z-index: 5;
+  }
+  @keyframes rippleAnim {
+    to { transform: scale(2.6); opacity: 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card, .icon-circle, h1, .subtitle, .toolbar { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+  <h1><img src="CA.png" alt="CA Logo" width="150" height="150"></h1>
+  <p class="subtitle">Pick a tool to get started</p>
+
+  <div class="toolbar">
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="7"/>
+        <path d="M21 21l-4.35-4.35"/>
+      </svg>
+      <input id="search" type="text" placeholder="Search tools…" autocomplete="off">
+    </div>
+  </div>
+
+  <div class="grid" id="grid">
+
+    <a class="card" href="imposition.html" data-name="impose" style="animation-delay:0.05s">
+      <div class="icon-circle impose">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="4" width="9" height="9" rx="1.5"/>
+          <rect x="11" y="11" width="9" height="9" rx="1.5"/>
+        </svg>
+      </div>
+      <h3>Impose</h3>
+      <p>Arrange pages into print-ready sheets</p>
+    </a>
+
+    <a class="card" href="renametool.html" data-name="rename" style="animation-delay:0.1s">
+      <div class="icon-circle rename">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 20h4L18.5 9.5a2 2 0 0 0-3-3L5 17v3z"/>
+          <path d="M13.5 6.5l3 3"/>
+        </svg>
+      </div>
+      <h3>Rename</h3>
+      <p>Rename files and orders in bulk</p>
+    </a>
+
+    <a class="card" href="compare.html" data-name="compare" style="animation-delay:0.15s">
+      <div class="icon-circle compare">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 3v14"/>
+          <path d="M15 21V7"/>
+          <path d="M9 3l-4 4"/>
+          <path d="M9 3l4 4"/>
+          <path d="M15 21l4-4"/>
+          <path d="M15 21l-4-4"/>
+        </svg>
+      </div>
+      <h3>Compare</h3>
+      <p>Compare files side by side for differences</p>
+    </a>
+
+    <a class="card" href="colourcounter.html" data-name="colour page counter" style="animation-delay:0.2s">
+      <div class="icon-circle colorcount">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/>
+          <path d="M15 3v5h5"/>
+          <circle cx="9.5" cy="14" r="1.4" fill="currentColor" stroke="none"/>
+          <circle cx="13" cy="16.5" r="1.4" fill="currentColor" stroke="none"/>
+          <circle cx="16" cy="13" r="1.4" fill="currentColor" stroke="none"/>
+        </svg>
+      </div>
+      <h3>Colour Page Counter</h3>
+      <p>Count colour vs. black &amp; white pages in a file</p>
+    </a>
+
+    <a class="card" href="VDP.html" data-name="vdp variable data printing" style="animation-delay:0.25s">
+      <div class="icon-circle vdp">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="7" height="9" rx="1.2"/>
+          <rect x="14" y="4" width="7" height="9" rx="1.2"/>
+          <path d="M6.5 8.2v1.6"/>
+          <path d="M17.5 7.5l1 1-1 1"/>
+          <path d="M4 19h16"/>
+          <path d="M4 16.5h9"/>
+        </svg>
+      </div>
+      <h3>VDP</h3>
+      <p>Preview and validate variable data print jobs</p>
+    </a>
+
+  </div>
+
+  <p class="empty-state" id="emptyState">No tools match your search.</p>
+
+<script>
+  // --- Search / filter ---
+  const search = document.getElementById('search');
+  const cards = Array.from(document.querySelectorAll('.card'));
+  const emptyState = document.getElementById('emptyState');
+
+  search.addEventListener('input', () => {
+    const q = search.value.trim().toLowerCase();
+    let visibleCount = 0;
+    cards.forEach(card => {
+      const match = card.dataset.name.includes(q);
+      card.classList.toggle('hidden', !match);
+      if (match) visibleCount++;
+    });
+    emptyState.style.display = visibleCount === 0 ? 'block' : 'none';
+  });
+
+  // --- Subtle tilt + spotlight glow following cursor ---
+  cards.forEach(card => {
+    card.addEventListener('mousemove', (e) => {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const cx = rect.width / 2;
+      const cy = rect.height / 2;
+      const rotateX = ((y - cy) / cy) * -4;
+      const rotateY = ((x - cx) / cx) * 4;
+      card.style.transform = `perspective(600px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-2px)`;
+      card.style.setProperty('--mx', `${(x / rect.width) * 100}%`);
+      card.style.setProperty('--my', `${(y / rect.height) * 100}%`);
+    });
+    card.addEventListener('mouseleave', () => {
+      card.style.transform = '';
+    });
+
+    // --- Click ripple ---
+    card.addEventListener('click', (e) => {
+      const rect = card.getBoundingClientRect();
+      const ripple = document.createElement('span');
+      const size = Math.max(rect.width, rect.height);
+      ripple.className = 'ripple';
+      ripple.style.width = ripple.style.height = size + 'px';
+      ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
+      ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
+      card.appendChild(ripple);
+      setTimeout(() => ripple.remove(), 500);
+    });
+  });
+</script>
+
+</body>
+</html>
