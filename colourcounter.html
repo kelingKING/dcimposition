@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ColorProof — PDF Page Color Audit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  :root{
+    --bg:#FFFFFF;
+    --bg-subtle:#F7F8FA;
+    --bg-subtle-2:#F0F2F5;
+    --border:#E3E6EB;
+    --border-strong:#D0D5DD;
+    --text:#101828;
+    --text-secondary:#475467;
+    --text-tertiary:#98A2B3;
+    --accent:#2554F0;
+    --accent-hover:#1E45CC;
+    --accent-soft:#EEF2FF;
+    --accent-soft-border:#D6E0FF;
+    --gray-badge:#667085;
+    --gray-badge-soft:#F2F4F7;
+    --shadow-sm: 0 1px 2px rgba(16,24,40,.04);
+    --shadow-md: 0 2px 8px rgba(16,24,40,.06);
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  *{
+    -webkit-user-select:none;
+    -moz-user-select:none;
+    -ms-user-select:none;
+    user-select:none;
+    -webkit-touch-callout:none;
+  }
+  img, canvas{
+    -webkit-user-drag:none;
+    user-drag:none;
+    pointer-events:none;
+  }
+  body{
+    background:var(--bg-subtle);
+    color:var(--text);
+    font-family:'Inter', -apple-system, sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:'IBM Plex Mono', monospace;}
+
+  .shell{
+    max-width:1080px;
+    margin:0 auto;
+    padding:0 24px 64px;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:22px 0;
+    margin-bottom:28px;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .brand-mark{
+    width:32px;height:32px;
+    border-radius:8px;
+    background:var(--accent);
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  .brand-mark svg{width:18px;height:18px;}
+  .brand-name{
+    font-weight:700;
+    font-size:16px;
+    letter-spacing:-.01em;
+  }
+  .brand-tag{
+    font-size:12px;
+    color:var(--text-tertiary);
+    margin-left:10px;
+    padding-left:10px;
+    border-left:1px solid var(--border-strong);
+  }
+  .topbar-right{
+    font-size:12px;
+    color:var(--text-tertiary);
+  }
+
+  /* ---------- card base ---------- */
+  .card{
+    background:var(--bg);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow-sm);
+  }
+
+  /* ---------- upload dropzone ---------- */
+  .dropzone{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:14px;
+    text-align:center;
+    padding:56px 24px;
+    border:1.5px dashed var(--border-strong);
+    border-radius:var(--radius);
+    background:var(--bg);
+    cursor:pointer;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .dropzone:hover{border-color:var(--accent);background:var(--accent-soft);}
+  .dropzone.drag{border-color:var(--accent);background:var(--accent-soft);}
+  .dropzone input{display:none;}
+  .dz-icon{
+    width:44px;height:44px;
+    border-radius:10px;
+    background:var(--accent-soft);
+    border:1px solid var(--accent-soft-border);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .dz-icon svg{width:20px;height:20px;stroke:var(--accent);}
+  .dropzone h2{
+    font-size:15px;
+    font-weight:600;
+    margin:0;
+  }
+  .dropzone p{
+    font-size:13px;
+    color:var(--text-tertiary);
+    margin:0;
+  }
+
+  /* ---------- file info bar (shown after upload) ---------- */
+  .fileinfo{
+    display:none;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    padding:16px 20px;
+    margin-top:14px;
+    flex-wrap:wrap;
+  }
+  .fileinfo.show{display:flex;}
+  .fileinfo-left{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    min-width:0;
+  }
+  .file-icon{
+    width:38px;height:38px;
+    border-radius:8px;
+    background:var(--bg-subtle-2);
+    border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  .file-icon svg{width:18px;height:18px;stroke:var(--text-secondary);}
+  .file-text{min-width:0;}
+  .file-name{
+    font-size:13.5px;
+    font-weight:600;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    max-width:420px;
+  }
+  .file-meta{
+    font-size:12px;
+    color:var(--text-tertiary);
+    margin-top:2px;
+  }
+  .btn-secondary{
+    font-family:'Inter', sans-serif;
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--text-secondary);
+    background:var(--bg);
+    border:1px solid var(--border-strong);
+    border-radius:7px;
+    padding:8px 14px;
+    cursor:pointer;
+    white-space:nowrap;
+    transition:background .15s ease, border-color .15s ease;
+  }
+  .btn-secondary:hover{background:var(--bg-subtle-2);border-color:var(--text-tertiary);}
+
+  /* ---------- scan area selector ---------- */
+  .scanarea{
+    display:none;
+    align-items:center;
+    gap:14px;
+    padding:14px 20px;
+    margin-top:14px;
+    flex-wrap:wrap;
+  }
+  .scanarea.show{display:flex;}
+  .scanarea-label{
+    font-size:12px;
+    font-weight:600;
+    color:var(--text-secondary);
+  }
+  .segmented{
+    display:inline-flex;
+    background:var(--bg-subtle-2);
+    border-radius:8px;
+    padding:3px;
+    gap:2px;
+  }
+  .seg-btn{
+    font-family:'Inter', sans-serif;
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--text-secondary);
+    background:transparent;
+    border:none;
+    border-radius:6px;
+    padding:7px 13px;
+    cursor:pointer;
+    transition:background .15s ease, color .15s ease;
+  }
+  .seg-btn:hover{color:var(--text);}
+  .seg-btn.active{
+    background:var(--bg);
+    color:var(--accent);
+    box-shadow:var(--shadow-sm);
+  }
+  .scanarea-note{
+    font-size:11.5px;
+    color:var(--text-tertiary);
+    flex:1;
+    min-width:180px;
+  }
+  .scanarea-note.warn{ color:#B54708; }
+
+  /* ---------- progress ---------- */
+  .progresswrap{
+    display:none;
+    margin-top:14px;
+    padding:14px 20px;
+  }
+  .progresswrap.show{display:block;}
+  .progress-label{
+    font-size:12.5px;
+    color:var(--text-secondary);
+    display:flex;
+    justify-content:space-between;
+    margin-bottom:8px;
+  }
+  .progress-label .val{font-family:'IBM Plex Mono', monospace;color:var(--accent);}
+  .progressbar{
+    height:6px;
+    background:var(--bg-subtle-2);
+    border-radius:6px;
+    overflow:hidden;
+  }
+  .progressbar i{
+    display:block;
+    height:100%;
+    background:var(--accent);
+    width:0%;
+    transition:width .2s ease;
+  }
+
+  /* ---------- KPI / summary row ---------- */
+  .kpi-row{
+    display:none;
+    gap:14px;
+    margin-top:16px;
+    align-items:stretch;
+    flex-wrap:wrap;
+  }
+  .kpi-row.show{display:flex;}
+  .kpi{
+    flex:1;
+    min-width:140px;
+    padding:18px 20px;
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+  }
+  .kpi .num{
+    font-size:26px;
+    font-weight:700;
+    letter-spacing:-.02em;
+    font-family:'IBM Plex Mono', monospace;
+  }
+  .kpi.total .num{color:var(--text);}
+  .kpi.color .num{color:var(--accent);}
+  .kpi.bw .num{color:var(--gray-badge);}
+  .kpi .lbl{
+    font-size:12px;
+    color:var(--text-tertiary);
+    font-weight:500;
+  }
+  .kpi-export{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:0 20px;
+  }
+
+  /* ---------- page-number summary ---------- */
+  .pagelist{
+    display:none;
+    margin-top:14px;
+    padding:16px 20px;
+  }
+  .pagelist.show{display:block;}
+  .pagelist-row{
+    display:flex;
+    align-items:baseline;
+    gap:12px;
+    padding:4px 0;
+  }
+  .pagelist-row + .pagelist-row{
+    border-top:1px solid var(--border);
+    margin-top:8px;
+    padding-top:10px;
+  }
+  .pagelist-label{
+    font-size:11.5px;
+    font-weight:700;
+    letter-spacing:.03em;
+    text-transform:uppercase;
+    padding:2px 8px;
+    border-radius:99px;
+    flex-shrink:0;
+  }
+  .pagelist-label.color{background:var(--accent-soft);color:var(--accent);}
+  .pagelist-label.bw{background:var(--gray-badge-soft);color:var(--gray-badge);}
+  .pagelist-pages{
+    font-size:12.5px;
+    color:var(--text-secondary);
+    line-height:1.6;
+    word-break:break-word;
+  }
+  .btn-primary{
+    font-family:'Inter', sans-serif;
+    font-size:13px;
+    font-weight:600;
+    color:#fff;
+    background:var(--accent);
+    border:none;
+    border-radius:8px;
+    padding:12px 20px;
+    cursor:pointer;
+    white-space:nowrap;
+    transition:background .15s ease;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .btn-primary:hover{background:var(--accent-hover);}
+  .btn-primary:disabled{opacity:.4;cursor:default;}
+  .btn-primary svg{width:14px;height:14px;}
+
+  /* ---------- page grid ---------- */
+  .grid-header{
+    display:none;
+    align-items:center;
+    justify-content:space-between;
+    margin:28px 2px 12px;
+  }
+  .grid-header.show{display:flex;}
+  .grid-header h3{
+    font-size:14px;
+    font-weight:600;
+    margin:0;
+  }
+  .grid-header .count{
+    font-size:12px;
+    color:var(--text-tertiary);
+  }
+  .sheet{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));
+    gap:14px;
+  }
+  .pcard{
+    background:var(--bg);
+    border:1px solid var(--border);
+    border-radius:9px;
+    overflow:hidden;
+    transition:box-shadow .15s ease, border-color .15s ease;
+  }
+  .pcard:hover{box-shadow:var(--shadow-md);border-color:var(--border-strong);}
+  .pcard .thumbwrap{
+    position:relative;
+    border-bottom:1px solid var(--border);
+    background:var(--bg-subtle);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:100px;
+  }
+  .pcard img{display:block;width:100%;height:auto;}
+  .swatch{
+    position:absolute;
+    top:8px;right:8px;
+    width:12px;height:12px;
+    border-radius:50%;
+    border:2px solid #fff;
+    box-shadow:0 0 0 1px rgba(16,24,40,.12);
+  }
+  .swatch.bw{background:var(--gray-badge);}
+  .pcard .meta{
+    padding:9px 11px 4px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .pcard .pg{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color:var(--text-tertiary);
+  }
+  .badge{
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:.02em;
+    padding:2px 7px;
+    border-radius:20px;
+  }
+  .badge.color{color:var(--accent);background:var(--accent-soft);}
+  .badge.bw{color:var(--gray-badge);background:var(--gray-badge-soft);}
+  .pcard .pct{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    color:var(--text-tertiary);
+    padding:0 11px 10px;
+  }
+
+  footer{
+    margin-top:56px;
+    padding-top:18px;
+    border-top:1px solid var(--border);
+    font-size:12px;
+    color:var(--text-tertiary);
+    display:flex;
+    justify-content:space-between;
+  }
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+  @media (max-width:640px){
+    .kpi-row{flex-direction:column;}
+    .kpi-export{padding:14px 20px;}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <path d="M14 2v6h6"/>
+          <circle cx="10" cy="15" r="1.6" fill="#fff" stroke="none"/>
+        </svg>
+      </div>
+      <span class="brand-name">ColorProof</span>
+      <span class="brand-tag">PDF page color audit</span>
+    </div>
+    <div class="topbar-right">Runs locally in your browser</div>
+  </div>
+
+  <label class="dropzone card" id="dropzone">
+    <input type="file" id="fileInput" accept="application/pdf">
+    <div class="dz-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 16V4M12 4l-4 4M12 4l4 4"/>
+        <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
+      </svg>
+    </div>
+    <h2>Drop a PDF to analyze</h2>
+    <p>or click to browse — every page is checked, nothing is uploaded</p>
+  </label>
+
+  <div class="fileinfo card" id="fileinfo">
+    <div class="fileinfo-left">
+      <div class="file-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <path d="M14 2v6h6"/>
+        </svg>
+      </div>
+      <div class="file-text">
+        <div class="file-name" id="fileName">—</div>
+        <div class="file-meta" id="fileMeta">—</div>
+      </div>
+    </div>
+    <button class="btn-secondary" id="changeFileBtn">Change file</button>
+  </div>
+
+  <div class="scanarea card" id="scanareaCard">
+    <span class="scanarea-label">Scan area</span>
+    <div class="segmented" id="scanSegmented">
+      <button class="seg-btn active" data-mode="full" type="button">Full page</button>
+      <button class="seg-btn" data-mode="trim" type="button">Trim box</button>
+      <button class="seg-btn" data-mode="bleed" type="button">Bleed box</button>
+    </div>
+    <span class="scanarea-note" id="scanareaNote"></span>
+  </div>
+
+  <div class="progresswrap card" id="progressWrap">
+    <div class="progress-label">
+      <span id="progressLabel">Rendering page 0 / 0</span>
+      <span class="val mono" id="progressPct">0%</span>
+    </div>
+    <div class="progressbar"><i id="progressBar"></i></div>
+  </div>
+
+  <div class="kpi-row" id="kpiRow">
+    <div class="kpi total card">
+      <span class="num" id="totalCount">0</span>
+      <span class="lbl">Total pages</span>
+    </div>
+    <div class="kpi color card">
+      <span class="num" id="colorCount">0</span>
+      <span class="lbl">Color pages</span>
+    </div>
+    <div class="kpi bw card">
+      <span class="num" id="bwCount">0</span>
+      <span class="lbl">Black &amp; white pages</span>
+    </div>
+    <div class="kpi-export card">
+      <button class="btn-primary" id="exportBtn" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M12 15l-4-4M12 15l4-4"/><path d="M4 19h16"/></svg>
+        Export CSV
+      </button>
+    </div>
+  </div>
+
+  <div class="pagelist card" id="pagelist">
+    <div class="pagelist-row">
+      <span class="pagelist-label color">Color</span>
+      <span class="pagelist-pages mono" id="colorPagesList">—</span>
+    </div>
+    <div class="pagelist-row">
+      <span class="pagelist-label bw">B&amp;W</span>
+      <span class="pagelist-pages mono" id="bwPagesList">—</span>
+    </div>
+  </div>
+
+  <div class="grid-header" id="gridHeader">
+    <h3>Page-by-page results</h3>
+    <span class="count mono" id="gridCount"></span>
+  </div>
+
+  <div class="sheet" id="sheet"></div>
+
+  <footer>
+    <span>ColorProof — client-side PDF analysis, no upload required</span>
+    <span id="footerFile"></span>
+  </footer>
+</div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// ============================================================
+// PDF page box resolver — finds TrimBox / BleedBox for a given
+// page (by indirect object ref), handling both directly-written
+// objects and objects packed into compressed object streams
+// (ObjStm), with inheritance up the /Parent chain.
+// ============================================================
+function bytesToLatin1(bytes){
+  let out = '';
+  const CHUNK = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK){
+    out += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+  }
+  return out;
+}
+function latin1ToBytes(str){
+  const bytes = new Uint8Array(str.length);
+  for (let i = 0; i < str.length; i++) bytes[i] = str.charCodeAt(i) & 0xff;
+  return bytes;
+}
+async function inflateDeflate(bytes){
+  const ds = new DecompressionStream('deflate');
+  const stream = new Blob([bytes]).stream().pipeThrough(ds);
+  const buf = await new Response(stream).arrayBuffer();
+  return new Uint8Array(buf);
+}
+function findDirectObject(text, num, gen){
+  const re = new RegExp('(?:^|[^0-9])' + num + '\\s+' + gen + '\\s+obj\\b', 'g');
+  const m = re.exec(text);
+  if (!m) return null;
+  const start = m.index + m[0].length;
+  const end = text.indexOf('endobj', start);
+  if (end === -1) return null;
+  return text.slice(start, end);
+}
+async function buildObjStmIndex(text){
+  const index = new Map();
+  const objStmHeaderRe = /(\d+)\s+(\d+)\s+obj\b([\s\S]*?)stream(?:\r\n|\n|\r)/g;
+  let m;
+  while ((m = objStmHeaderRe.exec(text)) !== null){
+    const dictText = m[3];
+    if (!/\/Type\s*\/ObjStm\b/.test(dictText)) continue;
+    const nMatch = /\/N\s+(\d+)/.exec(dictText);
+    const firstMatch = /\/First\s+(\d+)/.exec(dictText);
+    if (!nMatch || !firstMatch) continue;
+    const n = parseInt(nMatch[1], 10);
+    const first = parseInt(firstMatch[1], 10);
+    const streamStart = objStmHeaderRe.lastIndex;
+    const streamEnd = text.indexOf('endstream', streamStart);
+    if (streamEnd === -1) continue;
+    let rawStreamText = text.slice(streamStart, streamEnd);
+    rawStreamText = rawStreamText.replace(/(\r\n|\n|\r)$/, '');
+    const compressedBytes = latin1ToBytes(rawStreamText);
+    let decompressed;
+    try { decompressed = await inflateDeflate(compressedBytes); }
+    catch (e) { continue; }
+    const decompressedText = bytesToLatin1(decompressed);
+    const headerRe = /(\d+)\s+(\d+)/g;
+    const pairs = [];
+    let hm, pairsFound = 0;
+    while (pairsFound < n && (hm = headerRe.exec(decompressedText)) !== null){
+      pairs.push({objNum: parseInt(hm[1],10), offset: parseInt(hm[2],10)});
+      pairsFound++;
+    }
+    for (let i = 0; i < pairs.length; i++){
+      const objStart = first + pairs[i].offset;
+      const objEnd = (i+1 < pairs.length) ? (first + pairs[i+1].offset) : decompressedText.length;
+      index.set(pairs[i].objNum, decompressedText.slice(objStart, objEnd));
+    }
+  }
+  return index;
+}
+function getArrayEntry(dictText, key){
+  const re = new RegExp('/' + key + '\\s*\\[\\s*([\\-0-9.]+)\\s+([\\-0-9.]+)\\s+([\\-0-9.]+)\\s+([\\-0-9.]+)\\s*\\]');
+  const m = re.exec(dictText);
+  if (!m) return null;
+  return [parseFloat(m[1]), parseFloat(m[2]), parseFloat(m[3]), parseFloat(m[4])];
+}
+function getParentRef(dictText){
+  const m = /\/Parent\s+(\d+)\s+(\d+)\s+R/.exec(dictText);
+  if (!m) return null;
+  return {num: parseInt(m[1],10), gen: parseInt(m[2],10)};
+}
+async function resolveBox(text, objStmIndex, num, gen, boxName, depth){
+  if (depth === undefined) depth = 0;
+  if (depth > 8) return null;
+  let dictText = findDirectObject(text, num, gen);
+  if (dictText === null) dictText = objStmIndex.get(num) || null;
+  if (dictText === null) return null;
+  const box = getArrayEntry(dictText, boxName);
+  if (box) return box;
+  const parent = getParentRef(dictText);
+  if (parent) return resolveBox(text, objStmIndex, parent.num, parent.gen, boxName, depth+1);
+  return null;
+}
+// ============================================================
+
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const sheet = document.getElementById('sheet');
+const kpiRow = document.getElementById('kpiRow');
+const gridHeader = document.getElementById('gridHeader');
+const gridCount = document.getElementById('gridCount');
+const progressWrap = document.getElementById('progressWrap');
+const progressBar = document.getElementById('progressBar');
+const progressLabel = document.getElementById('progressLabel');
+const progressPct = document.getElementById('progressPct');
+const colorCountEl = document.getElementById('colorCount');
+const bwCountEl = document.getElementById('bwCount');
+const totalCountEl = document.getElementById('totalCount');
+const exportBtn = document.getElementById('exportBtn');
+const pagelist = document.getElementById('pagelist');
+const colorPagesListEl = document.getElementById('colorPagesList');
+const bwPagesListEl = document.getElementById('bwPagesList');
+// Fixed detection settings — tuned to reliably separate real color pages from B&W/scanned pages
+const COLOR_PIXEL_TOLERANCE = 12;   // how far R/G/B can drift before a pixel counts as "colored" — set above pdf.js/Canvas text anti-aliasing noise (verified ceiling ~9 on pure text pages)
+const COLOR_PAGE_THRESHOLD_PCT = 0.03; // % of a page's pixels that must be colored to mark the page COLOR — low, so small real color elements (highlights, tiny logos) aren't missed
+const fileinfo = document.getElementById('fileinfo');
+const fileNameEl = document.getElementById('fileName');
+const fileMetaEl = document.getElementById('fileMeta');
+const footerFile = document.getElementById('footerFile');
+const changeFileBtn = document.getElementById('changeFileBtn');
+const scanareaCard = document.getElementById('scanareaCard');
+const scanSegmented = document.getElementById('scanSegmented');
+const scanareaNote = document.getElementById('scanareaNote');
+
+let lastResults = [];
+let currentFileBaseName = 'report';
+let currentPdfBytes = null;
+let currentFileSize = 0;
+let scanMode = 'full'; // 'full' | 'trim' | 'bleed'
+
+scanSegmented.addEventListener('click', (e) => {
+  const btn = e.target.closest('.seg-btn');
+  if (!btn) return;
+  scanMode = btn.dataset.mode;
+  [...scanSegmented.querySelectorAll('.seg-btn')].forEach(b => b.classList.toggle('active', b === btn));
+  if (currentPdfBytes) analyzePdf(currentPdfBytes.slice(), currentFileSize);
+});
+
+['dragenter','dragover'].forEach(evt => {
+  dropzone.addEventListener(evt, e => { e.preventDefault(); dropzone.classList.add('drag'); });
+});
+['dragleave','drop'].forEach(evt => {
+  dropzone.addEventListener(evt, e => { e.preventDefault(); dropzone.classList.remove('drag'); });
+});
+dropzone.addEventListener('drop', e => {
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+});
+fileInput.addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (file) handleFile(file);
+});
+changeFileBtn.addEventListener('click', (e) => {
+  e.preventDefault();
+  fileInput.value = '';
+  fileInput.click();
+});
+
+function formatBytes(bytes){
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/(1024*1024)).toFixed(2) + ' MB';
+}
+
+function handleFile(file){
+  if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')){
+    alert('Please choose a PDF file.');
+    return;
+  }
+  currentFileBaseName = file.name.replace(/\.pdf$/i, '');
+  fileNameEl.textContent = file.name;
+  fileNameEl.title = file.name;
+  fileMetaEl.textContent = formatBytes(file.size) + ' · analyzing…';
+  fileinfo.classList.add('show');
+  scanareaCard.classList.add('show');
+  footerFile.textContent = file.name;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    currentPdfBytes = new Uint8Array(reader.result);
+    currentFileSize = file.size;
+    analyzePdf(currentPdfBytes.slice(), file.size);
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+async function analyzePdf(data, fileSize){
+  sheet.innerHTML = '';
+  lastResults = [];
+  kpiRow.classList.remove('show');
+  pagelist.classList.remove('show');
+  gridHeader.classList.remove('show');
+  exportBtn.disabled = true;
+  progressWrap.classList.add('show');
+  progressBar.style.width = '0%';
+  progressPct.textContent = '0%';
+  scanareaNote.textContent = '';
+  scanareaNote.classList.remove('warn');
+
+  const tolerance = COLOR_PIXEL_TOLERANCE;
+  const thresholdPct = COLOR_PAGE_THRESHOLD_PCT;
+
+  // Keep a copy of the raw bytes for our own dictionary parsing (pdf.js consumes/detaches its copy)
+  const rawBytesForParsing = data.slice ? data.slice() : new Uint8Array(data);
+
+  const loadingTask = pdfjsLib.getDocument({data});
+  const pdf = await loadingTask.promise;
+  const numPages = pdf.numPages;
+
+  fileMetaEl.textContent = formatBytes(fileSize) + ' · ' + numPages + ' page' + (numPages===1?'':'s');
+
+  // Pre-parse the raw PDF for TrimBox/BleedBox lookups only if a non-default scan area is selected
+  let rawText = null, objStmIndex = null;
+  const boxKey = scanMode === 'trim' ? 'TrimBox' : (scanMode === 'bleed' ? 'BleedBox' : null);
+  if (boxKey){
+    rawText = bytesToLatin1(rawBytesForParsing);
+    try { objStmIndex = await buildObjStmIndex(rawText); }
+    catch (e) { objStmIndex = new Map(); }
+  }
+
+  let colorCount = 0, bwCount = 0;
+  let boxMissingCount = 0;
+  kpiRow.classList.add('show');
+  pagelist.classList.add('show');
+  gridHeader.classList.add('show');
+
+  for (let i = 1; i <= numPages; i++){
+    progressLabel.textContent = `Rendering page ${i} / ${numPages}`;
+    const pctDone = Math.round(((i-1)/numPages)*100);
+    progressBar.style.width = pctDone + '%';
+    progressPct.textContent = pctDone + '%';
+
+    const page = await pdf.getPage(i);
+    const baseViewport = page.getViewport({scale:1});
+    const targetWidth = 380;
+    const scale = targetWidth / baseViewport.width;
+    const viewport = page.getViewport({scale});
+
+    const fullCanvas = document.createElement('canvas');
+    fullCanvas.width = Math.ceil(viewport.width);
+    fullCanvas.height = Math.ceil(viewport.height);
+    const fullCtx = fullCanvas.getContext('2d');
+    fullCtx.fillStyle = '#ffffff';
+    fullCtx.fillRect(0,0,fullCanvas.width,fullCanvas.height);
+
+    await page.render({canvasContext: fullCtx, viewport}).promise;
+
+    let canvas = fullCanvas;
+    let usedFallback = false;
+
+    if (boxKey){
+      let box = null;
+      try {
+        box = await resolveBox(rawText, objStmIndex, page.ref.num, page.ref.gen, boxKey);
+      } catch (e) { box = null; }
+
+      if (box){
+        const corners = [
+          [box[0], box[1]], [box[2], box[1]],
+          [box[2], box[3]], [box[0], box[3]]
+        ].map(([x,y]) => viewport.convertToViewportPoint(x,y));
+        const xs = corners.map(p => p[0]);
+        const ys = corners.map(p => p[1]);
+        let minX = Math.max(0, Math.min(...xs));
+        let minY = Math.max(0, Math.min(...ys));
+        let maxX = Math.min(fullCanvas.width, Math.max(...xs));
+        let maxY = Math.min(fullCanvas.height, Math.max(...ys));
+        const w = Math.round(maxX - minX);
+        const h = Math.round(maxY - minY);
+
+        if (w > 4 && h > 4){
+          const cropped = document.createElement('canvas');
+          cropped.width = w;
+          cropped.height = h;
+          cropped.getContext('2d').drawImage(fullCanvas, minX, minY, w, h, 0, 0, w, h);
+          canvas = cropped;
+        } else {
+          usedFallback = true;
+        }
+      } else {
+        usedFallback = true;
+      }
+    }
+    if (usedFallback) boxMissingCount++;
+
+    const ctx = canvas.getContext('2d');
+    const imgData = ctx.getImageData(0,0,canvas.width,canvas.height);
+    const {isColor, pct, swatch} = classifyImageData(imgData, tolerance, thresholdPct);
+
+    if (isColor) colorCount++; else bwCount++;
+    lastResults.push({page:i, classification:isColor?'COLOR':'B&W', pct: pct.toFixed(3)});
+
+    renderCard(i, canvas, isColor, pct, swatch, usedFallback && boxKey);
+    colorCountEl.textContent = colorCount;
+    bwCountEl.textContent = bwCount;
+    totalCountEl.textContent = colorCount+bwCount;
+    gridCount.textContent = (colorCount+bwCount) + ' / ' + numPages;
+    updatePageListSummary();
+  }
+
+  progressBar.style.width = '100%';
+  progressPct.textContent = '100%';
+  setTimeout(()=>progressWrap.classList.remove('show'), 400);
+  exportBtn.disabled = false;
+
+  if (boxKey && boxMissingCount > 0){
+    const label = boxKey === 'TrimBox' ? 'Trim box' : 'Bleed box';
+    scanareaNote.textContent = `${label} not found on ${boxMissingCount} of ${numPages} page${numPages===1?'':'s'} — used full page for ${boxMissingCount===1?'it':'those'}.`;
+    scanareaNote.classList.add('warn');
+  } else if (boxKey){
+    const label = boxKey === 'TrimBox' ? 'Trim box' : 'Bleed box';
+    scanareaNote.textContent = `${label} found and used on all pages.`;
+  }
+}
+
+function classifyImageData(imgData, tolerance, thresholdPct){
+  const d = imgData.data;
+  const total = d.length/4;
+  let coloredPixels = 0;
+  let maxSat = -1;
+  let swatch = [102,112,133];
+
+  for (let p=0; p<d.length; p+=4){
+    const r = d[p], g = d[p+1], b = d[p+2];
+    const maxC = Math.max(r,g,b);
+    const minC = Math.min(r,g,b);
+    const diff = maxC - minC;
+    if (diff > tolerance){
+      coloredPixels++;
+      const brightnessOk = maxC > 25 && maxC < 250;
+      if (brightnessOk && diff > maxSat){
+        maxSat = diff;
+        swatch = [r,g,b];
+      }
+    }
+  }
+  const pct = (coloredPixels/total)*100;
+  const isColor = pct > thresholdPct;
+  return {isColor, pct, swatch: isColor ? swatch : null};
+}
+
+function formatPageRanges(pageNumbers){
+  if (!pageNumbers.length) return '\u2014';
+  const sorted = pageNumbers.slice().sort((a,b) => a-b);
+  const ranges = [];
+  let start = sorted[0], prev = sorted[0];
+  for (let i = 1; i <= sorted.length; i++){
+    const n = sorted[i];
+    if (n === prev + 1){
+      prev = n;
+      continue;
+    }
+    ranges.push(start === prev ? `${start}` : `${start}\u2013${prev}`);
+    if (i < sorted.length){ start = n; prev = n; }
+  }
+  return ranges.join(', ');
+}
+
+function updatePageListSummary(){
+  const colorPages = lastResults.filter(r => r.classification === 'COLOR').map(r => r.page);
+  const bwPages = lastResults.filter(r => r.classification === 'B&W').map(r => r.page);
+  colorPagesListEl.textContent = formatPageRanges(colorPages);
+  bwPagesListEl.textContent = formatPageRanges(bwPages);
+}
+
+function renderCard(pageNum, canvas, isColor, pct, swatch, usedFallback){
+  const card = document.createElement('div');
+  card.className = 'pcard';
+
+  const thumbwrap = document.createElement('div');
+  thumbwrap.className = 'thumbwrap';
+
+  const img = document.createElement('img');
+  img.src = canvas.toDataURL('image/jpeg', 0.72);
+  thumbwrap.appendChild(img);
+
+  const sw = document.createElement('div');
+  sw.className = 'swatch' + (isColor ? '' : ' bw');
+  if (isColor && swatch){
+    sw.style.background = `rgb(${swatch[0]},${swatch[1]},${swatch[2]})`;
+  }
+  thumbwrap.appendChild(sw);
+
+  const meta = document.createElement('div');
+  meta.className = 'meta';
+  meta.innerHTML = `<span class="pg">PG ${String(pageNum).padStart(3,'0')}</span><span class="badge ${isColor?'color':'bw'}">${isColor?'COLOR':'B&W'}</span>`;
+
+  const pctEl = document.createElement('div');
+  pctEl.className = 'pct';
+  pctEl.textContent = pct.toFixed(2) + '% colored pixels' + (usedFallback ? ' · full page (no box)' : '');
+
+  card.appendChild(thumbwrap);
+  card.appendChild(meta);
+  card.appendChild(pctEl);
+  sheet.appendChild(card);
+}
+
+exportBtn.addEventListener('click', () => {
+  if (!lastResults.length) return;
+  let csv = 'page,classification,colored_pixel_pct\n';
+  lastResults.forEach(r => { csv += `${r.page},${r.classification},${r.pct}\n`; });
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = currentFileBaseName + '_color_report.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+// ---- Basic copy/save deterrents ----
+// Note: these only block the common, casual routes (right-click menu, drag-save, a handful
+// of keyboard shortcuts, and the copy event). They cannot stop view-source, browser devtools,
+// or someone deliberately extracting the underlying HTML/JS — there's no way to fully prevent
+// that in a page that has to run in the user's own browser.
+document.addEventListener('contextmenu', (e) => e.preventDefault());
+document.addEventListener('dragstart', (e) => e.preventDefault());
+document.addEventListener('selectstart', (e) => e.preventDefault());
+document.addEventListener('copy', (e) => e.preventDefault());
+document.addEventListener('cut', (e) => e.preventDefault());
+document.addEventListener('keydown', (e) => {
+  const k = e.key ? e.key.toLowerCase() : '';
+  const ctrlOrCmd = e.ctrlKey || e.metaKey;
+  // Save page, print, view source, select all, devtools
+  if (ctrlOrCmd && ['s','p','u','a','c'].includes(k)){ e.preventDefault(); return; }
+  if (k === 'f12'){ e.preventDefault(); return; }
+  if (ctrlOrCmd && e.shiftKey && ['i','j','c'].includes(k)){ e.preventDefault(); return; }
+});
+</script>
+</body>
+</html>

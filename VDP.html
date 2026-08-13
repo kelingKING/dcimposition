@@ -1,0 +1,1528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VDP · Variable Data + Cut &amp; Stack Impose</title>
+<style>
+  :root{
+    --bg:#0c0e12; --panel:#151821; --panel2:#1b1f2a; --panel3:#20242f;
+    --border:#2a2f3c; --border2:#363c4b; --text:#e7e9ee; --muted:#8b90a3;
+    --accent:#e0a83e; --accent-dim:#8a6a2c; --accent2:#4fc3d9; --danger:#e0655a;
+    --ok:#5fbf87; --radius:9px; --mono:'SF Mono',SFMono-Regular,Consolas,'Liberation Mono',Menlo,monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font:14px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  #app{display:flex; flex-direction:column; min-height:100vh;}
+  header{
+    padding:16px 24px; border-bottom:1px solid var(--border);
+    display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;
+    background:linear-gradient(180deg,#12141b,#0f1116);
+  }
+  header h1{font-size:16px; margin:0; letter-spacing:.02em; font-weight:600;}
+  header h1 span{color:var(--accent);}
+  header p{margin:0; color:var(--muted); font-size:12.5px;}
+
+  nav.steps{
+    display:flex; gap:2px; padding:0 24px; background:#0f1116; border-bottom:1px solid var(--border);
+    overflow-x:auto;
+  }
+  nav.steps button{
+    appearance:none; border:none; background:transparent; color:var(--muted);
+    padding:12px 16px; font-size:12.5px; font-weight:600; letter-spacing:.03em; cursor:pointer;
+    border-bottom:2px solid transparent; white-space:nowrap; text-transform:uppercase;
+  }
+  nav.steps button.active{color:var(--text); border-bottom-color:var(--accent);}
+  nav.steps button:hover{color:var(--text);}
+  nav.steps button .n{color:var(--accent); margin-right:6px; font-family:var(--mono);}
+
+  main{flex:1; padding:22px 24px 60px; max-width:1280px; width:100%; margin:0 auto;}
+  .panel{display:none;}
+  .panel.active{display:block; animation:fade .15s ease;}
+  @keyframes fade{from{opacity:0;} to{opacity:1;}}
+
+  .card{
+    background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
+    padding:18px; margin-bottom:16px;
+  }
+  .card h2{margin:0 0 4px; font-size:13.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--text);}
+  .card h2 .sub{color:var(--muted); text-transform:none; font-weight:400; letter-spacing:0; font-size:12px; display:block; margin-top:2px;}
+  .row{display:flex; gap:14px; flex-wrap:wrap;}
+  .col{flex:1; min-width:220px;}
+  label{display:block; font-size:11.5px; color:var(--muted); margin-bottom:5px; text-transform:uppercase; letter-spacing:.03em;}
+  input[type=text], input[type=number], textarea, select{
+    width:100%; background:var(--panel3); border:1px solid var(--border2); color:var(--text);
+    border-radius:6px; padding:8px 10px; font-size:13px; font-family:inherit;
+  }
+  input[type=color]{width:44px; height:34px; padding:2px; background:var(--panel3); border:1px solid var(--border2); border-radius:6px; cursor:pointer;}
+  textarea{resize:vertical; min-height:110px; font-family:var(--mono); font-size:12.5px;}
+  input:focus, select:focus, textarea:focus{outline:1px solid var(--accent); outline-offset:0;}
+  .field{margin-bottom:12px;}
+  .checkline{display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text); margin-bottom:10px;}
+  .checkline input{width:auto;}
+
+  button.btn{
+    appearance:none; border:1px solid var(--border2); background:var(--panel3); color:var(--text);
+    padding:9px 16px; border-radius:6px; font-size:12.5px; font-weight:600; cursor:pointer; letter-spacing:.02em;
+  }
+  button.btn:hover{border-color:var(--accent);}
+  button.btn.primary{background:var(--accent); border-color:var(--accent); color:#1a1305;}
+  button.btn.primary:hover{filter:brightness(1.08);}
+  button.btn.ghost{background:transparent;}
+  button.btn.danger{color:var(--danger); border-color:var(--danger);}
+  button.btn:disabled{opacity:.4; cursor:not-allowed;}
+  button.btn.small{padding:5px 10px; font-size:11.5px;}
+
+  .btnrow{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;}
+
+  table.preview{width:100%; border-collapse:collapse; font-size:12px; font-family:var(--mono);}
+  table.preview th, table.preview td{border:1px solid var(--border); padding:6px 8px; text-align:left; white-space:nowrap;}
+  table.preview th{background:var(--panel2); color:var(--accent2); position:sticky; top:0;}
+  .tablewrap{max-height:280px; overflow:auto; border:1px solid var(--border); border-radius:6px;}
+  .meta{color:var(--muted); font-size:12px; margin-top:8px;}
+
+  .status{font-size:12px; color:var(--muted); margin-top:10px; min-height:16px;}
+  .status.err{color:var(--danger);}
+  .status.ok{color:var(--ok);}
+
+  .sideblock{border:1px solid var(--border); border-radius:8px; padding:16px; background:var(--panel2); margin-bottom:14px;}
+  .sideblock h3{margin:0 0 10px; font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--accent2); display:flex; justify-content:space-between; align-items:center;}
+  .sideblock h3 .rm{color:var(--danger); font-size:11px; cursor:pointer; text-transform:none; letter-spacing:0;}
+
+  /* design stage */
+  .toggleRow{display:flex; border:1px solid var(--border2); border-radius:6px; overflow:hidden; width:fit-content; margin-bottom:14px;}
+  .toggleRow button{border:none; background:var(--panel3); color:var(--muted); padding:8px 14px; font-size:12px; cursor:pointer;}
+  .toggleRow button.active{background:var(--accent); color:#1a1305; font-weight:700;}
+  .toggleRow button:disabled{opacity:.35; cursor:not-allowed;}
+
+  .designwrap{display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap;}
+  #stageOuter{background:#0a0b0e; border:1px solid var(--border); border-radius:6px; padding:16px; overflow:auto; flex:2; min-width:340px;}
+  #designStage{position:relative; background:#fff; box-shadow:0 0 0 1px #000, 0 10px 30px rgba(0,0,0,.5); margin:0 auto;}
+  #designStage img{display:block; width:100%; height:100%; user-select:none; pointer-events:none;}
+  .trimguide{position:absolute; border:1.5px dashed rgba(224,168,62,.85); pointer-events:none; z-index:2;}
+  .trimguide .tag{position:absolute; top:-16px; left:0; font-size:9px; color:var(--accent); font-family:var(--mono); background:#0a0b0e; padding:0 3px;}
+  .fieldbox{
+    position:absolute; border:1.5px dashed var(--accent2); background:rgba(79,195,217,.10);
+    cursor:move; display:flex; align-items:center; overflow:hidden; z-index:5;
+  }
+  .fieldbox.selected{border-color:var(--accent); background:rgba(224,168,62,.16); z-index:6;}
+  .fieldbox .lbl{
+    position:absolute; top:-19px; left:-1px; background:var(--accent2); color:#08131a;
+    font-size:10px; font-weight:700; padding:1px 5px; border-radius:3px 3px 0 0; white-space:nowrap; font-family:var(--mono);
+  }
+  .fieldbox.selected .lbl{background:var(--accent);}
+  .fieldbox .txt{padding:0 3px; font-size:11px; color:#111; white-space:nowrap; overflow:hidden; pointer-events:none;}
+  .resize-handle{
+    position:absolute; right:-5px; bottom:-5px; width:11px; height:11px; background:var(--accent);
+    border-radius:2px; cursor:nwse-resize; border:1px solid #1a1305;
+  }
+  .inspector{flex:1; min-width:260px;}
+  .fieldlist{max-height:160px; overflow:auto; border:1px solid var(--border); border-radius:6px; margin-bottom:12px;}
+  .fieldlist .item{
+    padding:7px 10px; font-size:12px; border-bottom:1px solid var(--border); cursor:pointer; display:flex; justify-content:space-between; align-items:center;
+  }
+  .fieldlist .item:last-child{border-bottom:none;}
+  .fieldlist .item:hover{background:var(--panel2);}
+  .fieldlist .item.selected{background:var(--panel3); color:var(--accent);}
+  .fieldlist .item .del{color:var(--danger); font-size:11px; cursor:pointer;}
+
+  .previewgrid{display:flex; flex-wrap:wrap; gap:10px; margin-top:12px;}
+  .thumb{background:#fff; border:1px solid var(--border); border-radius:4px; overflow:hidden; width:120px;}
+  .thumb img{display:block; width:100%;}
+  .thumb .cap{font-size:10px; color:var(--muted); text-align:center; padding:3px 0; background:var(--panel2); font-family:var(--mono);}
+  .thumbsection{margin-top:10px;}
+  .thumbsection .lbl{font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin-bottom:4px;}
+
+  .progresswrap{height:6px; background:var(--panel3); border-radius:3px; overflow:hidden; margin-top:10px; display:none;}
+  .progresswrap.show{display:block;}
+  .progressbar{height:100%; width:0%; background:var(--accent); transition:width .15s;}
+
+  .hint{font-size:11.5px; color:var(--muted); margin-top:6px;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;}
+  @media (max-width:640px){.grid3{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>VDP<span>·</span>Impose</h1>
+    <p>Variable data merge from CSV/list &rarr; PDF/image template (sized from TrimBox) &rarr; cut &amp; stack imposition, front &amp; back. Runs entirely in your browser.</p>
+  </header>
+
+  <nav class="steps">
+    <button data-step="data" class="active"><span class="n">1</span>Data</button>
+    <button data-step="template"><span class="n">2</span>Template</button>
+    <button data-step="design"><span class="n">3</span>Design</button>
+    <button data-step="generate"><span class="n">4</span>Generate</button>
+    <button data-step="impose"><span class="n">5</span>Impose</button>
+  </nav>
+
+  <main>
+
+    <!-- STEP 1: DATA -->
+    <section id="step-data" class="panel active">
+      <div class="card">
+        <h2>Load variable data<span class="sub">Paste a CSV, upload a .csv file, or paste a plain one-item-per-line list.</span></h2>
+        <div class="row">
+          <div class="col">
+            <div class="field">
+              <label>Paste CSV or list</label>
+              <textarea id="csvText" placeholder="Name,Number,Barcode&#10;John Smith,00001,0000123456&#10;Jane Doe,00002,0000123457"></textarea>
+            </div>
+            <div class="checkline"><input type="checkbox" id="hasHeader" checked><span>First row is a header</span></div>
+            <div class="checkline"><input type="checkbox" id="listMode"><span>Treat as simple list (one value per line, single column "Value")</span></div>
+          </div>
+          <div class="col" style="max-width:260px;">
+            <label>Or upload a .csv file</label>
+            <input type="file" id="csvFile" accept=".csv,text/csv,text/plain">
+            <div class="hint">Uploading a file replaces the pasted text above.</div>
+            <div class="btnrow"><button class="btn primary" id="btnLoadData">Load data</button></div>
+            <div class="status" id="dataStatus"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="dataPreviewCard" style="display:none;">
+        <h2>Preview<span class="sub" id="dataMeta"></span></h2>
+        <div class="tablewrap"><table class="preview" id="dataTable"></table></div>
+      </div>
+
+      <div class="btnrow"><button class="btn primary" id="toTemplate">Next: Template &rarr;</button></div>
+    </section>
+
+    <!-- STEP 2: TEMPLATE -->
+    <section id="step-template" class="panel">
+      <div class="card">
+        <h2>Upload templates<span class="sub">A single-page PDF (vector, kept as-is — page size taken from the TrimBox, with bleed preserved from the MediaBox) or a PNG/JPG image. Add a back template for two-sided jobs.</span></h2>
+
+        <div class="sideblock">
+          <h3>Front template</h3>
+          <div class="row">
+            <div class="col" style="max-width:320px;">
+              <label>Template file</label>
+              <input type="file" id="templateFile_front" accept=".pdf,image/png,image/jpeg">
+              <div class="field" id="dpiWrap_front" style="display:none; margin-top:10px;">
+                <label>Image resolution (DPI) — used to size the page</label>
+                <input type="number" id="dpiInput_front" value="300" min="50" max="1200">
+              </div>
+              <div class="btnrow"><button class="btn primary" id="btnLoadTemplate_front">Load front template</button></div>
+              <div class="status" id="templateStatus_front"></div>
+              <div class="meta" id="templateMeta_front"></div>
+            </div>
+            <div class="col">
+              <label>Preview</label>
+              <div style="border:1px solid var(--border); border-radius:6px; background:#0a0b0e; padding:14px; display:flex; align-items:center; justify-content:center; min-height:200px;">
+                <img id="templatePreview_front" style="max-width:100%; max-height:300px; display:none; box-shadow:0 6px 24px rgba(0,0,0,.5);">
+                <span id="templatePlaceholder_front" style="color:var(--muted); font-size:12.5px;">No template loaded yet</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sideblock">
+          <h3>Back template <span style="color:var(--muted); font-weight:400;">(optional — for two-sided print)</span><span class="rm" id="btnRemoveBack">remove</span></h3>
+          <div class="row">
+            <div class="col" style="max-width:320px;">
+              <label>Template file</label>
+              <input type="file" id="templateFile_back" accept=".pdf,image/png,image/jpeg">
+              <div class="hint">Tip: if the front upload is a 2-page PDF, page 2 is used as the back automatically — no separate upload needed. Upload here only to override it or to use a different file.</div>
+              <div class="field" id="dpiWrap_back" style="display:none; margin-top:10px;">
+                <label>Image resolution (DPI) — used to size the page</label>
+                <input type="number" id="dpiInput_back" value="300" min="50" max="1200">
+              </div>
+              <div class="btnrow"><button class="btn primary" id="btnLoadTemplate_back">Load back template</button></div>
+              <div class="status" id="templateStatus_back"></div>
+              <div class="meta" id="templateMeta_back"></div>
+            </div>
+            <div class="col">
+              <label>Preview</label>
+              <div style="border:1px solid var(--border); border-radius:6px; background:#0a0b0e; padding:14px; display:flex; align-items:center; justify-content:center; min-height:200px;">
+                <img id="templatePreview_back" style="max-width:100%; max-height:300px; display:none; box-shadow:0 6px 24px rgba(0,0,0,.5);">
+                <span id="templatePlaceholder_back" style="color:var(--muted); font-size:12.5px;">No back template — job will be treated as single-sided</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="btnrow">
+        <button class="btn ghost" id="toDataBack">&larr; Back</button>
+        <button class="btn primary" id="toDesign">Next: Design &rarr;</button>
+      </div>
+    </section>
+
+    <!-- STEP 3: DESIGN -->
+    <section id="step-design" class="panel">
+      <div class="card">
+        <h2>Place variable fields<span class="sub">Drag to move, drag the corner handle to resize (controls text wrap width / alignment box). The dashed amber line marks the TrimBox — field positions are relative to it. Click a field to edit it.</span></h2>
+
+        <div class="toggleRow" id="sideToggle">
+          <button data-side="front" class="active">Front</button>
+          <button data-side="back" disabled>Back</button>
+        </div>
+
+        <div class="btnrow" style="margin-top:0;">
+          <button class="btn primary small" id="btnAddField">+ Add field</button>
+          <button class="btn ghost small" id="btnExportFields">Export layout (.json)</button>
+          <button class="btn ghost small" id="btnImportFieldsTrigger">Import layout</button>
+          <input type="file" id="btnImportFields" accept=".json" style="display:none;">
+        </div>
+        <div class="designwrap" style="margin-top:14px;">
+          <div id="stageOuter">
+            <div id="designStage"><img id="stageImg" src=""></div>
+          </div>
+          <div class="inspector">
+            <label>Fields</label>
+            <div class="fieldlist" id="fieldList"></div>
+            <div id="fieldEditor"></div>
+          </div>
+        </div>
+      </div>
+      <div class="btnrow">
+        <button class="btn ghost" id="toTemplateBack">&larr; Back</button>
+        <button class="btn primary" id="toGenerate">Next: Generate &rarr;</button>
+      </div>
+    </section>
+
+    <!-- STEP 4: GENERATE -->
+    <section id="step-generate" class="panel">
+      <div class="card">
+        <h2>Generate merged PDF<span class="sub">One page per data row — two pages per row (front then back) if a back template is loaded, so a two-sided job is a single PDF ready for duplex printing. Pages keep the template's full bleed; the TrimBox is recorded as metadata for the Impose step.</span></h2>
+        <div class="btnrow" style="margin-top:0;">
+          <button class="btn primary" id="btnGenerate">Generate merged PDF</button>
+          <button class="btn ghost" id="btnDownloadMain" disabled>Download merged PDF</button>
+          <button class="btn ghost small" id="btnDownloadFrontOnly" disabled style="display:none;">Front pages only</button>
+          <button class="btn ghost small" id="btnDownloadBackOnly" disabled style="display:none;">Back pages only</button>
+        </div>
+        <div class="progresswrap" id="genProgressWrap"><div class="progressbar" id="genProgressBar"></div></div>
+        <div class="status" id="generateStatus"></div>
+        <div class="thumbsection"><div class="lbl" id="genThumbsLabel">Pages</div><div class="previewgrid" id="genThumbsFront"></div></div>
+      </div>
+      <div class="btnrow">
+        <button class="btn ghost" id="toDesignBack">&larr; Back</button>
+        <button class="btn primary" id="toImpose">Next: Impose &rarr;</button>
+      </div>
+    </section>
+
+    <!-- STEP 5: IMPOSE -->
+    <section id="step-impose" class="panel">
+      <div class="card">
+        <h2>Cut &amp; stack imposition<span class="sub">Grid layout, bleed handling, and printer's marks use the same logic as your Impose tool — ported in, running locally.</span></h2>
+
+        <div class="grid3">
+          <div class="field">
+            <label>Arrangement</label>
+            <select id="arrangeSelect">
+              <option value="stack" selected>Cut &amp; stack — sequential blocks</option>
+              <option value="sequential">Sequential — sheet by sheet</option>
+              <option value="repeat">Step &amp; repeat — same content everywhere</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Row order</label>
+            <select id="rowOrderSelect">
+              <option value="raster" selected>Raster (left → right each row)</option>
+              <option value="boustrophedon">Boustrophedon (zigzag)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Copies per record</label>
+            <input type="number" id="repeatCount" value="1" min="1">
+          </div>
+        </div>
+        <div class="hint" id="arrangeHint" style="margin-bottom:12px;"></div>
+        <div class="checkline" id="doubleSidedWrap" style="display:none;">
+          <input type="checkbox" id="doubleSided" checked><span>Double sided — work-and-turn (back is flipped left–right to register under the front)</span>
+        </div>
+
+        <div class="grid3" style="margin-top:6px;">
+          <div class="field">
+            <label>Sheet preset</label>
+            <select id="sheetPreset">
+              <option value="A4">A4 — 210 × 297 mm</option>
+              <option value="A3" selected>A3 — 297 × 420 mm</option>
+              <option value="SRA3">SRA3 — 320 × 450 mm</option>
+              <option value="SRA4">SRA4 — 225 × 320 mm</option>
+              <option value="LETTER">US Letter — 215.9 × 279.4 mm</option>
+              <option value="TABLOID">US Tabloid — 279.4 × 431.8 mm</option>
+              <option value="CUSTOM">Custom&hellip;</option>
+            </select>
+          </div>
+          <div class="field"><label>Sheet width (mm)</label><input type="number" id="sheetW" value="297" step="0.1"></div>
+          <div class="field"><label>Sheet height (mm)</label><input type="number" id="sheetH" value="420" step="0.1"></div>
+          <div class="field"><label>Columns</label><input type="number" id="gridCols" value="2" min="1"></div>
+          <div class="field"><label>Rows</label><input type="number" id="gridRows" value="2" min="1"></div>
+          <div class="field"><label>Margin (mm)</label><input type="number" id="marginMm" value="10" step="0.5"></div>
+          <div class="field"><label>Gutter horizontal (mm)</label><input type="number" id="gutterHMm" value="4" step="0.5"></div>
+          <div class="field"><label>Gutter vertical (mm)</label><input type="number" id="gutterVMm" value="4" step="0.5"></div>
+        </div>
+        <div class="checkline"><input type="checkbox" id="autoscale" checked><span>Scale to fill each cell (uncheck for true/natural size)</span></div>
+        <div class="checkline"><input type="checkbox" id="centerOnPage" checked><span>Center the imposed block on the sheet</span></div>
+        <div class="btnrow" style="margin-top:0;"><button class="btn ghost small" id="btnAutoFit">Auto-fit grid to template size</button></div>
+
+        <div class="grid3" style="margin-top:14px;">
+          <div class="field"><label>Mark length (mm)</label><input type="number" id="markLen" value="4" step="0.5"></div>
+          <div class="field"><label>Mark thickness (mm)</label><input type="number" id="markThick" value="0.25" step="0.05"></div>
+          <div class="field"><label>Mark distance from trim (mm)</label><input type="number" id="markDist" value="2" step="0.5"></div>
+        </div>
+        <div class="checkline"><input type="checkbox" id="cropMarks" checked><span>Crop marks</span></div>
+        <div class="checkline"><input type="checkbox" id="gutterMarks"><span>Marks inside gutters</span></div>
+        <div class="checkline"><input type="checkbox" id="centerMarks"><span>Center marks</span></div>
+        <div class="checkline"><input type="checkbox" id="knockout"><span>Knockout (small white box behind each mark)</span></div>
+        <div class="checkline"><input type="checkbox" id="registrationColor"><span>Registration color (mark prints on every separation, not just black)</span></div>
+
+        <div class="btnrow">
+          <button class="btn primary" id="btnImpose">Build imposed PDF</button>
+          <button class="btn ghost" id="btnDownloadImposed" disabled>Download imposed PDF</button>
+        </div>
+        <div class="status" id="imposeStatus"></div>
+        <div class="meta" id="imposeMeta"></div>
+        <div class="thumbsection"><div class="lbl" id="imposeThumbsLabel">Sheets</div><div class="previewgrid" id="imposeThumbsFront"></div></div>
+      </div>
+      <div class="btnrow">
+        <button class="btn ghost" id="toGenerateBack">&larr; Back</button>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+/* ============================== STATE ============================== */
+const MM_PT = 2.834645669;
+const state = {
+  data: { headers: [], rows: [] },
+  sides: {
+    front: { template: null, fields: [] },
+    back:  { template: null, fields: [] }
+  },
+  activeSide: 'front',
+  selectedFieldId: { front:null, back:null },
+  stageScale: 1,
+  generated: { front:null, back:null, duplex:null },
+  imposed: { all:null }
+};
+const FONT_OPTIONS = [
+  ["Helvetica","Helvetica"],["HelveticaBold","Helvetica Bold"],["HelveticaOblique","Helvetica Oblique"],
+  ["TimesRoman","Times Roman"],["TimesRomanBold","Times Bold"],["TimesRomanItalic","Times Italic"],
+  ["Courier","Courier"],["CourierBold","Courier Bold"]
+];
+const SHEET_PRESETS = {
+  A4:[210,297], A3:[297,420], SRA3:[320,450], SRA4:[225,320], LETTER:[215.9,279.4], TABLOID:[279.4,431.8]
+};
+
+let fieldSeq = 1;
+const nextFrame = () => new Promise(r => requestAnimationFrame(r));
+const clamp = (v,min,max) => Math.max(min, Math.min(max, v));
+function debounce(fn, delay){
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(()=>fn(...args), delay); };
+}
+function hexToRgb01(hex){
+  const h = hex.replace('#','');
+  const r = parseInt(h.substring(0,2),16)/255, g = parseInt(h.substring(2,4),16)/255, b = parseInt(h.substring(4,6),16)/255;
+  return {r,g,b};
+}
+function setStatus(elId, msg, kind){
+  const el = document.getElementById(elId);
+  el.textContent = msg || '';
+  el.className = 'status' + (kind ? ' '+kind : '');
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function cur(){ return state.sides[state.activeSide]; }
+function downloadBytes(bytes, filename){
+  const blob = new Blob([bytes], {type:'application/pdf'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = filename; a.click();
+}
+
+/* ============================== NAV ============================== */
+const stepOrder = ['data','template','design','generate','impose'];
+function goStep(name){
+  stepOrder.forEach(s=>{
+    document.getElementById('step-'+s).classList.toggle('active', s===name);
+  });
+  document.querySelectorAll('nav.steps button').forEach(b=>{
+    b.classList.toggle('active', b.dataset.step===name);
+  });
+  if(name==='design') requestAnimationFrame(layoutStage);
+  if(name==='generate' && typeof scheduleGenerate==='function' && !state.generated.front) scheduleGenerate();
+  if(name==='impose'){
+    if(typeof refreshImposeAvailability==='function') refreshImposeAvailability();
+    if(typeof scheduleImpose==='function' && state.generated.front && !state.imposed.all) scheduleImpose();
+  }
+}
+document.querySelectorAll('nav.steps button').forEach(b=>{
+  b.addEventListener('click', ()=>goStep(b.dataset.step));
+});
+document.getElementById('toTemplate').onclick = ()=>goStep('template');
+document.getElementById('toDataBack').onclick = ()=>goStep('data');
+document.getElementById('toDesign').onclick = ()=>{
+  if(!state.sides.front.template){ setStatus('templateStatus_front','Load a front template first.','err'); return; }
+  goStep('design');
+};
+document.getElementById('toTemplateBack').onclick = ()=>goStep('template');
+document.getElementById('toGenerate').onclick = ()=>goStep('generate');
+document.getElementById('toDesignBack').onclick = ()=>goStep('design');
+document.getElementById('toImpose').onclick = ()=>goStep('impose');
+document.getElementById('toGenerateBack').onclick = ()=>goStep('generate');
+
+/* ============================== STEP 1: DATA ============================== */
+function parseCSV(text){
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for(let i=0;i<text.length;i++){
+    const c = text[i], next = text[i+1];
+    if(inQuotes){
+      if(c === '"' && next === '"'){ field += '"'; i++; }
+      else if(c === '"'){ inQuotes = false; }
+      else field += c;
+    } else {
+      if(c === '"') inQuotes = true;
+      else if(c === ','){ row.push(field); field=''; }
+      else if(c === '\r'){ /* skip */ }
+      else if(c === '\n'){ row.push(field); rows.push(row); row=[]; field=''; }
+      else field += c;
+    }
+  }
+  if(field.length || row.length){ row.push(field); rows.push(row); }
+  return rows.filter(r => !(r.length===1 && r[0].trim()===''));
+}
+
+document.getElementById('csvFile').addEventListener('change', async (e)=>{
+  const f = e.target.files[0];
+  if(!f) return;
+  const text = await f.text();
+  document.getElementById('csvText').value = text;
+});
+
+document.getElementById('listMode').addEventListener('change', (e)=>{
+  document.getElementById('hasHeader').disabled = e.target.checked;
+});
+
+document.getElementById('btnLoadData').addEventListener('click', ()=>{
+  const text = document.getElementById('csvText').value;
+  const isList = document.getElementById('listMode').checked;
+  const hasHeader = document.getElementById('hasHeader').checked;
+  if(!text.trim()){ setStatus('dataStatus','Paste or upload some data first.','err'); return; }
+
+  let headers, rows;
+  if(isList){
+    const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l.length);
+    headers = ['Value'];
+    rows = lines.map(l => ({Value:l}));
+  } else {
+    const raw = parseCSV(text);
+    if(!raw.length){ setStatus('dataStatus','Could not parse any rows.','err'); return; }
+    if(hasHeader){
+      headers = raw[0].map(h=>h.trim());
+      rows = raw.slice(1).map(r=>{
+        const o = {};
+        headers.forEach((h,i)=> o[h] = (r[i]!==undefined ? r[i] : ''));
+        return o;
+      });
+    } else {
+      headers = raw[0].map((_,i)=>'Column '+(i+1));
+      rows = raw.map(r=>{
+        const o = {};
+        headers.forEach((h,i)=> o[h] = (r[i]!==undefined ? r[i] : ''));
+        return o;
+      });
+    }
+  }
+  state.data = {headers, rows};
+  renderDataPreview();
+  setStatus('dataStatus', 'Loaded '+rows.length+' record(s) with '+headers.length+' column(s).', 'ok');
+  if(typeof scheduleGenerate==='function') scheduleGenerate();
+});
+
+function renderDataPreview(){
+  const {headers, rows} = state.data;
+  document.getElementById('dataPreviewCard').style.display = rows.length ? 'block' : 'none';
+  document.getElementById('dataMeta').textContent = ' '+rows.length+' rows × '+headers.length+' columns (showing first 15)';
+  const table = document.getElementById('dataTable');
+  let html = '<thead><tr>'+headers.map(h=>'<th>'+escapeHtml(h)+'</th>').join('')+'</tr></thead><tbody>';
+  rows.slice(0,15).forEach(r=>{
+    html += '<tr>'+headers.map(h=>'<td>'+escapeHtml(String(r[h]??''))+'</td>').join('')+'</tr>';
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+}
+
+/* ============================== STEP 2: TEMPLATE ============================== */
+['front','back'].forEach(side=>{
+  const fileInput = document.getElementById('templateFile_'+side);
+  const dpiInput = document.getElementById('dpiInput_'+side);
+  fileInput.addEventListener('change', (e)=>{
+    const f = e.target.files[0];
+    if(!f) return;
+    const isPdf = f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf');
+    document.getElementById('dpiWrap_'+side).style.display = isPdf ? 'none' : 'block';
+    loadTemplateForSide(side); // auto-load, no click needed
+  });
+  dpiInput.addEventListener('change', ()=>{
+    if(fileInput.files[0]) loadTemplateForSide(side); // re-load with the new DPI
+  });
+  document.getElementById('btnLoadTemplate_'+side).addEventListener('click', ()=> loadTemplateForSide(side));
+});
+
+document.getElementById('btnRemoveBack').addEventListener('click', ()=>{
+  state.sides.back.template = null;
+  state.sides.back.fields = [];
+  state.generated.back = null;
+  state.generated.duplex = null;
+  document.getElementById('templatePreview_back').style.display = 'none';
+  document.getElementById('templatePlaceholder_back').style.display = 'block';
+  document.getElementById('templatePlaceholder_back').textContent = 'No back template — job will be treated as single-sided';
+  document.getElementById('templateMeta_back').textContent = '';
+  setStatus('templateStatus_back','','');
+  document.getElementById('templateFile_back').value = '';
+  refreshSideToggleAvailability();
+  if(typeof scheduleGenerate==='function') scheduleGenerate();
+});
+
+function applyTemplateToUI(side, tmpl, statusMsg){
+  const wmm = (tmpl.widthPt/MM_PT).toFixed(1), hmm = (tmpl.heightPt/MM_PT).toFixed(1);
+  const bleedNote = (tmpl.mediaWidthPt > tmpl.widthPt + 0.5 || tmpl.mediaHeightPt > tmpl.heightPt + 0.5)
+    ? '  ·  bleed: '+(tmpl.mediaWidthPt/MM_PT).toFixed(1)+' × '+(tmpl.mediaHeightPt/MM_PT).toFixed(1)+' mm media, kept in the merged PDF'
+    : '  ·  no extra bleed in file (TrimBox = MediaBox)';
+  document.getElementById('templateMeta_'+side).textContent =
+    'Trim size: '+wmm+' × '+hmm+' mm ('+tmpl.widthPt.toFixed(1)+' × '+tmpl.heightPt.toFixed(1)+' pt)'+bleedNote;
+  document.getElementById('templatePreview_'+side).src = tmpl.previewUrl;
+  document.getElementById('templatePreview_'+side).style.display = 'block';
+  document.getElementById('templatePlaceholder_'+side).style.display = 'none';
+  setStatus('templateStatus_'+side, statusMsg, 'ok');
+  if(state.activeSide === side) document.getElementById('stageImg').src = tmpl.previewUrl;
+  if(typeof scheduleGenerate==='function') scheduleGenerate();
+}
+
+async function loadTemplateForSide(side){
+  const f = document.getElementById('templateFile_'+side).files[0];
+  if(!f){ setStatus('templateStatus_'+side,'Choose a PDF or image file first.','err'); return; }
+  setStatus('templateStatus_'+side,'Loading…');
+  try{
+    const bytes = new Uint8Array(await f.arrayBuffer());
+    const isPdf = f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf');
+
+    if(isPdf){
+      const probe = await PDFLib.PDFDocument.load(bytes.slice());
+      const pageCount = probe.getPageCount();
+
+      if(side === 'front' && pageCount >= 2){
+        // A 2+ page PDF dropped on the front slot is treated as a front/back pair automatically.
+        const frontTmpl = await loadPdfTemplate(bytes, 0);
+        state.sides.front.template = frontTmpl;
+        applyTemplateToUI('front', frontTmpl, 'Template loaded (page 1 of '+pageCount+').');
+
+        const backTmpl = await loadPdfTemplate(bytes, 1);
+        state.sides.back.template = backTmpl;
+        applyTemplateToUI('back', backTmpl, 'Auto-detected from page 2 of the front upload.');
+        refreshSideToggleAvailability();
+        return;
+      }
+
+      const tmpl = await loadPdfTemplate(bytes, 0);
+      state.sides[side].template = tmpl;
+      applyTemplateToUI(side, tmpl, 'Template loaded.');
+    } else {
+      const dpi = parseFloat(document.getElementById('dpiInput_'+side).value) || 300;
+      const mime = f.type || (f.name.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg');
+      const tmpl = await loadImageTemplate(bytes, mime, dpi);
+      state.sides[side].template = tmpl;
+      applyTemplateToUI(side, tmpl, 'Template loaded.');
+    }
+    refreshSideToggleAvailability();
+  }catch(err){
+    console.error(err);
+    setStatus('templateStatus_'+side,'Failed to load template: '+err.message,'err');
+  }
+}
+
+async function loadPdfTemplate(bytes, pageIndex){
+  pageIndex = pageIndex || 0;
+  // pdf-lib reads the real PDF box hierarchy (TrimBox falls back to CropBox/MediaBox per spec).
+  const probe = await PDFLib.PDFDocument.load(bytes.slice());
+  const page = probe.getPages()[pageIndex];
+  const media = page.getMediaBox();
+  let trim;
+  try{ trim = page.getTrimBox(); }catch(e){ trim = null; }
+  if(!trim || trim.width<=0 || trim.height<=0) trim = media;
+
+  // pdf.js takes ownership of the buffer it's given (transfers it to a worker),
+  // which detaches the underlying ArrayBuffer. Hand it a clone so the original
+  // `bytes` stays valid for pdf-lib embedding later.
+  const doc = await pdfjsLib.getDocument({data: bytes.slice()}).promise;
+  const pdfjsPage = await doc.getPage(pageIndex+1);
+  const vp1 = pdfjsPage.getViewport({scale:1});
+  const targetPx = 1000;
+  const scale = targetPx / vp1.width;
+  const vp = pdfjsPage.getViewport({scale});
+  const canvas = document.createElement('canvas');
+  canvas.width = vp.width; canvas.height = vp.height;
+  await pdfjsPage.render({canvasContext: canvas.getContext('2d'), viewport: vp}).promise;
+
+  const trimOffXPt = trim.x - media.x;
+  const trimOffYPt = trim.y - media.y;
+  return {
+    type: 'pdf',
+    bytes,
+    pageIndex,
+    mediaWidthPt: media.width, mediaHeightPt: media.height,
+    widthPt: trim.width, heightPt: trim.height,
+    trimOffXPt, trimOffYPt,
+    trimTopOffsetPt: media.height - trimOffYPt - trim.height,
+    previewUrl: canvas.toDataURL('image/png')
+  };
+}
+
+async function loadImageTemplate(bytes, mime, dpi){
+  const blob = new Blob([bytes], {type: mime});
+  const url = URL.createObjectURL(blob);
+  const img = await new Promise((res, rej)=>{
+    const im = new Image();
+    im.onload = ()=>res(im);
+    im.onerror = rej;
+    im.src = url;
+  });
+  const w = img.naturalWidth / dpi * 72, h = img.naturalHeight / dpi * 72;
+  return {
+    type: mime.includes('png') ? 'png' : 'jpg',
+    bytes,
+    mediaWidthPt: w, mediaHeightPt: h,
+    widthPt: w, heightPt: h,
+    trimOffXPt: 0, trimOffYPt: 0, trimTopOffsetPt: 0,
+    previewUrl: url
+  };
+}
+
+/* ============================== STEP 3: DESIGN ============================== */
+function refreshSideToggleAvailability(){
+  const backBtn = document.querySelector('#sideToggle button[data-side="back"]');
+  backBtn.disabled = !state.sides.back.template;
+  if(!state.sides.back.template && state.activeSide==='back') switchSide('front');
+}
+document.getElementById('sideToggle').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button[data-side]');
+  if(!btn || btn.disabled) return;
+  switchSide(btn.dataset.side);
+});
+function switchSide(side){
+  state.activeSide = side;
+  document.querySelectorAll('#sideToggle button').forEach(b=>b.classList.toggle('active', b.dataset.side===side));
+  const t = cur().template;
+  document.getElementById('stageImg').src = t ? t.previewUrl : '';
+  layoutStage();
+  renderFieldList();
+  renderFieldEditor();
+}
+
+function layoutStage(){
+  const outer = document.getElementById('stageOuter');
+  const stage = document.getElementById('designStage');
+  const t = cur().template;
+  if(!t){ stage.style.width='0'; stage.style.height='0'; return; }
+  const maxW = Math.min(760, outer.clientWidth - 32);
+  const scale = maxW / t.mediaWidthPt;
+  state.stageScale = scale;
+  stage.style.width = (t.mediaWidthPt*scale)+'px';
+  stage.style.height = (t.mediaHeightPt*scale)+'px';
+  renderFields();
+}
+window.addEventListener('resize', ()=>{ if(document.getElementById('step-design').classList.contains('active')) layoutStage(); });
+
+document.getElementById('btnAddField').addEventListener('click', ()=>{
+  if(!state.data.headers.length){ alert('Load your CSV/list data first (Step 1) so fields can be bound to a column.'); return; }
+  if(!cur().template){ alert('Load a template for this side first (Step 2).'); return; }
+  const fields = cur().fields;
+  const col = state.data.headers.find(h => !fields.some(f=>f.column===h)) || state.data.headers[0];
+  const f = {
+    id: 'f'+(fieldSeq++),
+    column: col,
+    xPt: 20, yPt: 20 + fields.length*24,
+    wPt: 160, hPt: 22,
+    fontSize: 12, color: '#111111', align: 'left', font: 'Helvetica'
+  };
+  fields.push(f);
+  state.selectedFieldId[state.activeSide] = f.id;
+  renderFields();
+  renderFieldList();
+  renderFieldEditor();
+  if(typeof scheduleGenerate==='function') scheduleGenerate();
+});
+
+function renderFieldList(){
+  const wrap = document.getElementById('fieldList');
+  const fields = cur().fields;
+  const selId = state.selectedFieldId[state.activeSide];
+  if(!fields.length){ wrap.innerHTML = '<div class="item" style="cursor:default;color:var(--muted);">No fields yet — click "Add field"</div>'; return; }
+  wrap.innerHTML = '';
+  fields.forEach(f=>{
+    const div = document.createElement('div');
+    div.className = 'item'+(f.id===selId?' selected':'');
+    div.innerHTML = '<span>{'+escapeHtml(f.column)+'}</span><span class="del" data-id="'+f.id+'">remove</span>';
+    div.addEventListener('click', (e)=>{
+      if(e.target.classList.contains('del')) return;
+      state.selectedFieldId[state.activeSide] = f.id;
+      renderFields(); renderFieldList(); renderFieldEditor();
+    });
+    div.querySelector('.del').addEventListener('click', (e)=>{
+      e.stopPropagation();
+      cur().fields = cur().fields.filter(x=>x.id!==f.id);
+      if(selId===f.id) state.selectedFieldId[state.activeSide] = null;
+      renderFields(); renderFieldList(); renderFieldEditor();
+      if(typeof scheduleGenerate==='function') scheduleGenerate();
+    });
+    wrap.appendChild(div);
+  });
+}
+
+function renderFieldEditor(){
+  const wrap = document.getElementById('fieldEditor');
+  const fields = cur().fields;
+  const selId = state.selectedFieldId[state.activeSide];
+  const f = fields.find(x=>x.id===selId);
+  if(!f){ wrap.innerHTML = ''; return; }
+  wrap.innerHTML = `
+    <div class="field"><label>Column</label>
+      <select id="fe_col">${state.data.headers.map(h=>`<option value="${escapeHtml(h)}" ${h===f.column?'selected':''}>${escapeHtml(h)}</option>`).join('')}</select>
+    </div>
+    <div class="row">
+      <div class="col"><div class="field"><label>Font</label>
+        <select id="fe_font">${FONT_OPTIONS.map(([v,l])=>`<option value="${v}" ${v===f.font?'selected':''}>${l}</option>`).join('')}</select>
+      </div></div>
+      <div class="col"><div class="field"><label>Size (pt)</label><input type="number" id="fe_size" value="${f.fontSize}" min="4" max="300"></div></div>
+    </div>
+    <div class="row">
+      <div class="col"><div class="field"><label>Color</label><input type="color" id="fe_color" value="${f.color}"></div></div>
+      <div class="col"><div class="field"><label>Align</label>
+        <select id="fe_align">
+          <option value="left" ${f.align==='left'?'selected':''}>Left</option>
+          <option value="center" ${f.align==='center'?'selected':''}>Center</option>
+          <option value="right" ${f.align==='right'?'selected':''}>Right</option>
+        </select>
+      </div></div>
+    </div>
+    <div class="row">
+      <div class="col"><div class="field"><label>X from trim left (pt)</label><input type="number" id="fe_x" value="${f.xPt.toFixed(1)}" step="0.5"></div></div>
+      <div class="col"><div class="field"><label>Y from trim top (pt)</label><input type="number" id="fe_y" value="${f.yPt.toFixed(1)}" step="0.5"></div></div>
+    </div>
+    <div class="row">
+      <div class="col"><div class="field"><label>Box width (pt)</label><input type="number" id="fe_w" value="${f.wPt.toFixed(1)}" step="0.5"></div></div>
+      <div class="col"><div class="field"><label>Box height (pt)</label><input type="number" id="fe_h" value="${f.hPt.toFixed(1)}" step="0.5"></div></div>
+    </div>
+  `;
+  const bind = (id, prop, isFloat)=>{
+    document.getElementById(id).addEventListener('input', (e)=>{
+      f[prop] = isFloat ? (parseFloat(e.target.value)||0) : e.target.value;
+      renderFields(); renderFieldList();
+      if(typeof scheduleGenerate==='function') scheduleGenerate();
+    });
+  };
+  bind('fe_col','column',false);
+  bind('fe_font','font',false);
+  bind('fe_size','fontSize',true);
+  bind('fe_color','color',false);
+  bind('fe_align','align',false);
+  bind('fe_x','xPt',true);
+  bind('fe_y','yPt',true);
+  bind('fe_w','wPt',true);
+  bind('fe_h','hPt',true);
+}
+
+function renderFields(){
+  const stage = document.getElementById('designStage');
+  stage.querySelectorAll('.fieldbox, .trimguide').forEach(el=>el.remove());
+  const t = cur().template;
+  if(!t) return;
+  const scale = state.stageScale;
+
+  // trim guide
+  const guide = document.createElement('div');
+  guide.className = 'trimguide';
+  guide.style.left = (t.trimOffXPt*scale)+'px';
+  guide.style.top = (t.trimTopOffsetPt*scale)+'px';
+  guide.style.width = (t.widthPt*scale)+'px';
+  guide.style.height = (t.heightPt*scale)+'px';
+  guide.innerHTML = '<span class="tag">TRIM</span>';
+  stage.appendChild(guide);
+
+  const scaleX = t.trimOffXPt, topOff = t.trimTopOffsetPt;
+  const selId = state.selectedFieldId[state.activeSide];
+  const sampleRow = state.data.rows[0] || {};
+  cur().fields.forEach(f=>{
+    const el = document.createElement('div');
+    el.className = 'fieldbox'+(f.id===selId?' selected':'');
+    el.style.left = ((scaleX+f.xPt)*scale)+'px';
+    el.style.top = ((topOff+f.yPt)*scale)+'px';
+    el.style.width = (f.wPt*scale)+'px';
+    el.style.height = (f.hPt*scale)+'px';
+    el.style.justifyContent = f.align==='center' ? 'center' : (f.align==='right' ? 'flex-end' : 'flex-start');
+    const sample = String(sampleRow[f.column] ?? f.column);
+    el.innerHTML = `<span class="lbl">{${escapeHtml(f.column)}}</span><span class="txt" style="font-size:${Math.max(9,f.fontSize*scale)}px;color:${f.color};">${escapeHtml(sample)}</span><span class="resize-handle"></span>`;
+    el.addEventListener('pointerdown', (e)=>{
+      if(e.target.classList.contains('resize-handle')) return;
+      e.preventDefault();
+      state.selectedFieldId[state.activeSide] = f.id;
+      renderFieldList(); renderFieldEditor();
+      stage.querySelectorAll('.fieldbox').forEach(b=>b.classList.remove('selected'));
+      el.classList.add('selected');
+      const startX = e.clientX, startY = e.clientY;
+      const startLeft = f.xPt, startTop = f.yPt;
+      function onMove(ev){
+        const dx = (ev.clientX-startX)/state.stageScale, dy = (ev.clientY-startY)/state.stageScale;
+        f.xPt = clamp(startLeft+dx, 0, t.widthPt-f.wPt);
+        f.yPt = clamp(startTop+dy, 0, t.heightPt-f.hPt);
+        el.style.left = ((scaleX+f.xPt)*state.stageScale)+'px';
+        el.style.top = ((topOff+f.yPt)*state.stageScale)+'px';
+        if(document.getElementById('fe_x')){
+          document.getElementById('fe_x').value = f.xPt.toFixed(1);
+          document.getElementById('fe_y').value = f.yPt.toFixed(1);
+        }
+      }
+      function onUp(){
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+        if(typeof scheduleGenerate==='function') scheduleGenerate();
+      }
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
+    });
+    const handle = el.querySelector('.resize-handle');
+    handle.addEventListener('pointerdown', (e)=>{
+      e.preventDefault(); e.stopPropagation();
+      const startX = e.clientX, startY = e.clientY;
+      const startW = f.wPt, startH = f.hPt;
+      function onMove(ev){
+        const dx = (ev.clientX-startX)/state.stageScale, dy = (ev.clientY-startY)/state.stageScale;
+        f.wPt = clamp(startW+dx, 10, t.widthPt-f.xPt);
+        f.hPt = clamp(startH+dy, 6, t.heightPt-f.yPt);
+        el.style.width = (f.wPt*state.stageScale)+'px';
+        el.style.height = (f.hPt*state.stageScale)+'px';
+        if(document.getElementById('fe_w')){
+          document.getElementById('fe_w').value = f.wPt.toFixed(1);
+          document.getElementById('fe_h').value = f.hPt.toFixed(1);
+        }
+      }
+      function onUp(){
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+        if(typeof scheduleGenerate==='function') scheduleGenerate();
+      }
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
+    });
+    stage.appendChild(el);
+  });
+}
+
+document.getElementById('btnExportFields').addEventListener('click', ()=>{
+  const t = cur().template;
+  const payload = { side: state.activeSide, templateWidthPt: t?t.widthPt:0, templateHeightPt: t?t.heightPt:0, fields: cur().fields };
+  const blob = new Blob([JSON.stringify(payload,null,2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'vdp-field-layout-'+state.activeSide+'.json'; a.click();
+});
+document.getElementById('btnImportFieldsTrigger').addEventListener('click', ()=> document.getElementById('btnImportFields').click());
+document.getElementById('btnImportFields').addEventListener('change', async (e)=>{
+  const f = e.target.files[0]; if(!f) return;
+  try{
+    const json = JSON.parse(await f.text());
+    if(Array.isArray(json.fields)){
+      cur().fields = json.fields.map(f=>({...f, id:'f'+(fieldSeq++)}));
+      state.selectedFieldId[state.activeSide] = cur().fields.length ? cur().fields[0].id : null;
+      renderFields(); renderFieldList(); renderFieldEditor();
+      if(typeof scheduleGenerate==='function') scheduleGenerate();
+    }
+  }catch(err){ alert('Could not read layout file: '+err.message); }
+  e.target.value = '';
+});
+
+/* ============================== STEP 4: GENERATE ============================== */
+document.getElementById('btnGenerate').addEventListener('click', runGenerate);
+
+async function generateSide(side){
+  const s = state.sides[side];
+  if(!s.template) return null;
+  const { PDFDocument, StandardFonts, rgb } = PDFLib;
+  const pdfDoc = await PDFDocument.create();
+  const t = s.template;
+  // Output page size is the full MediaBox (trim + bleed) — bleed is kept,
+  // not clipped. TrimBox is recorded as metadata (not the physical page
+  // edge), which is what the imposition step's bleed-aware cell embedding
+  // (getBoxes / embedIntoCell) actually reads to cap bleed into the gutter.
+  const pageW = t.mediaWidthPt, pageH = t.mediaHeightPt;
+
+  let templateEmbed;
+  if(t.type === 'pdf'){
+    const [embedded] = await pdfDoc.embedPdf(t.bytes, [t.pageIndex || 0]);
+    templateEmbed = {kind:'page', obj:embedded};
+  } else {
+    const img = t.type === 'png' ? await pdfDoc.embedPng(t.bytes) : await pdfDoc.embedJpg(t.bytes);
+    templateEmbed = {kind:'image', obj:img};
+  }
+
+  const fontCache = {};
+  async function getFont(name){
+    if(!fontCache[name]) fontCache[name] = await pdfDoc.embedFont(StandardFonts[name] || StandardFonts.Helvetica);
+    return fontCache[name];
+  }
+  for(const f of s.fields) await getFont(f.font);
+
+  const rows = state.data.rows;
+  for(let i=0;i<rows.length;i++){
+    const row = rows[i];
+    const page = pdfDoc.addPage([pageW, pageH]);
+    if(templateEmbed.kind==='page') page.drawPage(templateEmbed.obj, {x:0,y:0,width:pageW,height:pageH});
+    else page.drawImage(templateEmbed.obj, {x:0,y:0,width:pageW,height:pageH});
+
+    for(const f of s.fields){
+      const text = String(row[f.column] ?? '');
+      if(!text) continue;
+      const font = await getFont(f.font);
+      const size = f.fontSize;
+      const textWidth = font.widthOfTextAtSize(text, size);
+      // Field coordinates are relative to the trim's top-left, so shift by
+      // the trim's offset within the full (bleed-inclusive) media page.
+      let xPos = t.trimOffXPt + f.xPt;
+      if(f.align==='center') xPos = t.trimOffXPt + f.xPt + (f.wPt - textWidth)/2;
+      else if(f.align==='right') xPos = t.trimOffXPt + f.xPt + (f.wPt - textWidth);
+      const yPos = pageH - (t.trimTopOffsetPt + f.yPt) - size*0.85;
+      const c = hexToRgb01(f.color);
+      page.drawText(text, {x:xPos, y:yPos, size, font, color: rgb(c.r,c.g,c.b)});
+    }
+    // Record the real TrimBox (finished size, offset within the bleed) and
+    // BleedBox (full media) on every page — the imposition step reads these
+    // via pdf-lib's own box methods to size cells off the trim and cap
+    // bleed into the gutter, same as the Impose tool.
+    try{ page.setTrimBox(t.trimOffXPt, t.trimOffYPt, t.widthPt, t.heightPt); }catch(e){}
+    try{ page.setBleedBox(0, 0, pageW, pageH); }catch(e){}
+    if(i % 20 === 0){
+
+      updateGenProgress(side, i, rows.length);
+      await nextFrame();
+    }
+  }
+  return await pdfDoc.save();
+}
+
+function updateGenProgress(side, i, total){
+  const bar = document.getElementById('genProgressBar');
+  bar.style.width = Math.round((i/total)*100)+'%';
+  setStatus('generateStatus','Generating '+side+'… '+(i+1)+' / '+total);
+}
+
+async function buildDuplexInterleaved(frontBytes, backBytes){
+  const { PDFDocument } = PDFLib;
+  const frontDoc = await PDFDocument.load(frontBytes);
+  const backDoc = await PDFDocument.load(backBytes);
+  const n = Math.min(frontDoc.getPageCount(), backDoc.getPageCount());
+  const out = await PDFDocument.create();
+  for(let i=0;i<n;i++){
+    const [fp] = await out.copyPages(frontDoc, [i]); out.addPage(fp);
+    const [bp] = await out.copyPages(backDoc, [i]); out.addPage(bp);
+  }
+  return await out.save();
+}
+
+let generateInFlight = false, generatePending = false;
+async function runGenerate(opts){
+  const silent = !!(opts && opts.silent);
+  if(!state.sides.front.template){ if(!silent) setStatus('generateStatus','Load a front template first (Step 2).','err'); return; }
+  if(!state.data.rows.length){ if(!silent) setStatus('generateStatus','Load data first (Step 1).','err'); return; }
+  if(!state.sides.front.fields.length){ if(!silent) setStatus('generateStatus','Add at least one field to the front (Step 3).','err'); return; }
+  if(generateInFlight){ generatePending = true; return; }
+  generateInFlight = true;
+
+  const btn = document.getElementById('btnGenerate'); btn.disabled = true;
+  document.getElementById('btnDownloadMain').disabled = true;
+  document.getElementById('btnDownloadFrontOnly').disabled = true;
+  document.getElementById('btnDownloadBackOnly').disabled = true;
+  document.getElementById('genThumbsFront').innerHTML = '';
+  const hasBack = !!state.sides.back.template;
+  document.getElementById('btnDownloadFrontOnly').style.display = hasBack ? 'inline-block' : 'none';
+  document.getElementById('btnDownloadBackOnly').style.display = hasBack ? 'inline-block' : 'none';
+  const progWrap = document.getElementById('genProgressWrap'); progWrap.classList.add('show');
+  document.getElementById('genProgressBar').style.width='0%';
+  setStatus('generateStatus','Generating…');
+
+  try{
+    state.generated.front = await generateSide('front');
+    if(hasBack) state.generated.back = await generateSide('back');
+    else { state.generated.back = null; state.generated.duplex = null; }
+
+    document.getElementById('genProgressBar').style.width='100%';
+
+    document.getElementById('btnDownloadMain').textContent = hasBack ? 'Download merged PDF (front + back)' : 'Download merged PDF';
+    document.getElementById('genThumbsLabel').textContent = hasBack ? 'Merged pages (front, back, front, back, …)' : 'Pages';
+
+    if(hasBack){
+      state.generated.duplex = await buildDuplexInterleaved(state.generated.front, state.generated.back);
+      await renderThumbs(state.generated.duplex, 'genThumbsFront', 8);
+      document.getElementById('btnDownloadFrontOnly').disabled = false;
+      document.getElementById('btnDownloadBackOnly').disabled = false;
+      setStatus('generateStatus','Done — '+state.data.rows.length+' record(s) generated, 1 PDF with '+(state.data.rows.length*2)+' pages (front + back).', 'ok');
+    } else {
+      await renderThumbs(state.generated.front, 'genThumbsFront', 6);
+      setStatus('generateStatus','Done — '+state.data.rows.length+' record(s) generated.', 'ok');
+    }
+    document.getElementById('btnDownloadMain').disabled = false;
+  }catch(err){
+    console.error(err);
+    setStatus('generateStatus','Failed: '+err.message,'err');
+  }finally{
+    btn.disabled = false;
+    setTimeout(()=>progWrap.classList.remove('show'), 600);
+    generateInFlight = false;
+    if(generatePending){ generatePending = false; scheduleGenerate(); }
+    else if(typeof scheduleImpose==='function' && state.generated.front) scheduleImpose();
+    if(typeof refreshImposeAvailability==='function') refreshImposeAvailability();
+  }
+}
+const scheduleGenerate = debounce(()=> runGenerate({silent:true}), 500);
+
+document.getElementById('btnDownloadMain').addEventListener('click', ()=>{
+  const hasBack = !!state.generated.back;
+  downloadBytes(hasBack ? state.generated.duplex : state.generated.front, 'vdp-merged.pdf');
+});
+document.getElementById('btnDownloadFrontOnly').addEventListener('click', ()=> downloadBytes(state.generated.front, 'vdp-merged-front-only.pdf'));
+document.getElementById('btnDownloadBackOnly').addEventListener('click', ()=> downloadBytes(state.generated.back, 'vdp-merged-back-only.pdf'));
+
+async function renderThumbs(bytes, containerId, maxPages){
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  const doc = await pdfjsLib.getDocument({data: bytes.slice()}).promise;
+  const n = Math.min(maxPages, doc.numPages);
+  for(let i=1;i<=n;i++){
+    const page = await doc.getPage(i);
+    const vp = page.getViewport({scale: 140/page.getViewport({scale:1}).width});
+    const canvas = document.createElement('canvas');
+    canvas.width = vp.width; canvas.height = vp.height;
+    await page.render({canvasContext: canvas.getContext('2d'), viewport: vp}).promise;
+    const div = document.createElement('div');
+    div.className = 'thumb';
+    div.innerHTML = `<img src="${canvas.toDataURL('image/png')}"><div class="cap">page ${i}${i===n && doc.numPages>n ? ' of '+doc.numPages : ''}</div>`;
+    container.appendChild(div);
+  }
+}
+
+/* ============================================================================
+   STEP 5: IMPOSE — grid imposition engine ported from the Impose tool.
+   Same arrangement math (stack/sequential/repeat + doubleSided mirroring),
+   same trim/bleed-aware cell embedding (bleed capped into the gutter,
+   full run at outer sheet edges), same crop/gutter/center mark geometry.
+   Runs entirely in this page against the merged PDF(s) from Step 4 — no
+   external tool, no new tab.
+   ========================================================================= */
+
+const arrangeHints = {
+  stack: 'Each sheet position holds a contiguous block of the sequence: cut into stacks by position, and each stack is already in numeric order — ideal for numbered tickets, coupons, labels.',
+  sequential: 'Pages fill sheet by sheet, in reading order — a normal step-and-repeat.',
+  repeat: 'Each sheet is a single page repeated across every position — not sequence-aware, generally not what you want for per-record variable data.'
+};
+document.getElementById('arrangeSelect').addEventListener('change', (e)=>{
+  document.getElementById('arrangeHint').textContent = arrangeHints[e.target.value] || '';
+});
+document.getElementById('arrangeHint').textContent = arrangeHints.stack;
+
+document.getElementById('sheetPreset').addEventListener('change', (e)=>{
+  const v = e.target.value;
+  if(v==='CUSTOM') return;
+  const [w,h] = SHEET_PRESETS[v];
+  document.getElementById('sheetW').value = w;
+  document.getElementById('sheetH').value = h;
+  if(typeof scheduleImpose==='function') scheduleImpose();
+});
+
+// Auto-rebuild the imposed PDF whenever any imposition control changes.
+['gridCols','gridRows','sheetW','sheetH','marginMm','gutterHMm','gutterVMm',
+ 'arrangeSelect','rowOrderSelect','repeatCount','doubleSided','autoscale','centerOnPage',
+ 'markLen','markDist','markThick','cropMarks','gutterMarks','centerMarks','knockout','registrationColor'
+].forEach(id=>{
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.addEventListener('input', ()=>{ if(typeof scheduleImpose==='function') scheduleImpose(); });
+  el.addEventListener('change', ()=>{ if(typeof scheduleImpose==='function') scheduleImpose(); });
+});
+
+function refreshImposeAvailability(){
+  const hasBack = !!state.generated.back;
+  document.getElementById('doubleSidedWrap').style.display = hasBack ? 'flex' : 'none';
+  if(!hasBack) document.getElementById('doubleSided').checked = false;
+  document.getElementById('btnImpose').disabled = !state.generated.front;
+  if(!state.generated.front) setStatus('imposeStatus', 'Generate the merged PDF first (Step 4).', '');
+  else setStatus('imposeStatus', '', '');
+}
+
+document.getElementById('btnAutoFit').addEventListener('click', ()=>{
+  const t = state.sides.front.template;
+  if(!t){ setStatus('imposeStatus','Load a template first.','err'); return; }
+  const sheetW = parseFloat(document.getElementById('sheetW').value);
+  const sheetH = parseFloat(document.getElementById('sheetH').value);
+  const margin = parseFloat(document.getElementById('marginMm').value);
+  const gutterH = parseFloat(document.getElementById('gutterHMm').value);
+  const gutterV = parseFloat(document.getElementById('gutterVMm').value);
+  const tWmm = t.widthPt / MM_PT, tHmm = t.heightPt / MM_PT;
+  const availW = sheetW - 2*margin, availH = sheetH - 2*margin;
+  const fitCount = (avail, cell, gut) => Math.max(1, Math.floor((avail+gut) / (cell+gut)));
+  const c = fitCount(availW, tWmm, gutterH), r = fitCount(availH, tHmm, gutterV);
+  document.getElementById('gridCols').value = c;
+  document.getElementById('gridRows').value = r;
+  setStatus('imposeStatus', 'Auto-fit: '+c+' × '+r+' = '+(c*r)+' up per sheet (sized to TrimBox).', 'ok');
+});
+
+/* ---- ported helpers (same math as the Impose tool's grid engine) ---- */
+
+function seqToCellPos(k, rows, cols, order){
+  const r = Math.floor(k/cols); let c = k % cols;
+  if(order==='boustrophedon' && r % 2 === 1) c = cols - 1 - c;
+  return r*cols + c;
+}
+function reverseRows(cells, rows, cols){
+  const out = new Array(cells.length);
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) out[r*cols+c] = cells[r*cols + (cols-1-c)];
+  return out;
+}
+function buildGridSheets(numPages, params){
+  if(!numPages) return [];
+  const rows = Math.max(1, params.rows||1);
+  const cols = Math.max(1, params.cols||1);
+  const slots = rows*cols;
+  const arrangement = params.arrangement || 'sequential';
+  const rowOrderVal = params.rowOrder || 'raster';
+  const doubleSided = !!params.doubleSided;
+  const repeatCount = (arrangement==='sequential' || arrangement==='stack') ? Math.max(1, params.repeatCount||1) : 1;
+
+  const cellsFrom = (idxForSlot, totalUnits, unitToPage) => {
+    const cells = new Array(slots).fill(null);
+    for(let k=0;k<slots;k++){
+      const i = idxForSlot(k);
+      const p = (i!=null && i<totalUnits) ? unitToPage(i) : null;
+      cells[seqToCellPos(k, rows, cols, rowOrderVal)] = p;
+    }
+    return cells;
+  };
+
+  let sheets = [];
+  if(arrangement === 'repeat'){
+    for(let p=0;p<numPages;p++){
+      sheets.push({ rows, cols, cells: new Array(slots).fill(p), tag:`Sheet ${p+1}` });
+    }
+    if(doubleSided){
+      if(sheets.length % 2 === 1) sheets.push({rows,cols,cells:new Array(slots).fill(null), tag:'blank'});
+      sheets = sheets.map((s,i)=>({...s, tag:`Sheet ${Math.floor(i/2)+1} · ${i%2===0?'front':'back'}`}));
+    }
+    return sheets;
+  }
+
+  if(doubleSided){
+    // Source pages are interleaved front,back,front,back,… — one record is
+    // a (front,back) PAGE PAIR. Repeat count is expanded at the record
+    // level, so each repeated copy keeps its own front matched to its own
+    // back; expanding raw pages instead (tripling front, then tripling
+    // back, in place) breaks that alternation for repeatCount > 1.
+    const numRecords = Math.floor(numPages/2);
+    const expandedRecords = [];
+    for(let r=0;r<numRecords;r++) for(let n=0;n<repeatCount;n++) expandedRecords.push(r);
+    const totalUnits = expandedRecords.length;
+
+    // Front takes the odd unit of each pair, back takes the following even
+    // unit, at the same nominal grid position — then the back sheet is
+    // mirrored left-right (work-and-turn), so a card on the left of the
+    // front lands on the right of the back and registers correctly once
+    // the paper is physically flipped for the second pass.
+    const nSheets = Math.ceil(totalUnits/slots);
+    for(let ph=0; ph<nSheets; ph++){
+      const posIndex = k => arrangement==='stack' ? (k*nSheets+ph) : (ph*slots+k);
+      const frontCells = cellsFrom(posIndex, totalUnits, i => 2*expandedRecords[i]);
+      const backCellsRaw = cellsFrom(posIndex, totalUnits, i => 2*expandedRecords[i]+1);
+      const backCells = reverseRows(backCellsRaw, rows, cols);
+      sheets.push({rows, cols, cells: frontCells, tag:`Sheet ${ph+1} · front`});
+      sheets.push({rows, cols, cells: backCells,  tag:`Sheet ${ph+1} · back`});
+    }
+  } else {
+    const expandedPages = [];
+    for(let p=0;p<numPages;p++) for(let n=0;n<repeatCount;n++) expandedPages.push(p);
+    const totalUnits = expandedPages.length;
+    const nSheets = Math.ceil(totalUnits/slots);
+    for(let s=0;s<nSheets;s++){
+      const posIndex = k => arrangement==='stack' ? (k*nSheets+s) : (s*slots+k);
+      sheets.push({rows, cols, cells: cellsFrom(posIndex, totalUnits, i => expandedPages[i]), tag:`Sheet ${s+1}`});
+    }
+  }
+  return sheets;
+}
+
+function tryGetBox(p, fn){
+  try{
+    if(typeof p[fn] === 'function'){
+      const b = p[fn]();
+      if(b && b.width>0 && b.height>0) return b;
+    }
+  }catch(e){}
+  return null;
+}
+function getBoxes(p){
+  const mediaBox = tryGetBox(p,'getMediaBox') || {x:0,y:0,width:p.getWidth(),height:p.getHeight()};
+  const cropBox = tryGetBox(p,'getCropBox') || mediaBox;
+  const trimBox = tryGetBox(p,'getTrimBox') || cropBox;
+  const bleedBox = tryGetBox(p,'getBleedBox') || trimBox;
+  const bleed = {
+    left: Math.max(0, trimBox.x - bleedBox.x),
+    bottom: Math.max(0, trimBox.y - bleedBox.y),
+    right: Math.max(0, (bleedBox.x+bleedBox.width) - (trimBox.x+trimBox.width)),
+    top: Math.max(0, (bleedBox.y+bleedBox.height) - (trimBox.y+trimBox.height)),
+  };
+  // Everything physically available around the TrimBox out to the MediaBox —
+  // used on genuine outer sheet edges (nothing to gutter-cap against) so
+  // marks/bleed there aren't clipped to a smaller declared BleedBox.
+  const maxAllow = {
+    left: Math.max(0, trimBox.x - mediaBox.x),
+    bottom: Math.max(0, trimBox.y - mediaBox.y),
+    right: Math.max(0, (mediaBox.x+mediaBox.width) - (trimBox.x+trimBox.width)),
+    top: Math.max(0, (mediaBox.y+mediaBox.height) - (trimBox.y+trimBox.height)),
+  };
+  return {mediaBox, cropBox, trimBox, bleedBox, bleed, maxAllow};
+}
+function cellEdgeFlags(c, r, cols, rows){
+  return { left: c===0, right: c===cols-1, top: r===0, bottom: r===rows-1 };
+}
+
+// Embeds one source page into a grid cell, sized/positioned off its TrimBox,
+// with bleed allowed to run full-width on outer sheet edges but capped to
+// half the gutter against a neighboring cell (so two neighbors' bleeds meet
+// in the middle rather than overlapping).
+async function embedIntoCell(outDoc, page, srcPage, cellX, cellY, cellW, cellH, edges, gutterH, gutterV, autoscale){
+  const boxes = getBoxes(srcPage);
+  const trimBox = boxes.trimBox;
+  const effTrimW = trimBox.width, effTrimH = trimBox.height;
+  const scale = autoscale ? Math.min(cellW/effTrimW, cellH/effTrimH) : 1;
+
+  const halfGutterH = (gutterH/2)/scale;
+  const halfGutterV = (gutterV/2)/scale;
+  const allow = {
+    left:   edges.left   ? boxes.maxAllow.left   : Math.min(boxes.bleed.left,   halfGutterH),
+    right:  edges.right  ? boxes.maxAllow.right  : Math.min(boxes.bleed.right,  halfGutterH),
+    top:    edges.top    ? boxes.maxAllow.top    : Math.min(boxes.bleed.top,    halfGutterV),
+    bottom: edges.bottom ? boxes.maxAllow.bottom : Math.min(boxes.bleed.bottom, halfGutterV),
+  };
+
+  const emb = await outDoc.embedPage(srcPage, {
+    left: trimBox.x - allow.left, bottom: trimBox.y - allow.bottom,
+    right: trimBox.x+trimBox.width+allow.right, top: trimBox.y+trimBox.height+allow.top
+  });
+
+  const trimDrawW = effTrimW*scale, trimDrawH = effTrimH*scale;
+  const trimOriginX = cellX + (cellW-trimDrawW)/2;
+  const trimOriginY = cellY + (cellH-trimDrawH)/2;
+  const trimLocalX0 = allow.left*scale;
+  const trimLocalY0 = allow.bottom*scale;
+  const dw = emb.width*scale, dh = emb.height*scale;
+  const dx = trimOriginX - trimLocalX0, dy = trimOriginY - trimLocalY0;
+
+  page.drawPage(emb, {x:dx, y:dy, width:dw, height:dh});
+}
+
+function drawTick(page, x1,y1,x2,y2, knockout, thickness, registration){
+  const { rgb, cmyk } = PDFLib;
+  if(knockout){
+    const pad = MM_PT*0.2125;
+    page.drawRectangle({
+      x: Math.min(x1,x2)-pad, y: Math.min(y1,y2)-pad,
+      width: Math.abs(x2-x1)+pad*2 || pad*2, height: Math.abs(y2-y1)+pad*2 || pad*2,
+      color: rgb(1,1,1)
+    });
+  }
+  page.drawLine({start:{x:x1,y:y1}, end:{x:x2,y:y2}, thickness, color: registration ? cmyk(1,1,1,1) : cmyk(0,0,0,1)});
+}
+
+function drawPrinterMarks(page, sheet, w, h, geo, opts){
+  const {cropOn, gutOn, centerOn, len, dist, thick, knockout, registration} = opts;
+  if(!cropOn && !gutOn && !centerOn) return;
+  const tick = (x1,y1,x2,y2) => drawTick(page, x1,y1,x2,y2, knockout, thick, registration);
+
+  const bx = geo.originX, by = h - geo.originYTop - geo.blockH;
+  const bw = geo.blockW, bh = geo.blockH;
+  const {cellW, cellH, gutterH, gutterV} = geo;
+
+  if(cropOn){
+    const corners = [
+      {x:bx, y:by+bh, ox:-1, oy:1}, {x:bx+bw, y:by+bh, ox:1, oy:1},
+      {x:bx, y:by, ox:-1, oy:-1}, {x:bx+bw, y:by, ox:1, oy:-1},
+    ];
+    corners.forEach(({x,y,ox,oy})=>{
+      tick(x+ox*dist, y, x+ox*(dist+len), y);
+      tick(x, y+oy*dist, x, y+oy*(dist+len));
+    });
+    for(let c=1;c<sheet.cols;c++){
+      const leftCellRight = bx+(c-1)*(cellW+gutterH)+cellW;
+      const rightCellLeft = bx+c*(cellW+gutterH);
+      [by+bh, by].forEach(y=>{
+        const dir=(y===by+bh)?1:-1;
+        tick(leftCellRight, y+dir*dist, leftCellRight, y+dir*(dist+len));
+        tick(rightCellLeft, y+dir*dist, rightCellLeft, y+dir*(dist+len));
+      });
+    }
+    for(let r=1;r<sheet.rows;r++){
+      const aboveBottomOffset=(r-1)*(cellH+gutterV)+cellH;
+      const belowTopOffset=r*(cellH+gutterV);
+      const yAboveBottom=by+bh-aboveBottomOffset;
+      const yBelowTop=by+bh-belowTopOffset;
+      [bx, bx+bw].forEach(x=>{
+        const dir=(x===bx)?-1:1;
+        tick(x+dir*dist, yAboveBottom, x+dir*(dist+len), yAboveBottom);
+        tick(x+dir*dist, yBelowTop, x+dir*(dist+len), yBelowTop);
+      });
+    }
+  }
+  if(centerOn){
+    const midX=bx+bw/2, midY=by+bh/2;
+    tick(midX, by+bh+dist, midX, by+bh+dist+len);
+    tick(midX, by-dist, midX, by-dist-len);
+    tick(bx-dist, midY, bx-dist-len, midY);
+    tick(bx+bw+dist, midY, bx+bw+dist+len, midY);
+  }
+  if(gutOn){
+    for(let c=1;c<sheet.cols;c++){
+      const cx = bx+(c-1)*(cellW+gutterH)+cellW+gutterH/2;
+      const leftCellRight = bx+(c-1)*(cellW+gutterH)+cellW;
+      const rightCellLeft = bx+c*(cellW+gutterH);
+      const halfLenTB = Math.max(0.75, Math.min(len/2, gutterH*0.2));
+      for(let r=1;r<sheet.rows;r++){
+        const cy = by+bh-((r-1)*(cellH+gutterV)+cellH+gutterV/2);
+        const aboveBottomOffset=(r-1)*(cellH+gutterV)+cellH;
+        const belowTopOffset=r*(cellH+gutterV);
+        const yAboveBottom=by+bh-aboveBottomOffset;
+        const yBelowTop=by+bh-belowTopOffset;
+        const halfLenLR = Math.max(0.75, Math.min(len/2, gutterV*0.2));
+        tick(leftCellRight, cy-halfLenLR, leftCellRight, cy+halfLenLR);
+        tick(rightCellLeft, cy-halfLenLR, rightCellLeft, cy+halfLenLR);
+        tick(cx-halfLenTB, yAboveBottom, cx+halfLenTB, yAboveBottom);
+        tick(cx-halfLenTB, yBelowTop, cx+halfLenTB, yBelowTop);
+      }
+    }
+  }
+}
+
+/* ---- orchestration ---- */
+
+document.getElementById('btnImpose').addEventListener('click', runImpose);
+
+let imposeInFlight = false, imposePending = false;
+async function runImpose(opts){
+  const silent = !!(opts && opts.silent);
+  if(!state.generated.front){ if(!silent) setStatus('imposeStatus','Generate the merged PDF first (Step 4).','err'); return; }
+  if(imposeInFlight){ imposePending = true; return; }
+  imposeInFlight = true;
+  const btn = document.getElementById('btnImpose'); btn.disabled = true;
+  document.getElementById('btnDownloadImposed').disabled = true;
+  document.getElementById('imposeThumbsFront').innerHTML = '';
+  setStatus('imposeStatus','Building imposition…');
+
+  try{
+    const { PDFDocument } = PDFLib;
+    const hasBack = !!state.generated.back;
+    const doubleSidedOn = hasBack && document.getElementById('doubleSided').checked;
+    const sourceBytes = doubleSidedOn ? state.generated.duplex : state.generated.front;
+    if(doubleSidedOn && !sourceBytes) throw new Error('Duplex file missing — try generating again in Step 4.');
+
+    const cols = parseInt(document.getElementById('gridCols').value)||1;
+    const rows = parseInt(document.getElementById('gridRows').value)||1;
+    const sheetWPt = parseFloat(document.getElementById('sheetW').value)*MM_PT;
+    const sheetHPt = parseFloat(document.getElementById('sheetH').value)*MM_PT;
+    const marginPt = parseFloat(document.getElementById('marginMm').value)*MM_PT;
+    const gutterHPt = parseFloat(document.getElementById('gutterHMm').value)*MM_PT;
+    const gutterVPt = parseFloat(document.getElementById('gutterVMm').value)*MM_PT;
+    const arrangement = document.getElementById('arrangeSelect').value;
+    const rowOrder = document.getElementById('rowOrderSelect').value;
+    const repeatCount = parseInt(document.getElementById('repeatCount').value)||1;
+    const autoscaleOn = document.getElementById('autoscale').checked;
+    const centerOnPageOn = document.getElementById('centerOnPage').checked;
+
+    const marksOpts = {
+      cropOn: document.getElementById('cropMarks').checked,
+      gutOn: document.getElementById('gutterMarks').checked,
+      centerOn: document.getElementById('centerMarks').checked,
+      knockout: document.getElementById('knockout').checked,
+      registration: document.getElementById('registrationColor').checked,
+      len: parseFloat(document.getElementById('markLen').value||0)*MM_PT,
+      dist: parseFloat(document.getElementById('markDist').value||0)*MM_PT,
+      thick: parseFloat(document.getElementById('markThick').value||0.25)*MM_PT,
+    };
+
+    const srcDoc = await PDFDocument.load(sourceBytes.slice());
+    const numPages = srcDoc.getPageCount();
+    const sheets = buildGridSheets(numPages, {cols, rows, arrangement, rowOrder, repeatCount, doubleSided: doubleSidedOn});
+    if(!sheets.length) throw new Error('Nothing to impose.');
+
+    const outDoc = await PDFDocument.create();
+    const localPages = await outDoc.copyPages(srcDoc, srcDoc.getPageIndices());
+
+    for(const sheet of sheets){
+      const {rows:R, cols:C, cells} = sheet;
+      const availW = sheetWPt - 2*marginPt - (C-1)*gutterHPt;
+      const availH = sheetHPt - 2*marginPt - (R-1)*gutterVPt;
+      if(availW<=0 || availH<=0) throw new Error('Grid does not fit on the sheet — reduce columns/rows or margins/gutter.');
+      let cellW, cellH, blockW, blockH;
+      if(autoscaleOn){
+        cellW = availW/C; cellH = availH/R;
+        blockW = availW; blockH = availH;
+      } else {
+        let maxW=1, maxH=1;
+        cells.forEach(idx=>{ if(idx!=null){ const b=getBoxes(localPages[idx]).trimBox; maxW=Math.max(maxW,b.width); maxH=Math.max(maxH,b.height); } });
+        cellW = maxW; cellH = maxH;
+        blockW = C*cellW + (C-1)*gutterHPt;
+        blockH = R*cellH + (R-1)*gutterVPt;
+      }
+      const originX = centerOnPageOn ? Math.max(0, (sheetWPt-blockW)/2) : marginPt;
+      const originYTop = centerOnPageOn ? Math.max(0, (sheetHPt-blockH)/2) : marginPt;
+
+      const page = outDoc.addPage([sheetWPt, sheetHPt]);
+      for(let k=0;k<cells.length;k++){
+        const idx = cells[k];
+        if(idx===null || idx===undefined || idx>=numPages) continue;
+        const r = Math.floor(k/C), c = k%C;
+        const cellX = originX + c*(cellW+gutterHPt);
+        const cellY = sheetHPt - (originYTop + r*(cellH+gutterVPt)) - cellH;
+        const edges = cellEdgeFlags(c, r, C, R);
+        await embedIntoCell(outDoc, page, localPages[idx], cellX, cellY, cellW, cellH, edges, gutterHPt, gutterVPt, autoscaleOn);
+      }
+      const geo = {cellW, cellH, gutterH:gutterHPt, gutterV:gutterVPt, originX, originYTop, blockW, blockH};
+      drawPrinterMarks(page, sheet, sheetWPt, sheetHPt, geo, marksOpts);
+    }
+
+    const outBytes = await outDoc.save();
+    state.imposed.all = outBytes;
+
+    document.getElementById('btnDownloadImposed').disabled = false;
+    await renderThumbs(state.imposed.all, 'imposeThumbsFront', doubleSidedOn ? 8 : 6);
+    document.getElementById('imposeThumbsLabel').textContent = doubleSidedOn ? 'Sheets (front, back, front, back, …)' : 'Sheets';
+
+    const sheetCountShown = doubleSidedOn ? sheets.length/2 : sheets.length;
+    document.getElementById('imposeMeta').textContent =
+      numPages+' page(s) in · '+cols+' × '+rows+' up ('+(cols*rows)+' per sheet) · '+sheetCountShown+' sheet(s)'+(doubleSidedOn?' × 2 sides (1 PDF, sheets alternating front/back)':'')+' · arrangement: '+arrangement;
+    setStatus('imposeStatus','Imposition built.','ok');
+  }catch(err){
+    console.error(err);
+    setStatus('imposeStatus','Failed: '+err.message,'err');
+  }finally{
+    btn.disabled = false;
+    imposeInFlight = false;
+    if(imposePending){ imposePending = false; scheduleImpose(); }
+  }
+}
+const scheduleImpose = debounce(()=> runImpose({silent:true}), 500);
+
+document.getElementById('btnDownloadImposed').addEventListener('click', ()=> downloadBytes(state.imposed.all, 'vdp-imposed.pdf'));
+
+</script>
+</body>
+</html>
