@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ujian Olimpiade Matematika SD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f6f1e4;
+    --paper-line:#e1d6ba;
+    --ink:#1f2a37;
+    --ink-soft:#5b6472;
+    --navy:#1f3c5c;
+    --navy-dark:#122740;
+    --gold:#a9812f;
+    --gold-soft:#e7d8ab;
+    --red:#a4392f;
+    --red-soft:#f1ddd6;
+    --green:#3d6b4a;
+    --green-soft:#dde9e0;
+    --radius:14px;
+    --shadow: 0 10px 30px -12px rgba(18,39,64,0.25);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 10% -10%, #fffaf0 0%, transparent 60%),
+      var(--paper);
+    color:var(--ink);
+    font-family:'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  h1,h2,h3,.serif{font-family:'Fraunces', Georgia, serif;}
+  .mono{font-family:'IBM Plex Mono', monospace;}
+  #app{max-width:920px;margin:0 auto;padding:22px 16px 80px;}
+  a{color:inherit;}
+  button{font-family:inherit;cursor:pointer;}
+
+  /* ---------- Header stamp ---------- */
+  .seal{
+    display:flex;align-items:center;gap:14px;
+    padding:18px 22px;
+    background:var(--navy);
+    color:#fdf9ee;
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    position:relative;
+    overflow:hidden;
+  }
+  .seal::after{
+    content:"";
+    position:absolute; right:-40px; top:-40px;
+    width:160px;height:160px;border-radius:50%;
+    background:radial-gradient(circle, rgba(233,207,139,0.18), transparent 70%);
+  }
+  .seal-badge{
+    width:56px;height:56px;border-radius:50%;
+    border:2px solid var(--gold-soft);
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+    font-family:'Fraunces',serif;font-weight:700;font-size:20px;
+    color:var(--gold-soft);
+    background:rgba(255,255,255,0.05);
+  }
+  .seal-title{font-size:20px;font-weight:600;line-height:1.25;margin:0;}
+  .seal-sub{margin:2px 0 0;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;color:#cfe0f0;opacity:.85;}
+
+  /* ---------- Cards ---------- */
+  .card{
+    background:#fffdf7;
+    border:1px solid var(--paper-line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:24px;
+    margin-top:18px;
+  }
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:6px;letter-spacing:.02em;text-transform:uppercase;}
+  .field input[type=text], .field input[type=password], .field textarea{
+    width:100%;padding:12px 14px;border-radius:10px;
+    border:1.5px solid var(--paper-line);background:#fffefb;
+    font-size:15.5px;color:var(--ink);font-family:inherit;
+  }
+  .field input:focus, .field textarea:focus{outline:2px solid var(--navy);outline-offset:1px;border-color:var(--navy);}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    padding:12px 22px;border-radius:999px;border:none;
+    font-weight:700;font-size:15px;letter-spacing:.01em;
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn-primary{background:var(--navy);color:#fdf9ee;box-shadow:0 8px 18px -8px rgba(31,60,92,0.55);}
+  .btn-primary:hover{background:var(--navy-dark);}
+  .btn-ghost{background:transparent;color:var(--navy);border:1.5px solid var(--navy);}
+  .btn-ghost:hover{background:rgba(31,60,92,0.06);}
+  .btn-gold{background:var(--gold);color:#3a2c07;box-shadow:0 8px 18px -8px rgba(169,129,47,0.55);}
+  .btn-danger{background:var(--red);color:#fff6f2;}
+  .btn-sm{padding:8px 14px;font-size:13px;border-radius:999px;}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+  .link-btn{background:none;border:none;color:var(--ink-soft);text-decoration:underline;font-size:13.5px;padding:0;}
+
+  /* ---------- Home ---------- */
+  .home-hero{text-align:center;padding:6px 4px 2px;}
+  .home-hero h1{font-size:clamp(24px,4.5vw,32px);margin:0 0 6px;color:var(--navy-dark);}
+  .home-hero p{color:var(--ink-soft);font-size:14.5px;margin:0;}
+  .rules-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;}
+  @media (max-width:520px){.rules-grid{grid-template-columns:1fr;}}
+  .rule-item{
+    background:var(--gold-soft);
+    border-radius:10px;padding:10px 12px;font-size:13px;color:#4a3a10;
+    display:flex;justify-content:space-between;gap:8px;
+  }
+  .rule-item b{color:#2f2405;}
+
+  .paket-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
+  .paket-btn{
+    padding:10px 4px;border-radius:12px;
+    border:1.5px solid var(--paper-line);background:#fffefb;
+    font-family:'Fraunces',serif;font-weight:700;font-size:17px;color:var(--navy);
+  }
+  @media (max-width:420px){.paket-grid{grid-template-columns:repeat(5,1fr);} .paket-btn{font-size:15px;padding:9px 2px;}}
+  .paket-btn:hover{border-color:var(--navy);}
+  .paket-btn.active{background:var(--navy);border-color:var(--navy);color:#fdf9ee;}
+  .paket-btn.active::after{content:" ✓";font-size:13px;}
+
+  /* ---------- Nav grid (bubble sheet) ---------- */
+  .navgrid-wrap{
+    position:sticky;top:10px;z-index:20;
+    background:rgba(246,241,228,0.92);
+    backdrop-filter:blur(6px);
+    border:1px solid var(--paper-line);
+    border-radius:var(--radius);
+    padding:12px 14px;
+    margin-top:16px;
+    box-shadow:var(--shadow);
+  }
+  .navgrid-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;}
+  .timer{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:15px;color:var(--red);background:var(--red-soft);padding:5px 12px;border-radius:999px;}
+  .navgrid{display:grid;grid-template-columns:repeat(auto-fill, minmax(30px,1fr));gap:6px;}
+  .navdot{
+    width:30px;height:30px;border-radius:50%;
+    border:1.5px solid var(--paper-line);background:#fffefb;
+    font-size:11.5px;font-weight:700;color:var(--ink-soft);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .navdot.answered{background:var(--navy);border-color:var(--navy);color:#fff;}
+  .navdot.essay{border-style:dashed;}
+
+  /* ---------- Questions ---------- */
+  .qsection-label{
+    display:inline-block;background:var(--navy);color:#fdf9ee;
+    font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    padding:6px 14px;border-radius:999px;margin:22px 0 10px;
+  }
+  .qcard{scroll-margin-top:170px;}
+  .qnum{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:30px;height:30px;border-radius:50%;
+    background:var(--navy); color:#fff;font-weight:700;font-size:13.5px;
+    flex-shrink:0;
+  }
+  .qhead{display:flex;gap:12px;align-items:flex-start;margin-bottom:14px;}
+  .qtext{font-size:16px;line-height:1.55;padding-top:3px;}
+  .options{display:grid;gap:10px;margin-left:42px;}
+  .option{
+    display:flex;align-items:center;gap:12px;
+    border:1.5px solid var(--paper-line);border-radius:12px;
+    padding:10px 14px;background:#fffefb;
+  }
+  .option:hover{border-color:var(--navy);}
+  .bubble{
+    width:26px;height:26px;border-radius:50%;flex-shrink:0;
+    border:2px solid var(--navy);
+    display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:700;color:var(--navy);
+    background:#fff;
+  }
+  .option.selected{background:var(--navy);border-color:var(--navy);color:#fdf9ee;}
+  .option.selected .bubble{background:var(--gold);border-color:var(--gold);color:#3a2c07;}
+  .option-text{font-size:15px;}
+  .essay-points{font-size:12.5px;color:var(--ink-soft);font-style:italic;margin-left:42px;margin-top:-6px;margin-bottom:10px;}
+
+  /* ---------- Result ---------- */
+  .result-score{
+    text-align:center;padding:22px 10px 6px;
+  }
+  .result-score .num{font-family:'Fraunces',serif;font-size:52px;font-weight:700;color:var(--navy-dark);}
+  .result-score .lbl{color:var(--ink-soft);font-size:13.5px;text-transform:uppercase;letter-spacing:.05em;}
+  .code-box{
+    display:flex;align-items:center;justify-content:center;gap:10px;
+    background:var(--gold-soft);border:1.5px dashed var(--gold);
+    border-radius:12px;padding:14px;margin-top:14px;
+  }
+  .code-box .code{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;letter-spacing:.12em;color:#4a3a10;}
+
+  /* ---------- Admin ---------- */
+  .admin-row{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:14px 4px;border-bottom:1px solid var(--paper-line);
+    flex-wrap:wrap;
+  }
+  .admin-row:last-child{border-bottom:none;}
+  .pill{padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700;}
+  .pill.pending{background:var(--gold-soft);color:#4a3a10;}
+  .pill.done{background:var(--green-soft);color:var(--green);}
+  .score-input{width:64px;padding:6px 8px;border-radius:8px;border:1.5px solid var(--paper-line);font-family:'IBM Plex Mono',monospace;font-size:14px;text-align:center;}
+  .essay-review{background:var(--paper);border-radius:10px;padding:12px 14px;margin-top:8px;font-size:14px;line-height:1.5;white-space:pre-wrap;border:1px solid var(--paper-line);}
+  .rubric-box{background:var(--green-soft);border-radius:10px;padding:10px 14px;margin-top:8px;font-size:13px;color:#2c4a35;}
+  table.mc-key{width:100%;border-collapse:collapse;font-size:13px;}
+  table.mc-key td{padding:4px 6px;text-align:center;border-bottom:1px solid var(--paper-line);}
+  .banner{padding:10px 14px;border-radius:10px;font-size:13.5px;margin-bottom:14px;}
+  .banner.warn{background:var(--red-soft);color:var(--red);}
+  .banner.ok{background:var(--green-soft);color:var(--green);}
+  .empty{color:var(--ink-soft);font-size:14px;text-align:center;padding:30px 0;}
+  footer.tip{text-align:center;color:var(--ink-soft);font-size:12px;margin-top:26px;}
+
+  /* ---------- Review / pembahasan ---------- */
+  .review-item{border-radius:12px;border:1.5px solid var(--paper-line);padding:14px 16px;margin-top:12px;background:#fffefb;}
+  .review-item.correct{border-color:var(--green);background:var(--green-soft);}
+  .review-item.wrong{border-color:var(--red);background:var(--red-soft);}
+  .review-item.blank{border-color:var(--gold);background:var(--gold-soft);}
+  .review-top{display:flex;align-items:flex-start;gap:10px;}
+  .review-badge{
+    flex-shrink:0;width:26px;height:26px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;font-weight:800;color:#fff;
+  }
+  .review-badge.correct{background:var(--green);}
+  .review-badge.wrong{background:var(--red);}
+  .review-badge.blank{background:var(--gold);color:#3a2c07;}
+  .review-q{font-size:14.5px;font-weight:600;line-height:1.4;}
+  .review-ans{font-size:13.5px;margin:8px 0 0 36px;color:var(--ink-soft);}
+  .review-ans b{color:var(--ink);}
+  .review-explain{font-size:13.5px;margin:6px 0 0 36px;padding:8px 12px;background:rgba(255,255,255,0.6);border-radius:8px;line-height:1.5;}
+  .review-summary{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:14px 0 6px;}
+  .review-chip{padding:6px 14px;border-radius:999px;font-size:12.5px;font-weight:700;}
+  .review-chip.correct{background:var(--green-soft);color:var(--green);}
+  .review-chip.wrong{background:var(--red-soft);color:var(--red);}
+  .review-chip.blank{background:var(--gold-soft);color:#4a3a10;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============ DATA ============ */
+  var PAKET_LIST = ["A","B","C","D","E","F","G","H","I","J"];
+
+  var MC_SETS = {};
+
+  MC_SETS.A = [
+    ["Bilangan yang terletak di antara 27 dan 29 adalah ...", ["26","28","30","25"], 1, "Bilangan yang berada tepat di antara 27 dan 29 hanya ada satu, yaitu 28."],
+    ["Hasil dari 15 + 8 = ...", ["21","22","23","24"], 2, "15 + 8 = 23."],
+    ["Hasil dari 30 - 12 = ...", ["16","17","18","19"], 2, "30 - 12 = 18."],
+    ["Urutan bilangan dari yang terkecil ke terbesar adalah ...", ["45, 23, 67, 12","12, 23, 45, 67","67, 45, 23, 12","23, 12, 45, 67"], 1, "Jika diurutkan dari yang terkecil: 12, kemudian 23, lalu 45, dan terakhir 67."],
+    ["Perhatikan pola bilangan berikut: 3, 6, 9, 12, ... Bilangan selanjutnya adalah ...", ["13","14","15","16"], 2, "Polanya bertambah 3 setiap suku, sehingga setelah 12 adalah 12 + 3 = 15."],
+    ["Dina memiliki 7 permen. Ibu memberi 6 permen lagi. Jumlah permen Dina sekarang adalah ...", ["12","13","14","15"], 1, "7 + 6 = 13 permen."],
+    ["Budi mempunyai 20 kelereng. Ia memberikan 8 kelereng kepada adiknya. Sisa kelereng Budi adalah ...", ["10","11","12","13"], 2, "20 - 8 = 12 kelereng."],
+    ["Bangun datar yang memiliki 3 sisi disebut ...", ["Persegi","Segitiga","Lingkaran","Persegi panjang"], 1, "Bangun datar dengan 3 sisi dan 3 sudut adalah segitiga."],
+    ["Bangun datar yang memiliki 4 sisi sama panjang dan 4 sudut siku-siku disebut ...", ["Segitiga","Lingkaran","Persegi","Trapesium"], 2, "Bangun dengan 4 sisi sama panjang dan 4 sudut siku-siku adalah persegi."],
+    ["Bangun datar yang tidak memiliki sudut adalah ...", ["Segitiga","Persegi","Lingkaran","Persegi panjang"], 2, "Lingkaran adalah bangun datar yang tidak memiliki sudut maupun sisi lurus."],
+    ["Jam menunjukkan pukul 07.30 dibaca sebagai pukul ...", ["Tujuh lebih lima belas","Setengah delapan","Delapan lebih tiga puluh","Tujuh kurang tiga puluh"], 1, "Pukul 07.30 biasa dibaca 'setengah delapan' karena sudah setengah jam menuju pukul 8."],
+    ["Hasil dari 100 - 45 = ...", ["45","55","65","75"], 1, "100 - 45 = 55."],
+    ["Banyak bilangan genap di antara 10 dan 20 (tidak termasuk 10 dan 20) adalah ...", ["4","5","6","7"], 0, "Bilangan genap antara 10 dan 20 adalah 12, 14, 16, dan 18. Jumlahnya ada 4."],
+    ["Bilangan ganjil terbesar yang kurang dari 20 adalah ...", ["17","18","19","20"], 2, "Bilangan ganjil yang paling dekat namun kurang dari 20 adalah 19."],
+    ["Jika hari ini hari Senin, maka 3 hari lagi adalah hari ...", ["Rabu","Kamis","Jumat","Sabtu"], 1, "Senin + 1 = Selasa, + 2 = Rabu, + 3 = Kamis."],
+    ["Sinta mempunyai uang Rp1.000. Ia membeli permen seharga Rp600. Uang kembalian Sinta adalah ...", ["Rp300","Rp400","Rp500","Rp600"], 1, "Rp1.000 - Rp600 = Rp400."],
+    ["Sebuah kotak berisi 12 pensil dibagikan sama rata kepada 3 anak. Setiap anak mendapat ... pensil", ["3","4","5","6"], 1, "12 dibagi 3 sama dengan 4 pensil untuk setiap anak."],
+    ["Nilai angka 7 pada bilangan 74 adalah ...", ["4","7","70","74"], 2, "Pada bilangan 74, angka 7 berada di tempat puluhan, sehingga nilainya 70."],
+    ["Bilangan yang lebih besar dari 58 tetapi lebih kecil dari 60 adalah ...", ["57","58","59","61"], 2, "Satu-satunya bilangan di antara 58 dan 60 adalah 59."],
+    ["Ani memiliki 3 kotak, setiap kotak berisi 4 kue. Jumlah kue seluruhnya adalah ...", ["10","11","12","13"], 2, "3 kotak x 4 kue = 12 kue, karena 4 + 4 + 4 = 12."],
+    ["Perhatikan pola berikut: lingkaran, bintang, lingkaran, bintang, lingkaran, ... Bentuk selanjutnya adalah ...", ["Lingkaran","Bintang","Segitiga","Persegi"], 1, "Polanya berselang-seling lingkaran-bintang, jadi setelah lingkaran giliran bintang."],
+    ["Ibu mempunyai 25 telur. Ia menggunakan 9 telur untuk membuat kue. Sisa telur ibu adalah ...", ["14","15","16","17"], 2, "25 - 9 = 16 telur."],
+    ["Bilangan sebelum 100 adalah ...", ["98","99","101","90"], 1, "Bilangan tepat sebelum 100 adalah 99."],
+    ["Hasil dari 6 + 6 + 6 = ...", ["16","17","18","19"], 2, "6 + 6 + 6 = 18, sama dengan 6 x 3."],
+    ["Jarum pendek pada jam menunjukkan angka 3 dan jarum panjang menunjukkan angka 12. Waktu tersebut menunjukkan pukul ...", ["03.00","12.00","12.03","03.12"], 0, "Jarum pendek menunjukkan jam dan jarum panjang di angka 12 berarti tepat pukul 03.00."],
+    ["Dari kumpulan bilangan berikut: 14, 8, 21, 5. Bilangan terbesar adalah ...", ["14","8","21","5"], 2, "Di antara 14, 8, 21, dan 5, bilangan yang paling besar adalah 21."],
+    ["Ada 9 ekor bebek di kolam. Sebanyak 4 ekor bebek berenang pergi, kemudian datang lagi 6 ekor bebek. Sekarang jumlah bebek di kolam adalah ...", ["10","11","12","13"], 1, "9 - 4 = 5, kemudian 5 + 6 = 11 ekor bebek."],
+    ["Sebuah tali panjangnya 50 cm dipotong menjadi 2 bagian sama panjang. Panjang setiap bagian adalah ...", ["20 cm","25 cm","30 cm","35 cm"], 1, "50 cm dibagi 2 sama dengan 25 cm untuk setiap bagian."],
+    ["Urutan bilangan dari yang terbesar ke terkecil adalah ...", ["12, 34, 56, 78","78, 56, 34, 12","34, 12, 78, 56","56, 78, 12, 34"], 1, "Diurutkan dari terbesar ke terkecil: 78, 56, 34, 12."],
+    ["Rani berusia 8 tahun sekarang. 5 tahun yang akan datang, usia Rani adalah ...", ["12","13","14","15"], 1, "8 + 5 = 13 tahun."]
+  ];
+
+  MC_SETS.B = [
+    ["Bilangan yang terletak di antara 34 dan 36 adalah ...", ["33","35","37","36"], 1, "Bilangan yang berada tepat di antara 34 dan 36 hanya ada satu, yaitu 35."],
+    ["Hasil dari 18 + 7 = ...", ["23","24","25","26"], 2, "18 + 7 = 25."],
+    ["Hasil dari 40 - 16 = ...", ["22","23","24","25"], 2, "40 - 16 = 24."],
+    ["Urutan bilangan dari yang terkecil ke terbesar adalah ...", ["56, 19, 38, 7","7, 19, 38, 56","38, 7, 56, 19","19, 56, 7, 38"], 1, "Jika diurutkan dari yang terkecil: 7, kemudian 19, lalu 38, dan terakhir 56."],
+    ["Perhatikan pola bilangan berikut: 4, 8, 12, 16, ... Bilangan selanjutnya adalah ...", ["18","19","20","21"], 2, "Polanya bertambah 4 setiap suku, sehingga setelah 16 adalah 16 + 4 = 20."],
+    ["Rina memiliki 9 pensil. Ayah memberi 5 pensil lagi. Jumlah pensil Rina sekarang adalah ...", ["12","13","14","15"], 2, "9 + 5 = 14 pensil."],
+    ["Doni mempunyai 25 kelereng. Ia memberikan 10 kelereng kepada temannya. Sisa kelereng Doni adalah ...", ["13","14","15","16"], 2, "25 - 10 = 15 kelereng."],
+    ["Bangun datar yang memiliki 4 sisi, sisi berhadapan sama panjang, dan 4 sudut siku-siku disebut ...", ["Segitiga","Lingkaran","Persegi","Persegi panjang"], 3, "Bangun dengan 4 sudut siku-siku tetapi hanya sisi berhadapan yang sama panjang adalah persegi panjang."],
+    ["Bangun datar yang memiliki sisi lengkung dan tidak memiliki sudut adalah ...", ["Segitiga","Persegi","Trapesium","Lingkaran"], 3, "Lingkaran adalah bangun datar bersisi lengkung tanpa sudut."],
+    ["Bangun datar segi empat yang hanya memiliki sepasang sisi sejajar disebut ...", ["Persegi","Trapesium","Segitiga","Lingkaran"], 1, "Bangun segi empat dengan hanya sepasang sisi sejajar disebut trapesium."],
+    ["Jam menunjukkan pukul 09.30 dibaca sebagai pukul ...", ["Sembilan lebih tiga puluh","Setengah sepuluh","Sepuluh kurang lima belas","Sembilan lebih lima belas"], 1, "Pukul 09.30 biasa dibaca 'setengah sepuluh' karena sudah setengah jam menuju pukul 10."],
+    ["Hasil dari 90 - 37 = ...", ["52","53","54","55"], 1, "90 - 37 = 53."],
+    ["Banyak bilangan ganjil di antara 20 dan 30 (tidak termasuk 20 dan 30) adalah ...", ["4","5","6","7"], 1, "Bilangan ganjil antara 20 dan 30 adalah 21, 23, 25, 27, dan 29. Jumlahnya ada 5."],
+    ["Bilangan genap terbesar yang kurang dari 30 adalah ...", ["26","27","28","29"], 2, "Bilangan genap yang paling dekat namun kurang dari 30 adalah 28."],
+    ["Jika hari ini hari Rabu, maka 4 hari lagi adalah hari ...", ["Sabtu","Minggu","Senin","Selasa"], 1, "Rabu + 1 = Kamis, + 2 = Jumat, + 3 = Sabtu, + 4 = Minggu."],
+    ["Sinta mempunyai uang Rp2.000. Ia membeli pensil seharga Rp1.300. Uang kembalian Sinta adalah ...", ["Rp600","Rp700","Rp800","Rp900"], 1, "Rp2.000 - Rp1.300 = Rp700."],
+    ["Sebuah kotak berisi 18 pensil dibagikan sama rata kepada 3 anak. Setiap anak mendapat ... pensil", ["4","5","6","7"], 2, "18 dibagi 3 sama dengan 6 pensil untuk setiap anak."],
+    ["Nilai angka 5 pada bilangan 58 adalah ...", ["5","8","50","58"], 2, "Pada bilangan 58, angka 5 berada di tempat puluhan, sehingga nilainya 50."],
+    ["Bilangan yang lebih besar dari 68 tetapi lebih kecil dari 70 adalah ...", ["67","68","69","71"], 2, "Satu-satunya bilangan di antara 68 dan 70 adalah 69."],
+    ["Ani memiliki 4 kotak, setiap kotak berisi 5 kue. Jumlah kue seluruhnya adalah ...", ["18","19","20","21"], 2, "4 kotak x 5 kue = 20 kue."],
+    ["Perhatikan pola berikut: segitiga, persegi, segitiga, persegi, segitiga, ... Bentuk selanjutnya adalah ...", ["Segitiga","Persegi","Lingkaran","Bintang"], 1, "Polanya berselang-seling segitiga-persegi, jadi setelah segitiga giliran persegi."],
+    ["Ibu mempunyai 32 telur. Ia menggunakan 15 telur untuk membuat kue. Sisa telur ibu adalah ...", ["15","16","17","18"], 2, "32 - 15 = 17 telur."],
+    ["Bilangan sesudah 199 adalah ...", ["198","199","200","201"], 2, "Bilangan tepat sesudah 199 adalah 200."],
+    ["Hasil dari 7 + 7 + 7 = ...", ["19","20","21","22"], 2, "7 + 7 + 7 = 21, sama dengan 7 x 3."],
+    ["Jarum pendek pada jam menunjukkan angka 6 dan jarum panjang menunjukkan angka 12. Waktu tersebut menunjukkan pukul ...", ["06.00","12.00","12.06","06.12"], 0, "Jarum pendek menunjukkan jam dan jarum panjang di angka 12 berarti tepat pukul 06.00."],
+    ["Dari kumpulan bilangan berikut: 17, 42, 9, 31. Bilangan terbesar adalah ...", ["17","42","9","31"], 1, "Di antara 17, 42, 9, dan 31, bilangan yang paling besar adalah 42."],
+    ["Ada 12 ekor ayam di kandang. Sebanyak 5 ekor ayam keluar, kemudian masuk lagi 8 ekor ayam. Sekarang jumlah ayam di kandang adalah ...", ["13","14","15","16"], 2, "12 - 5 = 7, kemudian 7 + 8 = 15 ekor ayam."],
+    ["Sebuah tali panjangnya 60 cm dipotong menjadi 3 bagian sama panjang. Panjang setiap bagian adalah ...", ["15 cm","20 cm","25 cm","30 cm"], 1, "60 cm dibagi 3 sama dengan 20 cm untuk setiap bagian."],
+    ["Urutan bilangan dari yang terbesar ke terkecil adalah ...", ["23, 45, 67, 89","89, 67, 45, 23","45, 89, 23, 67","67, 23, 89, 45"], 1, "Diurutkan dari terbesar ke terkecil: 89, 67, 45, 23."],
+    ["Rani berusia 9 tahun sekarang. 6 tahun yang akan datang, usia Rani adalah ...", ["13","14","15","16"], 2, "9 + 6 = 15 tahun."]
+  ];
+
+  MC_SETS.C = [
+    ["Bilangan yang terletak di antara 51 dan 53 adalah ...", ["50","51","52","54"], 2, "Bilangan yang berada tepat di antara 51 dan 53 hanya ada satu, yaitu 52."],
+    ["Hasil dari 24 + 9 = ...", ["31","32","33","34"], 2, "24 + 9 = 33."],
+    ["Hasil dari 50 - 28 = ...", ["20","21","22","23"], 2, "50 - 28 = 22."],
+    ["Urutan bilangan dari yang terkecil ke terbesar adalah ...", ["63, 15, 48, 9","9, 15, 48, 63","48, 9, 63, 15","15, 63, 9, 48"], 1, "Jika diurutkan dari yang terkecil: 9, kemudian 15, lalu 48, dan terakhir 63."],
+    ["Perhatikan pola bilangan berikut: 5, 10, 15, 20, ... Bilangan selanjutnya adalah ...", ["22","23","24","25"], 3, "Polanya bertambah 5 setiap suku, sehingga setelah 20 adalah 20 + 5 = 25."],
+    ["Bayu memiliki 11 kelereng. Kakak memberi 9 kelereng lagi. Jumlah kelereng Bayu sekarang adalah ...", ["18","19","20","21"], 2, "11 + 9 = 20 kelereng."],
+    ["Sari mempunyai 30 permen. Ia memberikan 12 permen kepada adiknya. Sisa permen Sari adalah ...", ["16","17","18","19"], 2, "30 - 12 = 18 permen."],
+    ["Bangun datar yang memiliki 5 sisi disebut ...", ["Segi empat","Segi lima","Segi enam","Segitiga"], 1, "Bangun datar dengan 5 sisi disebut segi lima."],
+    ["Bangun datar yang memiliki 6 sisi disebut ...", ["Segi lima","Segi enam","Segi tujuh","Segi empat"], 1, "Bangun datar dengan 6 sisi disebut segi enam."],
+    ["Bangun datar yang semua sisinya sama panjang dan memiliki 3 sudut adalah ...", ["Segitiga sama sisi","Persegi panjang","Trapesium","Lingkaran"], 0, "Bangun datar bersisi 3 dan sisinya sama panjang disebut segitiga sama sisi."],
+    ["Jam menunjukkan pukul 04.45 dibaca sebagai pukul ...", ["Empat lebih empat puluh lima","Lima kurang lima belas","Empat lebih lima belas","Lima lebih empat puluh lima"], 1, "Pukul 04.45 biasa dibaca 'lima kurang lima belas' karena kurang 15 menit menuju pukul 5."],
+    ["Hasil dari 120 - 65 = ...", ["45","50","55","60"], 2, "120 - 65 = 55."],
+    ["Banyak bilangan genap di antara 30 dan 40 (tidak termasuk 30 dan 40) adalah ...", ["3","4","5","6"], 1, "Bilangan genap antara 30 dan 40 adalah 32, 34, 36, dan 38. Jumlahnya ada 4."],
+    ["Bilangan ganjil terkecil yang lebih dari 40 adalah ...", ["40","41","42","43"], 1, "Bilangan ganjil yang paling dekat dan lebih dari 40 adalah 41."],
+    ["Jika hari ini hari Jumat, maka 5 hari lagi adalah hari ...", ["Senin","Selasa","Rabu","Kamis"], 2, "Jumat + 1 = Sabtu, + 2 = Minggu, + 3 = Senin, + 4 = Selasa, + 5 = Rabu."],
+    ["Toni mempunyai uang Rp5.000. Ia membeli buku seharga Rp3.250. Uang kembalian Toni adalah ...", ["Rp1.500","Rp1.750","Rp1.800","Rp2.000"], 1, "Rp5.000 - Rp3.250 = Rp1.750."],
+    ["Sebanyak 24 kelereng dibagikan sama rata kepada 4 anak. Setiap anak mendapat ... kelereng", ["4","5","6","7"], 2, "24 dibagi 4 sama dengan 6 kelereng untuk setiap anak."],
+    ["Nilai angka 3 pada bilangan 132 adalah ...", ["3","30","100","132"], 1, "Pada bilangan 132, angka 3 berada di tempat puluhan, sehingga nilainya 30."],
+    ["Bilangan yang lebih besar dari 89 tetapi lebih kecil dari 91 adalah ...", ["88","89","90","92"], 2, "Satu-satunya bilangan di antara 89 dan 91 adalah 90."],
+    ["Terdapat 6 rak buku, setiap rak berisi 7 buku. Jumlah buku seluruhnya adalah ...", ["40","41","42","43"], 2, "6 rak x 7 buku = 42 buku."],
+    ["Perhatikan pola berikut: merah, biru, merah, biru, merah, ... Warna selanjutnya adalah ...", ["Merah","Biru","Hijau","Kuning"], 1, "Polanya berselang-seling merah-biru, jadi setelah merah giliran biru."],
+    ["Ibu mempunyai 45 apel. Ia menggunakan 27 apel untuk membuat jus. Sisa apel ibu adalah ...", ["16","17","18","19"], 2, "45 - 27 = 18 apel."],
+    ["Bilangan sebelum 300 adalah ...", ["298","299","301","300"], 1, "Bilangan tepat sebelum 300 adalah 299."],
+    ["Hasil dari 9 + 9 + 9 + 9 = ...", ["34","35","36","37"], 2, "9 + 9 + 9 + 9 = 36, sama dengan 9 x 4."],
+    ["Jarum pendek pada jam menunjukkan angka 8 dan jarum panjang menunjukkan angka 12. Waktu tersebut menunjukkan pukul ...", ["08.00","12.00","12.08","08.12"], 0, "Jarum pendek menunjukkan jam dan jarum panjang di angka 12 berarti tepat pukul 08.00."],
+    ["Dari kumpulan bilangan berikut: 54, 19, 76, 33. Bilangan terkecil adalah ...", ["54","19","76","33"], 1, "Di antara 54, 19, 76, dan 33, bilangan yang paling kecil adalah 19."],
+    ["Ada 20 ekor burung di sangkar. Sebanyak 7 ekor burung terbang pergi, kemudian datang lagi 5 ekor burung. Sekarang jumlah burung di sangkar adalah ...", ["16","17","18","19"], 2, "20 - 7 = 13, kemudian 13 + 5 = 18 ekor burung."],
+    ["Sebuah pita panjangnya 80 cm dipotong menjadi 4 bagian sama panjang. Panjang setiap bagian adalah ...", ["15 cm","20 cm","25 cm","30 cm"], 1, "80 cm dibagi 4 sama dengan 20 cm untuk setiap bagian."],
+    ["Urutan bilangan dari yang terbesar ke terkecil adalah ...", ["8, 27, 41, 63","63, 41, 27, 8","27, 63, 8, 41","41, 8, 63, 27"], 1, "Diurutkan dari terbesar ke terkecil: 63, 41, 27, 8."],
+    ["Dewi berusia 10 tahun sekarang. 7 tahun yang lalu, usia Dewi adalah ...", ["2","3","4","5"], 1, "10 - 7 = 3 tahun."]
+  ];
+
+  MC_SETS.D = [
+    ["Bilangan yang terletak di antara 72 dan 74 adalah ...", ["71","72","73","75"], 2, "Bilangan yang berada tepat di antara 72 dan 74 hanya ada satu, yaitu 73."],
+    ["Hasil dari 27 + 16 = ...", ["41","42","43","44"], 2, "27 + 16 = 43."],
+    ["Hasil dari 60 - 24 = ...", ["34","35","36","37"], 2, "60 - 24 = 36."],
+    ["Urutan bilangan dari yang terkecil ke terbesar adalah ...", ["81, 24, 57, 6","6, 24, 57, 81","57, 6, 81, 24","24, 81, 6, 57"], 1, "Jika diurutkan dari yang terkecil: 6, kemudian 24, lalu 57, dan terakhir 81."],
+    ["Perhatikan pola bilangan berikut: 2, 4, 6, 8, ... Bilangan selanjutnya adalah ...", ["9","10","11","12"], 1, "Polanya bertambah 2 setiap suku, sehingga setelah 8 adalah 8 + 2 = 10."],
+    ["Wati memiliki 14 kue. Ibu membuat 9 kue lagi. Jumlah kue Wati sekarang adalah ...", ["21","22","23","24"], 2, "14 + 9 = 23 kue."],
+    ["Eko mempunyai 40 kelereng. Ia memberikan 17 kelereng kepada temannya. Sisa kelereng Eko adalah ...", ["21","22","23","24"], 2, "40 - 17 = 23 kelereng."],
+    ["Bangun datar dengan dua pasang sisi sejajar, semua sudutnya siku-siku, tetapi panjang sisi yang berdekatan berbeda disebut ...", ["Persegi","Persegi panjang","Trapesium","Segitiga"], 1, "Bangun dengan 4 sudut siku-siku dan sisi berhadapan sama panjang tetapi sisi berdekatan berbeda adalah persegi panjang."],
+    ["Bangun datar dengan semua sisi sama panjang dan 4 sudut siku-siku disebut ...", ["Trapesium","Segitiga","Persegi","Lingkaran"], 2, "Bangun dengan 4 sisi sama panjang dan 4 sudut siku-siku disebut persegi."],
+    ["Bangun datar dengan 3 sisi sama panjang dan 3 sudut sama besar disebut ...", ["Segitiga sama sisi","Segitiga siku-siku","Persegi","Lingkaran"], 0, "Bangun bersisi 3 dengan semua sisi dan sudut sama besar disebut segitiga sama sisi."],
+    ["Jam menunjukkan pukul 10.30 dibaca sebagai pukul ...", ["Sepuluh lebih tiga puluh","Setengah sebelas","Sebelas kurang tiga puluh","Sepuluh lebih lima belas"], 1, "Pukul 10.30 biasa dibaca 'setengah sebelas' karena sudah setengah jam menuju pukul 11."],
+    ["Hasil dari 150 - 78 = ...", ["70","71","72","73"], 2, "150 - 78 = 72."],
+    ["Banyak bilangan ganjil di antara 40 dan 50 (tidak termasuk 40 dan 50) adalah ...", ["4","5","6","7"], 1, "Bilangan ganjil antara 40 dan 50 adalah 41, 43, 45, 47, dan 49. Jumlahnya ada 5."],
+    ["Bilangan genap terbesar yang kurang dari 50 adalah ...", ["46","47","48","49"], 2, "Bilangan genap yang paling dekat namun kurang dari 50 adalah 48."],
+    ["Jika hari ini hari Minggu, maka 6 hari lagi adalah hari ...", ["Jumat","Sabtu","Minggu","Senin"], 1, "Minggu + 1 = Senin, + 2 = Selasa, + 3 = Rabu, + 4 = Kamis, + 5 = Jumat, + 6 = Sabtu."],
+    ["Lani mempunyai uang Rp10.000. Ia membeli mainan seharga Rp6.400. Uang kembalian Lani adalah ...", ["Rp3.400","Rp3.500","Rp3.600","Rp3.800"], 2, "Rp10.000 - Rp6.400 = Rp3.600."],
+    ["Sebanyak 36 pensil dibagikan sama rata kepada 6 anak. Setiap anak mendapat ... pensil", ["5","6","7","8"], 1, "36 dibagi 6 sama dengan 6 pensil untuk setiap anak."],
+    ["Nilai angka 4 pada bilangan 249 adalah ...", ["4","9","40","49"], 2, "Pada bilangan 249, angka 4 berada di tempat puluhan, sehingga nilainya 40."],
+    ["Bilangan yang lebih besar dari 99 tetapi lebih kecil dari 101 adalah ...", ["98","99","100","102"], 2, "Satu-satunya bilangan di antara 99 dan 101 adalah 100."],
+    ["Terdapat 8 kandang kelinci, setiap kandang berisi 6 kelinci. Jumlah kelinci seluruhnya adalah ...", ["46","47","48","49"], 2, "8 kandang x 6 kelinci = 48 kelinci."],
+    ["Perhatikan pola berikut: bintang, hati, bintang, hati, bintang, ... Bentuk selanjutnya adalah ...", ["Bintang","Hati","Lingkaran","Segitiga"], 1, "Polanya berselang-seling bintang-hati, jadi setelah bintang giliran hati."],
+    ["Ayah mempunyai 60 mangga. Ia menjual 38 mangga. Sisa mangga ayah adalah ...", ["20","21","22","23"], 2, "60 - 38 = 22 mangga."],
+    ["Bilangan sesudah 999 adalah ...", ["998","999","1000","1001"], 2, "Bilangan tepat sesudah 999 adalah 1000."],
+    ["Hasil dari 8 + 8 + 8 = ...", ["22","23","24","25"], 2, "8 + 8 + 8 = 24, sama dengan 8 x 3."],
+    ["Jarum pendek pada jam menunjukkan angka 11 dan jarum panjang menunjukkan angka 12. Waktu tersebut menunjukkan pukul ...", ["11.00","12.00","12.11","11.12"], 0, "Jarum pendek menunjukkan jam dan jarum panjang di angka 12 berarti tepat pukul 11.00."],
+    ["Dari kumpulan bilangan berikut: 62, 87, 45, 91. Bilangan terbesar adalah ...", ["62","87","45","91"], 3, "Di antara 62, 87, 45, dan 91, bilangan yang paling besar adalah 91."],
+    ["Ada 15 ekor ikan di kolam. Sebanyak 6 ekor ikan mati, kemudian ditambahkan lagi 10 ekor ikan. Sekarang jumlah ikan di kolam adalah ...", ["17","18","19","20"], 2, "15 - 6 = 9, kemudian 9 + 10 = 19 ekor ikan."],
+    ["Sebuah kain panjangnya 90 cm dipotong menjadi 3 bagian sama panjang. Panjang setiap bagian adalah ...", ["25 cm","30 cm","35 cm","40 cm"], 1, "90 cm dibagi 3 sama dengan 30 cm untuk setiap bagian."],
+    ["Urutan bilangan dari yang terbesar ke terkecil adalah ...", ["14, 36, 58, 72","72, 58, 36, 14","36, 72, 14, 58","58, 14, 72, 36"], 1, "Diurutkan dari terbesar ke terkecil: 72, 58, 36, 14."],
+    ["Fajar berusia 12 tahun sekarang. 8 tahun yang akan datang, usia Fajar adalah ...", ["18","19","20","21"], 2, "12 + 8 = 20 tahun."]
+  ];
+
+  MC_SETS.E = [
+    ["Bilangan yang terletak di antara 45 dan 47 adalah ...", ["44","45","46","48"], 2, "Bilangan yang berada tepat di antara 45 dan 47 hanya ada satu, yaitu 46."],
+    ["Hasil dari 33 + 19 = ...", ["50","51","52","53"], 2, "33 + 19 = 52."],
+    ["Hasil dari 70 - 34 = ...", ["34","35","36","37"], 2, "70 - 34 = 36."],
+    ["Urutan bilangan dari yang terkecil ke terbesar adalah ...", ["29, 64, 8, 51","8, 29, 51, 64","64, 8, 29, 51","51, 29, 64, 8"], 1, "Jika diurutkan dari yang terkecil: 8, kemudian 29, lalu 51, dan terakhir 64."],
+    ["Perhatikan pola bilangan berikut: 10, 20, 30, 40, ... Bilangan selanjutnya adalah ...", ["45","48","50","55"], 2, "Polanya bertambah 10 setiap suku, sehingga setelah 40 adalah 40 + 10 = 50."],
+    ["Nadia memiliki 16 stiker. Kakak memberi 8 stiker lagi. Jumlah stiker Nadia sekarang adalah ...", ["22","23","24","25"], 2, "16 + 8 = 24 stiker."],
+    ["Rian mempunyai 35 kelereng. Ia memberikan 19 kelereng kepada adiknya. Sisa kelereng Rian adalah ...", ["14","15","16","17"], 2, "35 - 19 = 16 kelereng."],
+    ["Bangun datar segi empat dengan sisi berhadapan sejajar dan sama panjang, tetapi sudutnya tidak siku-siku disebut ...", ["Trapesium","Jajar genjang","Persegi","Segitiga"], 1, "Bangun segi empat dengan sisi berhadapan sejajar dan sama panjang namun sudutnya tidak siku-siku disebut jajar genjang."],
+    ["Bangun datar segi empat yang semua sisinya sama panjang tetapi sudutnya tidak siku-siku disebut ...", ["Persegi","Belah ketupat","Persegi panjang","Lingkaran"], 1, "Bangun segi empat dengan semua sisi sama panjang namun sudutnya tidak siku-siku disebut belah ketupat."],
+    ["Bangun datar yang tidak memiliki sudut maupun sisi lurus adalah ...", ["Segitiga","Lingkaran","Persegi","Trapesium"], 1, "Lingkaran adalah bangun datar yang tidak memiliki sudut maupun sisi lurus."],
+    ["Jam menunjukkan pukul 06.15 dibaca sebagai pukul ...", ["Enam lebih lima belas","Setengah tujuh","Tujuh kurang lima belas","Enam lebih tiga puluh"], 0, "Pukul 06.15 dibaca 'enam lebih lima belas' karena sudah lewat 15 menit dari pukul 6."],
+    ["Hasil dari 200 - 85 = ...", ["105","110","115","120"], 2, "200 - 85 = 115."],
+    ["Banyak bilangan genap di antara 50 dan 60 (tidak termasuk 50 dan 60) adalah ...", ["3","4","5","6"], 1, "Bilangan genap antara 50 dan 60 adalah 52, 54, 56, dan 58. Jumlahnya ada 4."],
+    ["Bilangan ganjil terbesar yang kurang dari 60 adalah ...", ["57","58","59","60"], 2, "Bilangan ganjil yang paling dekat namun kurang dari 60 adalah 59."],
+    ["Jika hari ini hari Selasa, maka 7 hari lagi adalah hari ...", ["Senin","Selasa","Rabu","Kamis"], 1, "Setelah 7 hari, hari akan kembali sama, yaitu Selasa."],
+    ["Bela mempunyai uang Rp15.000. Ia membeli tempat pensil seharga Rp9.750. Uang kembalian Bela adalah ...", ["Rp5.000","Rp5.150","Rp5.250","Rp5.500"], 2, "Rp15.000 - Rp9.750 = Rp5.250."],
+    ["Sebanyak 42 buku dibagikan sama rata kepada 7 anak. Setiap anak mendapat ... buku", ["5","6","7","8"], 1, "42 dibagi 7 sama dengan 6 buku untuk setiap anak."],
+    ["Nilai angka 6 pada bilangan 368 adalah ...", ["6","60","300","368"], 1, "Pada bilangan 368, angka 6 berada di tempat puluhan, sehingga nilainya 60."],
+    ["Bilangan yang lebih besar dari 74 tetapi lebih kecil dari 76 adalah ...", ["73","74","75","77"], 2, "Satu-satunya bilangan di antara 74 dan 76 adalah 75."],
+    ["Terdapat 9 keranjang, setiap keranjang berisi 8 jeruk. Jumlah jeruk seluruhnya adalah ...", ["70","71","72","73"], 2, "9 keranjang x 8 jeruk = 72 jeruk."],
+    ["Perhatikan pola bilangan berikut: 1, 3, 5, 7, ... Bilangan selanjutnya adalah ...", ["8","9","10","11"], 1, "Polanya adalah bilangan ganjil berurutan, sehingga setelah 7 adalah 9."],
+    ["Paman mempunyai 55 durian. Ia menjual 29 durian. Sisa durian paman adalah ...", ["24","25","26","27"], 2, "55 - 29 = 26 durian."],
+    ["Bilangan sebelum 500 adalah ...", ["498","499","501","500"], 1, "Bilangan tepat sebelum 500 adalah 499."],
+    ["Hasil dari 5 + 5 + 5 + 5 + 5 = ...", ["20","23","25","27"], 2, "5 + 5 + 5 + 5 + 5 = 25, sama dengan 5 x 5."],
+    ["Jarum pendek pada jam menunjukkan angka 2 dan jarum panjang menunjukkan angka 12. Waktu tersebut menunjukkan pukul ...", ["02.00","12.00","12.02","02.12"], 0, "Jarum pendek menunjukkan jam dan jarum panjang di angka 12 berarti tepat pukul 02.00."],
+    ["Dari kumpulan bilangan berikut: 78, 34, 92, 61. Bilangan terkecil adalah ...", ["78","34","92","61"], 1, "Di antara 78, 34, 92, dan 61, bilangan yang paling kecil adalah 34."],
+    ["Ada 18 ekor kupu-kupu di taman. Sebanyak 7 ekor kupu-kupu terbang pergi, kemudian datang lagi 9 ekor kupu-kupu. Sekarang jumlah kupu-kupu di taman adalah ...", ["18","19","20","21"], 2, "18 - 7 = 11, kemudian 11 + 9 = 20 ekor kupu-kupu."],
+    ["Sebuah benang panjangnya 100 cm dipotong menjadi 5 bagian sama panjang. Panjang setiap bagian adalah ...", ["15 cm","20 cm","25 cm","30 cm"], 1, "100 cm dibagi 5 sama dengan 20 cm untuk setiap bagian."],
+    ["Urutan bilangan dari yang terbesar ke terkecil adalah ...", ["16, 47, 65, 83","83, 65, 47, 16","47, 83, 16, 65","65, 16, 83, 47"], 1, "Diurutkan dari terbesar ke terkecil: 83, 65, 47, 16."],
+    ["Gita berusia 11 tahun sekarang. 4 tahun yang lalu, usia Gita adalah ...", ["6","7","8","9"], 1, "11 - 4 = 7 tahun."]
+  ];
+
+  MC_SETS.F = [
+    ["Bilangan yang terletak di antara 63 dan 65 adalah ...", ["62","63","64","66"], 2, "Bilangan yang berada tepat di antara 63 dan 65 hanya ada satu, yaitu 64."],
+    ["Hasil dari 21 + 14 = ...", ["33","34","35","36"], 2, "21 + 14 = 35."],
+    ["Hasil dari 45 - 19 = ...", ["24","25","26","27"], 2, "45 - 19 = 26."],
+    ["Urutan bilangan dari yang terkecil ke terbesar adalah ...", ["92, 37, 15, 68","15, 37, 68, 92","68, 15, 92, 37","37, 92, 15, 68"], 1, "Jika diurutkan dari yang terkecil: 15, kemudian 37, lalu 68, dan terakhir 92."],
+    ["Perhatikan pola bilangan berikut: 6, 12, 18, 24, ... Bilangan selanjutnya adalah ...", ["26","28","30","32"], 2, "Polanya bertambah 6 setiap suku, sehingga setelah 24 adalah 24 + 6 = 30."],
+    ["Fira memiliki 13 buku. Kakak memberi 8 buku lagi. Jumlah buku Fira sekarang adalah ...", ["19","20","21","22"], 2, "13 + 8 = 21 buku."],
+    ["Hari mempunyai 28 kelereng. Ia memberikan 13 kelereng kepada temannya. Sisa kelereng Hari adalah ...", ["13","14","15","16"], 2, "28 - 13 = 15 kelereng."],
+    ["Bangun datar yang memiliki 8 sisi disebut ...", ["Segi tujuh","Segi delapan","Segi enam","Segi sembilan"], 1, "Bangun datar dengan 8 sisi disebut segi delapan."],
+    ["Bangun datar yang memiliki 7 sisi disebut ...", ["Segi enam","Segi tujuh","Segi delapan","Segi lima"], 1, "Bangun datar dengan 7 sisi disebut segi tujuh."],
+    ["Bangun ruang yang berbentuk seperti bola sepak disebut ...", ["Kubus","Balok","Bola","Tabung"], 2, "Bangun ruang yang bentuknya bulat seperti bola sepak disebut bola."],
+    ["Jam menunjukkan pukul 01.45 dibaca sebagai pukul ...", ["Satu lebih empat puluh lima","Dua kurang lima belas","Satu lebih lima belas","Dua lebih empat puluh lima"], 1, "Pukul 01.45 biasa dibaca 'dua kurang lima belas' karena kurang 15 menit menuju pukul 2."],
+    ["Hasil dari 180 - 95 = ...", ["75","80","85","90"], 2, "180 - 95 = 85."],
+    ["Banyak bilangan genap di antara 60 dan 70 (tidak termasuk 60 dan 70) adalah ...", ["3","4","5","6"], 1, "Bilangan genap antara 60 dan 70 adalah 62, 64, 66, dan 68. Jumlahnya ada 4."],
+    ["Bilangan ganjil terkecil yang lebih dari 70 adalah ...", ["70","71","72","73"], 1, "Bilangan ganjil yang paling dekat dan lebih dari 70 adalah 71."],
+    ["Jika hari ini hari Kamis, maka 8 hari lagi adalah hari ...", ["Kamis","Jumat","Sabtu","Minggu"], 1, "Setelah 7 hari kembali ke Kamis, sehingga 8 hari lagi adalah Jumat."],
+    ["Vino mempunyai uang Rp20.000. Ia membeli topi seharga Rp13.500. Uang kembalian Vino adalah ...", ["Rp6.000","Rp6.500","Rp7.000","Rp7.500"], 1, "Rp20.000 - Rp13.500 = Rp6.500."],
+    ["Sebanyak 48 kelereng dibagikan sama rata kepada 8 anak. Setiap anak mendapat ... kelereng", ["5","6","7","8"], 1, "48 dibagi 8 sama dengan 6 kelereng untuk setiap anak."],
+    ["Nilai angka 7 pada bilangan 475 adalah ...", ["7","70","400","475"], 1, "Pada bilangan 475, angka 7 berada di tempat puluhan, sehingga nilainya 70."],
+    ["Bilangan yang lebih besar dari 119 tetapi lebih kecil dari 121 adalah ...", ["118","119","120","122"], 2, "Satu-satunya bilangan di antara 119 dan 121 adalah 120."],
+    ["Terdapat 7 kotak, setiap kotak berisi 9 pensil. Jumlah pensil seluruhnya adalah ...", ["61","62","63","64"], 2, "7 kotak x 9 pensil = 63 pensil."],
+    ["Perhatikan pola berikut: persegi, lingkaran, persegi, lingkaran, persegi, ... Bentuk selanjutnya adalah ...", ["Persegi","Lingkaran","Segitiga","Bintang"], 1, "Polanya berselang-seling persegi-lingkaran, jadi setelah persegi giliran lingkaran."],
+    ["Kakek mempunyai 70 rambutan. Ia menggunakan 44 rambutan untuk dijual. Sisa rambutan kakek adalah ...", ["24","25","26","27"], 2, "70 - 44 = 26 rambutan."],
+    ["Bilangan sebelum 700 adalah ...", ["698","699","701","700"], 1, "Bilangan tepat sebelum 700 adalah 699."],
+    ["Hasil dari 6 + 6 + 6 + 6 = ...", ["22","23","24","25"], 2, "6 + 6 + 6 + 6 = 24, sama dengan 6 x 4."],
+    ["Jarum pendek pada jam menunjukkan angka 9 dan jarum panjang menunjukkan angka 12. Waktu tersebut menunjukkan pukul ...", ["09.00","12.00","12.09","09.12"], 0, "Jarum pendek menunjukkan jam dan jarum panjang di angka 12 berarti tepat pukul 09.00."],
+    ["Dari kumpulan bilangan berikut: 83, 29, 56, 71. Bilangan terkecil adalah ...", ["83","29","56","71"], 1, "Di antara 83, 29, 56, dan 71, bilangan yang paling kecil adalah 29."],
+    ["Ada 22 ekor lebah di sarang. Sebanyak 9 ekor lebah terbang pergi, kemudian datang lagi 11 ekor lebah. Sekarang jumlah lebah di sarang adalah ...", ["22","23","24","25"], 2, "22 - 9 = 13, kemudian 13 + 11 = 24 ekor lebah."],
+    ["Sebuah tali panjangnya 70 cm dipotong menjadi 7 bagian sama panjang. Panjang setiap bagian adalah ...", ["5 cm","10 cm","15 cm","20 cm"], 1, "70 cm dibagi 7 sama dengan 10 cm untuk setiap bagian."],
+    ["Urutan bilangan dari yang terbesar ke terkecil adalah ...", ["18, 52, 66, 90","90, 66, 52, 18","52, 90, 18, 66","66, 18, 90, 52"], 1, "Diurutkan dari terbesar ke terkecil: 90, 66, 52, 18."],
+    ["Yuda berusia 13 tahun sekarang. 9 tahun yang lalu, usia Yuda adalah ...", ["3","4","5","6"], 1, "13 - 9 = 4 tahun."]
+  ];
+
+  MC_SETS.G = [
+    ["Bilangan yang terletak di antara 81 dan 83 adalah ...", ["80","81","82","84"], 2, "Bilangan yang berada tepat di antara 81 dan 83 hanya ada satu, yaitu 82."],
+    ["Hasil dari 26 + 17 = ...", ["41","42","43","44"], 2, "26 + 17 = 43."],
+    ["Hasil dari 55 - 28 = ...", ["25","26","27","28"], 2, "55 - 28 = 27."],
+    ["Urutan bilangan dari yang terkecil ke terbesar adalah ...", ["47, 73, 12, 60","12, 47, 60, 73","73, 12, 47, 60","60, 73, 12, 47"], 1, "Jika diurutkan dari yang terkecil: 12, kemudian 47, lalu 60, dan terakhir 73."],
+    ["Perhatikan pola bilangan berikut: 7, 14, 21, 28, ... Bilangan selanjutnya adalah ...", ["30","32","35","36"], 2, "Polanya bertambah 7 setiap suku, sehingga setelah 28 adalah 28 + 7 = 35."],
+    ["Gilang memiliki 19 kelereng. Ayah memberi 14 kelereng lagi. Jumlah kelereng Gilang sekarang adalah ...", ["31","32","33","34"], 2, "19 + 14 = 33 kelereng."],
+    ["Yanti mempunyai 44 permen. Ia membagikan 27 permen kepada temannya. Sisa permen Yanti adalah ...", ["15","16","17","18"], 2, "44 - 27 = 17 permen."],
+    ["Bangun datar dengan 4 sisi sama panjang dan semua sudutnya siku-siku disebut ...", ["Trapesium","Belah ketupat","Persegi","Segitiga"], 2, "Bangun dengan 4 sisi sama panjang dan 4 sudut siku-siku disebut persegi."],
+    ["Bangun datar segitiga yang memiliki salah satu sudut siku-siku (90 derajat) disebut ...", ["Segitiga sama sisi","Segitiga siku-siku","Segitiga sama kaki","Persegi"], 1, "Segitiga dengan salah satu sudutnya 90 derajat disebut segitiga siku-siku."],
+    ["Bangun ruang yang berbentuk seperti dadu dengan 6 sisi persegi disebut ...", ["Balok","Kubus","Tabung","Bola"], 1, "Bangun ruang dengan 6 sisi berbentuk persegi disebut kubus."],
+    ["Jam menunjukkan pukul 03.15 dibaca sebagai pukul ...", ["Tiga lebih lima belas","Setengah empat","Empat kurang lima belas","Tiga lebih tiga puluh"], 0, "Pukul 03.15 dibaca 'tiga lebih lima belas' karena sudah lewat 15 menit dari pukul 3."],
+    ["Hasil dari 250 - 125 = ...", ["115","120","125","130"], 2, "250 - 125 = 125."],
+    ["Banyak bilangan ganjil di antara 60 dan 70 (tidak termasuk 60 dan 70) adalah ...", ["4","5","6","7"], 1, "Bilangan ganjil antara 60 dan 70 adalah 61, 63, 65, 67, dan 69. Jumlahnya ada 5."],
+    ["Bilangan genap terbesar yang kurang dari 70 adalah ...", ["66","67","68","69"], 2, "Bilangan genap yang paling dekat namun kurang dari 70 adalah 68."],
+    ["Jika hari ini hari Sabtu, maka 9 hari lagi adalah hari ...", ["Minggu","Senin","Selasa","Rabu"], 1, "Sabtu + 7 hari kembali ke Sabtu, sehingga 9 hari lagi adalah Senin."],
+    ["Wawan mempunyai uang Rp25.000. Ia membeli bola mainan seharga Rp18.750. Uang kembalian Wawan adalah ...", ["Rp6.000","Rp6.250","Rp6.500","Rp7.000"], 1, "Rp25.000 - Rp18.750 = Rp6.250."],
+    ["Sebanyak 63 kelereng dibagikan sama rata kepada 9 anak. Setiap anak mendapat ... kelereng", ["6","7","8","9"], 1, "63 dibagi 9 sama dengan 7 kelereng untuk setiap anak."],
+    ["Nilai angka 8 pada bilangan 583 adalah ...", ["8","80","500","583"], 1, "Pada bilangan 583, angka 8 berada di tempat puluhan, sehingga nilainya 80."],
+    ["Bilangan yang lebih besar dari 144 tetapi lebih kecil dari 146 adalah ...", ["143","144","145","147"], 2, "Satu-satunya bilangan di antara 144 dan 146 adalah 145."],
+    ["Terdapat 6 kandang, setiap kandang berisi 9 ayam. Jumlah ayam seluruhnya adalah ...", ["52","53","54","55"], 2, "6 kandang x 9 ayam = 54 ayam."],
+    ["Perhatikan pola berikut: hati, bulan, hati, bulan, hati, ... Bentuk selanjutnya adalah ...", ["Hati","Bulan","Bintang","Awan"], 1, "Polanya berselang-seling hati-bulan, jadi setelah hati giliran bulan."],
+    ["Nenek mempunyai 85 buah salak. Ia menggunakan 52 buah untuk dijual. Sisa salak nenek adalah ...", ["31","32","33","34"], 2, "85 - 52 = 33 salak."],
+    ["Bilangan sesudah 1099 adalah ...", ["1098","1099","1100","1101"], 2, "Bilangan tepat sesudah 1099 adalah 1100."],
+    ["Hasil dari 4 + 4 + 4 + 4 + 4 + 4 = ...", ["20","22","24","26"], 2, "4 + 4 + 4 + 4 + 4 + 4 = 24, sama dengan 4 x 6."],
+    ["Jarum pendek pada jam menunjukkan angka 7 dan jarum panjang menunjukkan angka 12. Waktu tersebut menunjukkan pukul ...", ["07.00","12.00","12.07","07.12"], 0, "Jarum pendek menunjukkan jam dan jarum panjang di angka 12 berarti tepat pukul 07.00."],
+    ["Dari kumpulan bilangan berikut: 39, 94, 68, 25. Bilangan terbesar adalah ...", ["39","94","68","25"], 1, "Di antara 39, 94, 68, dan 25, bilangan yang paling besar adalah 94."],
+    ["Ada 30 ekor merpati di taman. Sebanyak 12 ekor merpati terbang pergi, kemudian datang lagi 14 ekor merpati. Sekarang jumlah merpati di taman adalah ...", ["30","31","32","33"], 2, "30 - 12 = 18, kemudian 18 + 14 = 32 ekor merpati."],
+    ["Sebuah pipa panjangnya 84 cm dipotong menjadi 6 bagian sama panjang. Panjang setiap bagian adalah ...", ["12 cm","14 cm","16 cm","18 cm"], 1, "84 cm dibagi 6 sama dengan 14 cm untuk setiap bagian."],
+    ["Urutan bilangan dari yang terbesar ke terkecil adalah ...", ["7, 28, 61, 95","95, 61, 28, 7","28, 95, 7, 61","61, 7, 95, 28"], 1, "Diurutkan dari terbesar ke terkecil: 95, 61, 28, 7."],
+    ["Vera berusia 14 tahun sekarang. 10 tahun yang akan datang, usia Vera adalah ...", ["22","23","24","25"], 2, "14 + 10 = 24 tahun."]
+  ];
+
+  MC_SETS.H = [
+    ["Bilangan yang terletak di antara 96 dan 98 adalah ...", ["95","96","97","99"], 2, "Bilangan yang berada tepat di antara 96 dan 98 hanya ada satu, yaitu 97."],
+    ["Hasil dari 38 + 25 = ...", ["61","62","63","64"], 2, "38 + 25 = 63."],
+    ["Hasil dari 80 - 37 = ...", ["41","42","43","44"], 2, "80 - 37 = 43."],
+    ["Urutan bilangan dari yang terkecil ke terbesar adalah ...", ["55, 8, 91, 42","8, 42, 55, 91","91, 8, 55, 42","42, 91, 8, 55"], 1, "Jika diurutkan dari yang terkecil: 8, kemudian 42, lalu 55, dan terakhir 91."],
+    ["Perhatikan pola bilangan berikut: 8, 16, 24, 32, ... Bilangan selanjutnya adalah ...", ["36","38","40","42"], 2, "Polanya bertambah 8 setiap suku, sehingga setelah 32 adalah 32 + 8 = 40."],
+    ["Tia memiliki 22 kue. Ibu membuat 19 kue lagi. Jumlah kue Tia sekarang adalah ...", ["39","40","41","42"], 2, "22 + 19 = 41 kue."],
+    ["Andra mempunyai 50 kelereng. Ia memberikan 34 kelereng kepada temannya. Sisa kelereng Andra adalah ...", ["14","15","16","17"], 2, "50 - 34 = 16 kelereng."],
+    ["Bangun datar segi empat dengan 4 sisi sama panjang tetapi sudutnya tidak siku-siku disebut ...", ["Persegi","Trapesium","Belah ketupat","Segitiga"], 2, "Bangun segi empat dengan 4 sisi sama panjang namun sudutnya tidak siku-siku disebut belah ketupat."],
+    ["Bangun datar segitiga yang memiliki 2 sisi sama panjang disebut ...", ["Segitiga sama sisi","Segitiga sama kaki","Segitiga siku-siku","Persegi"], 1, "Segitiga dengan 2 sisi sama panjang disebut segitiga sama kaki."],
+    ["Bangun ruang berbentuk seperti kaleng susu disebut ...", ["Kubus","Balok","Tabung","Kerucut"], 2, "Bangun ruang berbentuk seperti kaleng susu disebut tabung."],
+    ["Jam menunjukkan pukul 11.45 dibaca sebagai pukul ...", ["Sebelas lebih empat puluh lima","Dua belas kurang lima belas","Sebelas lebih lima belas","Dua belas lebih empat puluh lima"], 1, "Pukul 11.45 biasa dibaca 'dua belas kurang lima belas' karena kurang 15 menit menuju pukul 12."],
+    ["Hasil dari 300 - 165 = ...", ["125","130","135","140"], 2, "300 - 165 = 135."],
+    ["Banyak bilangan genap di antara 80 dan 90 (tidak termasuk 80 dan 90) adalah ...", ["3","4","5","6"], 1, "Bilangan genap antara 80 dan 90 adalah 82, 84, 86, dan 88. Jumlahnya ada 4."],
+    ["Bilangan ganjil terkecil yang lebih dari 90 adalah ...", ["90","91","92","93"], 1, "Bilangan ganjil yang paling dekat dan lebih dari 90 adalah 91."],
+    ["Jika hari ini hari Senin, maka 10 hari lagi adalah hari ...", ["Rabu","Kamis","Jumat","Sabtu"], 1, "Senin + 7 hari kembali ke Senin, sehingga 10 hari lagi adalah Kamis."],
+    ["Reza mempunyai uang Rp30.000. Ia membeli tas seharga Rp22.400. Uang kembalian Reza adalah ...", ["Rp7.200","Rp7.400","Rp7.600","Rp7.800"], 2, "Rp30.000 - Rp22.400 = Rp7.600."],
+    ["Sebanyak 72 kelereng dibagikan sama rata kepada 9 anak. Setiap anak mendapat ... kelereng", ["6","7","8","9"], 2, "72 dibagi 9 sama dengan 8 kelereng untuk setiap anak."],
+    ["Nilai angka 9 pada bilangan 692 adalah ...", ["9","90","600","692"], 1, "Pada bilangan 692, angka 9 berada di tempat puluhan, sehingga nilainya 90."],
+    ["Bilangan yang lebih besar dari 199 tetapi lebih kecil dari 201 adalah ...", ["198","199","200","202"], 2, "Satu-satunya bilangan di antara 199 dan 201 adalah 200."],
+    ["Terdapat 8 rak, setiap rak berisi 7 majalah. Jumlah majalah seluruhnya adalah ...", ["54","55","56","57"], 2, "8 rak x 7 majalah = 56 majalah."],
+    ["Perhatikan pola berikut: awan, matahari, awan, matahari, awan, ... Bentuk selanjutnya adalah ...", ["Awan","Matahari","Bintang","Bulan"], 1, "Polanya berselang-seling awan-matahari, jadi setelah awan giliran matahari."],
+    ["Bibi mempunyai 96 buah rambutan. Ia menggunakan 58 buah untuk dijual. Sisa rambutan bibi adalah ...", ["36","37","38","39"], 2, "96 - 58 = 38 rambutan."],
+    ["Bilangan sebelum 1000 adalah ...", ["998","999","1001","1000"], 1, "Bilangan tepat sebelum 1000 adalah 999."],
+    ["Hasil dari 3 + 3 + 3 + 3 + 3 + 3 + 3 = ...", ["18","19","21","24"], 2, "3 + 3 + 3 + 3 + 3 + 3 + 3 = 21, sama dengan 3 x 7."],
+    ["Jarum pendek pada jam menunjukkan angka 4 dan jarum panjang menunjukkan angka 12. Waktu tersebut menunjukkan pukul ...", ["04.00","12.00","12.04","04.12"], 0, "Jarum pendek menunjukkan jam dan jarum panjang di angka 12 berarti tepat pukul 04.00."],
+    ["Dari kumpulan bilangan berikut: 47, 12, 88, 63. Bilangan terkecil adalah ...", ["47","12","88","63"], 1, "Di antara 47, 12, 88, dan 63, bilangan yang paling kecil adalah 12."],
+    ["Ada 26 ekor kupu-kupu di kebun. Sebanyak 10 ekor kupu-kupu terbang pergi, kemudian datang lagi 14 ekor kupu-kupu. Sekarang jumlah kupu-kupu di kebun adalah ...", ["28","29","30","31"], 2, "26 - 10 = 16, kemudian 16 + 14 = 30 ekor kupu-kupu."],
+    ["Sebuah selang panjangnya 96 cm dipotong menjadi 8 bagian sama panjang. Panjang setiap bagian adalah ...", ["10 cm","12 cm","14 cm","16 cm"], 1, "96 cm dibagi 8 sama dengan 12 cm untuk setiap bagian."],
+    ["Urutan bilangan dari yang terbesar ke terkecil adalah ...", ["9, 33, 54, 77","77, 54, 33, 9","33, 77, 9, 54","54, 9, 77, 33"], 1, "Diurutkan dari terbesar ke terkecil: 77, 54, 33, 9."],
+    ["Sena berusia 15 tahun sekarang. 11 tahun yang lalu, usia Sena adalah ...", ["3","4","5","6"], 1, "15 - 11 = 4 tahun."]
+  ];
+
+  MC_SETS.I = [
+    ["Bilangan yang terletak di antara 108 dan 110 adalah ...", ["107","108","109","111"], 2, "Bilangan yang berada tepat di antara 108 dan 110 hanya ada satu, yaitu 109."],
+    ["Hasil dari 46 + 37 = ...", ["81","82","83","84"], 2, "46 + 37 = 83."],
+    ["Hasil dari 95 - 48 = ...", ["45","46","47","48"], 2, "95 - 48 = 47."],
+    ["Urutan bilangan dari yang terkecil ke terbesar adalah ...", ["70, 25, 99, 58","25, 58, 70, 99","99, 25, 70, 58","58, 99, 25, 70"], 1, "Jika diurutkan dari yang terkecil: 25, kemudian 58, lalu 70, dan terakhir 99."],
+    ["Perhatikan pola bilangan berikut: 9, 18, 27, 36, ... Bilangan selanjutnya adalah ...", ["40","42","45","48"], 2, "Polanya bertambah 9 setiap suku, sehingga setelah 36 adalah 36 + 9 = 45."],
+    ["Wulan memiliki 27 stiker. Kakak memberi 16 stiker lagi. Jumlah stiker Wulan sekarang adalah ...", ["41","42","43","44"], 2, "27 + 16 = 43 stiker."],
+    ["Bagas mempunyai 62 kelereng. Ia memberikan 39 kelereng kepada adiknya. Sisa kelereng Bagas adalah ...", ["21","22","23","24"], 2, "62 - 39 = 23 kelereng."],
+    ["Bangun datar segi empat dengan sisi berhadapan sejajar dan sama panjang, serta semua sudutnya siku-siku (namun bukan persegi) disebut ...", ["Persegi","Persegi panjang","Trapesium","Jajar genjang"], 1, "Bangun segi empat dengan sudut siku-siku dan sisi berhadapan sama panjang, namun sisi berdekatan berbeda panjang, disebut persegi panjang."],
+    ["Bangun ruang yang berbentuk seperti topi ulang tahun disebut ...", ["Kubus","Tabung","Kerucut","Bola"], 2, "Bangun ruang yang lancip di atas dan bulat di bawah disebut kerucut."],
+    ["Bangun ruang dengan 6 sisi berbentuk persegi panjang (bukan persegi) disebut ...", ["Kubus","Balok","Tabung","Bola"], 1, "Bangun ruang dengan 6 sisi persegi panjang disebut balok."],
+    ["Jam menunjukkan pukul 05.30 dibaca sebagai pukul ...", ["Lima lebih tiga puluh","Setengah enam","Enam kurang tiga puluh","Lima lebih lima belas"], 1, "Pukul 05.30 biasa dibaca 'setengah enam' karena sudah setengah jam menuju pukul 6."],
+    ["Hasil dari 400 - 235 = ...", ["155","160","165","170"], 2, "400 - 235 = 165."],
+    ["Banyak bilangan ganjil di antara 90 dan 100 (tidak termasuk 90 dan 100) adalah ...", ["4","5","6","7"], 1, "Bilangan ganjil antara 90 dan 100 adalah 91, 93, 95, 97, dan 99. Jumlahnya ada 5."],
+    ["Bilangan genap terbesar yang kurang dari 100 adalah ...", ["96","97","98","99"], 2, "Bilangan genap yang paling dekat namun kurang dari 100 adalah 98."],
+    ["Jika hari ini hari Jumat, maka 12 hari lagi adalah hari ...", ["Selasa","Rabu","Kamis","Jumat"], 1, "Jumat + 7 hari kembali ke Jumat, sehingga 12 hari lagi (5 hari setelahnya) adalah Rabu."],
+    ["Bimo mempunyai uang Rp50.000. Ia membeli buku gambar seharga Rp32.750. Uang kembalian Bimo adalah ...", ["Rp17.000","Rp17.250","Rp17.500","Rp18.000"], 1, "Rp50.000 - Rp32.750 = Rp17.250."],
+    ["Sebanyak 84 kelereng dibagikan sama rata kepada 7 anak. Setiap anak mendapat ... kelereng", ["10","11","12","13"], 2, "84 dibagi 7 sama dengan 12 kelereng untuk setiap anak."],
+    ["Nilai angka 4 pada bilangan 4.256 adalah ...", ["4","40","400","4000"], 3, "Pada bilangan 4.256, angka 4 berada di tempat ribuan, sehingga nilainya 4000."],
+    ["Bilangan yang lebih besar dari 249 tetapi lebih kecil dari 251 adalah ...", ["248","249","250","252"], 2, "Satu-satunya bilangan di antara 249 dan 251 adalah 250."],
+    ["Terdapat 9 dus, setiap dus berisi 8 botol. Jumlah botol seluruhnya adalah ...", ["70","71","72","73"], 2, "9 dus x 8 botol = 72 botol."],
+    ["Perhatikan pola berikut: kotak, segitiga, kotak, segitiga, kotak, ... Bentuk selanjutnya adalah ...", ["Kotak","Segitiga","Lingkaran","Bintang"], 1, "Polanya berselang-seling kotak-segitiga, jadi setelah kotak giliran segitiga."],
+    ["Kakek mempunyai 120 buah jambu. Ia menjual 76 buah. Sisa jambu kakek adalah ...", ["42","43","44","45"], 2, "120 - 76 = 44 jambu."],
+    ["Bilangan sesudah 2999 adalah ...", ["2998","2999","3000","3001"], 2, "Bilangan tepat sesudah 2999 adalah 3000."],
+    ["Hasil dari 2 + 2 + 2 + 2 + 2 + 2 + 2 + 2 = ...", ["14","15","16","17"], 2, "2 + 2 + 2 + 2 + 2 + 2 + 2 + 2 = 16, sama dengan 2 x 8."],
+    ["Jarum pendek pada jam menunjukkan angka 1 dan jarum panjang menunjukkan angka 12. Waktu tersebut menunjukkan pukul ...", ["01.00","12.00","12.01","01.12"], 0, "Jarum pendek menunjukkan jam dan jarum panjang di angka 12 berarti tepat pukul 01.00."],
+    ["Dari kumpulan bilangan berikut: 76, 124, 98, 65. Bilangan terbesar adalah ...", ["76","124","98","65"], 1, "Di antara 76, 124, 98, dan 65, bilangan yang paling besar adalah 124."],
+    ["Ada 40 ekor domba di kandang. Sebanyak 15 ekor domba dijual, kemudian lahir 9 ekor domba baru. Sekarang jumlah domba di kandang adalah ...", ["32","33","34","35"], 2, "40 - 15 = 25, kemudian 25 + 9 = 34 ekor domba."],
+    ["Sebuah kawat panjangnya 108 cm dipotong menjadi 9 bagian sama panjang. Panjang setiap bagian adalah ...", ["10 cm","12 cm","14 cm","16 cm"], 1, "108 cm dibagi 9 sama dengan 12 cm untuk setiap bagian."],
+    ["Urutan bilangan dari yang terbesar ke terkecil adalah ...", ["21, 44, 67, 86","86, 67, 44, 21","44, 86, 21, 67","67, 21, 86, 44"], 1, "Diurutkan dari terbesar ke terkecil: 86, 67, 44, 21."],
+    ["Nara berusia 16 tahun sekarang. 12 tahun yang akan datang, usia Nara adalah ...", ["26","27","28","29"], 2, "16 + 12 = 28 tahun."]
+  ];
+
+  MC_SETS.J = [
+    ["Bilangan yang terletak di antara 115 dan 117 adalah ...", ["114","115","116","118"], 2, "Bilangan yang berada tepat di antara 115 dan 117 hanya ada satu, yaitu 116."],
+    ["Hasil dari 54 + 29 = ...", ["81","82","83","84"], 2, "54 + 29 = 83."],
+    ["Hasil dari 110 - 56 = ...", ["52","53","54","55"], 2, "110 - 56 = 54."],
+    ["Urutan bilangan dari yang terkecil ke terbesar adalah ...", ["88, 33, 62, 17","17, 33, 62, 88","62, 17, 88, 33","33, 88, 17, 62"], 1, "Jika diurutkan dari yang terkecil: 17, kemudian 33, lalu 62, dan terakhir 88."],
+    ["Perhatikan pola bilangan berikut: 11, 22, 33, 44, ... Bilangan selanjutnya adalah ...", ["50","52","55","58"], 2, "Polanya bertambah 11 setiap suku, sehingga setelah 44 adalah 44 + 11 = 55."],
+    ["Citra memiliki 34 pensil warna. Ayah memberi 18 pensil warna lagi. Jumlah pensil warna Citra sekarang adalah ...", ["50","51","52","53"], 2, "34 + 18 = 52 pensil warna."],
+    ["Galih mempunyai 70 kelereng. Ia memberikan 45 kelereng kepada sepupunya. Sisa kelereng Galih adalah ...", ["23","24","25","26"], 2, "70 - 45 = 25 kelereng."],
+    ["Bangun datar segi empat dengan semua sisi sama panjang dan semua sudutnya siku-siku disebut ...", ["Belah ketupat","Trapesium","Persegi","Layang-layang"], 2, "Bangun segi empat dengan semua sisi sama panjang dan semua sudut siku-siku disebut persegi."],
+    ["Bangun datar segi empat menyerupai layangan dengan dua pasang sisi berdekatan sama panjang disebut ...", ["Trapesium","Layang-layang","Persegi","Jajar genjang"], 1, "Bangun segi empat yang menyerupai layangan disebut layang-layang."],
+    ["Bangun ruang yang berbentuk seperti dadu disebut ...", ["Balok","Kubus","Kerucut","Tabung"], 1, "Bangun ruang yang berbentuk seperti dadu disebut kubus."],
+    ["Jam menunjukkan pukul 12.45 dibaca sebagai pukul ...", ["Dua belas lebih empat puluh lima","Satu kurang lima belas","Dua belas lebih lima belas","Satu lebih lima belas"], 1, "Pukul 12.45 biasa dibaca 'satu kurang lima belas' karena kurang 15 menit menuju pukul 1."],
+    ["Hasil dari 500 - 268 = ...", ["222","227","232","237"], 2, "500 - 268 = 232."],
+    ["Banyak bilangan genap di antara 100 dan 110 (tidak termasuk 100 dan 110) adalah ...", ["3","4","5","6"], 1, "Bilangan genap antara 100 dan 110 adalah 102, 104, 106, dan 108. Jumlahnya ada 4."],
+    ["Bilangan ganjil terkecil yang lebih dari 100 adalah ...", ["100","101","102","103"], 1, "Bilangan ganjil yang paling dekat dan lebih dari 100 adalah 101."],
+    ["Jika hari ini hari Minggu, maka 15 hari lagi adalah hari ...", ["Minggu","Senin","Selasa","Rabu"], 1, "Setelah 14 hari (2 minggu) kembali ke Minggu, sehingga 15 hari lagi adalah Senin."],
+    ["Salsa mempunyai uang Rp100.000. Ia membeli sepatu mainan seharga Rp67.500. Uang kembalian Salsa adalah ...", ["Rp32.000","Rp32.500","Rp33.000","Rp33.500"], 1, "Rp100.000 - Rp67.500 = Rp32.500."],
+    ["Sebanyak 96 kelereng dibagikan sama rata kepada 8 anak. Setiap anak mendapat ... kelereng", ["10","11","12","13"], 2, "96 dibagi 8 sama dengan 12 kelereng untuk setiap anak."],
+    ["Nilai angka 6 pada bilangan 6.148 adalah ...", ["6","60","600","6000"], 3, "Pada bilangan 6.148, angka 6 berada di tempat ribuan, sehingga nilainya 6000."],
+    ["Bilangan yang lebih besar dari 299 tetapi lebih kecil dari 301 adalah ...", ["298","299","300","302"], 2, "Satu-satunya bilangan di antara 299 dan 301 adalah 300."],
+    ["Terdapat 12 kandang, setiap kandang berisi 6 burung. Jumlah burung seluruhnya adalah ...", ["70","71","72","73"], 2, "12 kandang x 6 burung = 72 burung."],
+    ["Perhatikan pola berikut: daun, bunga, daun, bunga, daun, ... Bentuk selanjutnya adalah ...", ["Daun","Bunga","Ranting","Akar"], 1, "Polanya berselang-seling daun-bunga, jadi setelah daun giliran bunga."],
+    ["Paman mempunyai 150 buah kelapa. Ia menjual 89 buah. Sisa kelapa paman adalah ...", ["59","60","61","62"], 2, "150 - 89 = 61 kelapa."],
+    ["Bilangan sebelum 5000 adalah ...", ["4998","4999","5001","5000"], 1, "Bilangan tepat sebelum 5000 adalah 4999."],
+    ["Hasil dari 10 + 10 + 10 + 10 = ...", ["30","35","40","45"], 2, "10 + 10 + 10 + 10 = 40, sama dengan 10 x 4."],
+    ["Jarum pendek pada jam menunjukkan angka 5 dan jarum panjang menunjukkan angka 12. Waktu tersebut menunjukkan pukul ...", ["05.00","12.00","12.05","05.12"], 0, "Jarum pendek menunjukkan jam dan jarum panjang di angka 12 berarti tepat pukul 05.00."],
+    ["Dari kumpulan bilangan berikut: 205, 89, 167, 120. Bilangan terkecil adalah ...", ["205","89","167","120"], 1, "Di antara 205, 89, 167, dan 120, bilangan yang paling kecil adalah 89."],
+    ["Ada 50 ekor angsa di kolam. Sebanyak 18 ekor angsa pergi, kemudian datang lagi 12 ekor angsa. Sekarang jumlah angsa di kolam adalah ...", ["42","43","44","45"], 2, "50 - 18 = 32, kemudian 32 + 12 = 44 ekor angsa."],
+    ["Sebuah selang panjangnya 132 cm dipotong menjadi 11 bagian sama panjang. Panjang setiap bagian adalah ...", ["10 cm","11 cm","12 cm","13 cm"], 2, "132 cm dibagi 11 sama dengan 12 cm untuk setiap bagian."],
+    ["Urutan bilangan dari yang terbesar ke terkecil adalah ...", ["24, 59, 76, 103","103, 76, 59, 24","59, 103, 24, 76","76, 24, 103, 59"], 1, "Diurutkan dari terbesar ke terkecil: 103, 76, 59, 24."],
+    ["Arka berusia 17 tahun sekarang. 13 tahun yang lalu, usia Arka adalah ...", ["3","4","5","6"], 1, "17 - 13 = 4 tahun."]
+  ];
+
+  var PAKET_LABEL = {
+    A: "Paket A",
+    B: "Paket B",
+    C: "Paket C",
+    D: "Paket D",
+    E: "Paket E",
+    F: "Paket F",
+    G: "Paket G",
+    H: "Paket H",
+    I: "Paket I",
+    J: "Paket J"
+  };
+
+  var ADMIN_CODE = "kelingking";
+  var TIME_LIMIT_SEC = 40 * 60;
+  var MAX_MC = 30 * 4;
+
+  /* ============ IN-MEMORY STATE ============ */
+  var state = {
+    screen: "home",
+    student: { name: "", kelas: "" },
+    paket: "A",         // paket soal terpilih: A/B/C/D/E
+    mcAnswers: {},      // index -> 0..3
+    timeLeft: TIME_LIMIT_SEC,
+    timerId: null,
+    examStarted: false,
+    lastSubmission: null,
+    checkCode: "",
+    checkResult: null,
+    checkError: "",
+    adminUnlocked: false,
+    adminCodeInput: "",
+    adminError: "",
+    submissions: [],
+    adminLoading: false,
+    adminExpanded: null,
+    adminMsg: "",
+    showKey: false
+  };
+
+  var app = document.getElementById("app");
+
+  function render(){ app.innerHTML = views[state.screen](); bindEvents(); }
+
+  function el(sel){ return app.querySelector(sel); }
+  function els(sel){ return Array.prototype.slice.call(app.querySelectorAll(sel)); }
+
+  /* ============ STORAGE HELPERS ============ */
+  function genId(){
+    var chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+    var out = "";
+    for (var i=0;i<6;i++) out += chars[Math.floor(Math.random()*chars.length)];
+    return out;
+  }
+
+  function getIndex(){
+    return window.storage.get("submission-index", true)
+      .then(function(r){ return r ? JSON.parse(r.value) : []; })
+      .catch(function(){ return []; });
+  }
+
+  function saveSubmission(sub){
+    return getIndex().then(function(idx){
+      idx.push(sub.id);
+      return window.storage.set("submission-index", JSON.stringify(idx), true);
+    }).then(function(){
+      return window.storage.set("submission:" + sub.id, JSON.stringify(sub), true);
+    });
+  }
+
+  function getSubmission(id){
+    return window.storage.get("submission:" + id, true)
+      .then(function(r){ return r ? JSON.parse(r.value) : null; })
+      .catch(function(){ return null; });
+  }
+
+  function loadAllSubmissions(){
+    state.adminLoading = true; render();
+    return getIndex().then(function(idx){
+      var uniq = idx.filter(function(v,i,a){ return a.indexOf(v)===i; });
+      return Promise.all(uniq.map(function(id){ return getSubmission(id); }));
+    }).then(function(list){
+      state.submissions = list.filter(Boolean).sort(function(a,b){ return (b.submittedAt||0) - (a.submittedAt||0); });
+      state.adminLoading = false;
+      render();
+    }).catch(function(){
+      state.adminLoading = false; render();
+    });
+  }
+
+  /* ============ SCORING ============ */
+  function computeMcScore(mcAnswers, paket){
+    var list = MC_SETS[paket] || MC_SETS.A;
+    var score = 0, answered = 0;
+    list.forEach(function(q, i){
+      var a = mcAnswers[i];
+      if (a === undefined || a === null){ return; }
+      answered++;
+      if (a === q[2]) score += 4; else score -= 1;
+    });
+    return { score: score, answered: answered };
+  }
+
+  /* ============ TIMER ============ */
+  function fmtTime(sec){
+    sec = Math.max(0, sec);
+    var m = Math.floor(sec/60), s = sec%60;
+    return (m<10?"0":"")+m+":"+(s<10?"0":"")+s;
+  }
+  function startTimer(){
+    if (state.timerId) return;
+    state.timerId = setInterval(function(){
+      state.timeLeft--;
+      if (state.timeLeft <= 0){
+        clearInterval(state.timerId);
+        state.timerId = null;
+        submitExam(true);
+        return;
+      }
+      var t = el(".timer");
+      if (t) t.textContent = "⏱ " + fmtTime(state.timeLeft);
+    }, 1000);
+  }
+
+  /* ============ ACTIONS ============ */
+  function goHome(){
+    if (state.timerId){ clearInterval(state.timerId); state.timerId = null; }
+    state.screen = "home"; render();
+  }
+
+  function startExam(){
+    var name = (el("#in-name")||{}).value || "";
+    var kelas = (el("#in-kelas")||{}).value || "";
+    if (!name.trim() || !kelas.trim()){
+      state.homeError = "Isi nama dan kelas terlebih dahulu.";
+      render();
+      return;
+    }
+    if (!state.paket || !MC_SETS[state.paket]){
+      state.homeError = "Pilih salah satu paket soal terlebih dahulu.";
+      render();
+      return;
+    }
+    state.homeError = "";
+    state.student = { name: name.trim(), kelas: kelas.trim() };
+    state.mcAnswers = {};
+    state.timeLeft = TIME_LIMIT_SEC;
+    state.examStarted = true;
+    state.screen = "exam";
+    render();
+    startTimer();
+  }
+
+  function submitExam(auto){
+    if (state.timerId){ clearInterval(state.timerId); state.timerId = null; }
+    var currentMC = MC_SETS[state.paket] || MC_SETS.A;
+    var unanswered = currentMC.length - Object.keys(state.mcAnswers).length;
+    if (!auto && unanswered > 0){
+      var ok = confirm("Masih ada " + unanswered + " soal pilihan ganda yang belum dijawab. Yakin ingin mengumpulkan jawaban sekarang?");
+      if (!ok) { startTimer(); return; }
+    }
+    var mc = computeMcScore(state.mcAnswers, state.paket);
+    var sub = {
+      id: genId(),
+      name: state.student.name,
+      kelas: state.student.kelas,
+      paket: state.paket,
+      mcAnswers: state.mcAnswers,
+      mcScore: mc.score,
+      mcAnswered: mc.answered,
+      totalScore: mc.score,
+      submittedAt: Date.now(),
+      autoSubmitted: !!auto
+    };
+    state.lastSubmission = sub;
+    state.screen = "result";
+    render();
+    saveSubmission(sub).catch(function(){});
+  }
+
+  function checkStatus(){
+    var code = (el("#check-code-input")||{}).value || "";
+    code = code.trim().toUpperCase();
+    if (!code){ return; }
+    state.checkError = ""; state.checkResult = null;
+    getSubmission(code).then(function(sub){
+      if (!sub){ state.checkError = "Kode tidak ditemukan. Periksa kembali kode ujian Anda."; }
+      else { state.checkResult = sub; }
+      render();
+    });
+  }
+
+  function tryAdminLogin(){
+    var code = (el("#admin-code-input")||{}).value || "";
+    if (code.trim().toLowerCase() === ADMIN_CODE){
+      state.adminUnlocked = true;
+      state.adminError = "";
+      state.screen = "admin";
+      render();
+      loadAllSubmissions();
+    } else {
+      state.adminError = "Kode admin salah.";
+      render();
+    }
+  }
+
+  function clearAllData(){
+    var ok = confirm("Hapus SEMUA data ujian yang tersimpan? Tindakan ini tidak dapat dibatalkan.");
+    if (!ok) return;
+    getIndex().then(function(idx){
+      var jobs = idx.map(function(id){ return window.storage.delete("submission:" + id, true).catch(function(){}); });
+      return Promise.all(jobs);
+    }).then(function(){
+      return window.storage.set("submission-index", JSON.stringify([]), true);
+    }).then(function(){
+      state.submissions = [];
+      state.adminMsg = "Semua data ujian telah dihapus.";
+      render();
+    });
+  }
+
+  /* ============ VIEWS ============ */
+  var views = {};
+
+  views.home = function(){
+    return ''
+    + '<div class="seal">'
+    +   '<div class="seal-badge">σ</div>'
+    +   '<div><p class="seal-title">Ujian Olimpiade Matematika</p><p class="seal-sub">Sekolah Dasar &middot; Kelas 1&ndash;2</p></div>'
+    + '</div>'
+    + '<div class="card">'
+    +   '<div class="home-hero"><h1>Selamat datang, Juara Kecil! 🎯</h1><p>Isi datamu dulu, lalu tekan mulai untuk mengerjakan soal.</p></div>'
+    +   (state.homeError ? '<div class="banner warn">' + state.homeError + '</div>' : '')
+    +   '<div class="field"><label>Nama lengkap</label><input type="text" id="in-name" placeholder="Contoh: Fathan"/></div>'
+    +   '<div class="field"><label>Kelas</label><input type="text" id="in-kelas" placeholder="Contoh: 2B"/></div>'
+    +   '<div class="field">'
+    +     '<label>Pilih paket soal</label>'
+    +     '<div class="paket-grid">'
+    +       PAKET_LIST.map(function(p){
+             var active = state.paket === p;
+             return '<button type="button" class="paket-btn ' + (active?'active':'') + '" data-paket="' + p + '">' + p + '</button>';
+           }).join('')
+    +     '</div>'
+    +   '</div>'
+    +   '<div class="rules-grid">'
+    +     '<div class="rule-item"><span>Benar</span><b>+4 poin</b></div>'
+    +     '<div class="rule-item"><span>Salah</span><b>&minus;1 poin</b></div>'
+    +     '<div class="rule-item"><span>Kosong</span><b>0 poin</b></div>'
+    +     '<div class="rule-item"><span>Waktu</span><b>40 menit</b></div>'
+    +   '</div>'
+    +   '<div style="margin-top:20px;text-align:center;">'
+    +     '<button class="btn btn-primary" id="btn-start">Mulai Ujian &rarr;</button>'
+    +   '</div>'
+    + '</div>'
+    + '<div class="card" style="text-align:center;">'
+    +   '<p style="margin:0 0 10px;font-size:14px;color:var(--ink-soft);">Sudah pernah mengumpulkan jawaban?</p>'
+    +   '<button class="btn btn-ghost btn-sm" id="btn-check">Cek Status Nilai</button>'
+    + '</div>'
+    + '<footer class="tip">Halaman untuk guru/panitia &middot; <button class="link-btn" id="btn-admin">Masuk sebagai Admin</button></footer>';
+  };
+
+  views.check = function(){
+    var r = state.checkResult;
+    return ''
+    + '<div class="seal"><div class="seal-badge">σ</div><div><p class="seal-title">Cek Status Nilai</p><p class="seal-sub">Masukkan kode ujian kamu</p></div></div>'
+    + '<div class="card">'
+    +   '<div class="field"><label>Kode ujian (6 karakter)</label><input type="text" id="check-code-input" class="mono" style="text-transform:uppercase;letter-spacing:.08em;" placeholder="Contoh: A1B2C3" maxlength="8"/></div>'
+    +   (state.checkError ? '<div class="banner warn">' + state.checkError + '</div>' : '')
+    +   '<div style="text-align:center;"><button class="btn btn-primary" id="btn-do-check">Cek Sekarang</button></div>'
+    +   (r ? renderCheckResult(r) : '')
+    + '</div>'
+    + '<div style="text-align:center;margin-top:14px;"><button class="link-btn" id="btn-back-home">&larr; Kembali ke beranda</button></div>';
+  };
+
+  function renderCheckResult(r){
+    var statusHtml = '<div class="result-score"><div class="lbl">Nilai Akhir</div><div class="num">' + r.totalScore + '</div><div class="lbl">dari ' + MAX_MC + '</div></div>';
+    return '<div style="margin-top:16px;border-top:1px dashed var(--paper-line);padding-top:14px;">'
+      + '<p style="margin:0 0 4px;font-weight:700;">' + r.name + ' &middot; Kelas ' + r.kelas + ' &middot; ' + (PAKET_LABEL[r.paket] || 'Paket A') + '</p>'
+      + statusHtml
+      + renderReview(r)
+      + '</div>';
+  }
+
+  function renderReview(sub){
+    var letters = ["A","B","C","D"];
+    var nCorrect=0, nWrong=0, nBlank=0;
+    var MC = MC_SETS[sub.paket] || MC_SETS.A;
+    var items = MC.map(function(q, i){
+      var qtext=q[0], opts=q[1], correctIdx=q[2], explain=q[3];
+      var given = sub.mcAnswers[i];
+      var status = (given===undefined) ? "blank" : (given===correctIdx ? "correct" : "wrong");
+      if (status==="correct") nCorrect++; else if (status==="wrong") nWrong++; else nBlank++;
+      var badgeChar = status==="correct" ? "✓" : (status==="wrong" ? "✕" : "?");
+      var yourAnsText = (given===undefined) ? "Tidak dijawab" : (letters[given] + ". " + opts[given]);
+      var extra = status==="wrong"
+        ? '<div class="review-ans">Jawaban benar: <b>' + letters[correctIdx] + '. ' + opts[correctIdx] + '</b></div>'
+        : (status==="blank" ? '<div class="review-ans">Jawaban benar: <b>' + letters[correctIdx] + '. ' + opts[correctIdx] + '</b></div>' : '');
+      return '<div class="review-item ' + status + '">'
+        + '<div class="review-top"><span class="review-badge ' + status + '">' + badgeChar + '</span>'
+        + '<span class="review-q">' + (i+1) + '. ' + qtext + '</span></div>'
+        + '<div class="review-ans">Jawabanmu: <b>' + yourAnsText + '</b></div>'
+        + extra
+        + '<div class="review-explain">💡 ' + explain + '</div>'
+      + '</div>';
+    }).join('');
+
+    return '<div style="margin-top:10px;">'
+      + '<div class="review-summary">'
+      +   '<span class="review-chip correct">Benar: ' + nCorrect + '</span>'
+      +   '<span class="review-chip wrong">Salah: ' + nWrong + '</span>'
+      +   '<span class="review-chip blank">Kosong: ' + nBlank + '</span>'
+      + '</div>'
+      + '<div class="qsection-label" style="margin-top:18px;">Pembahasan Soal</div>'
+      + items
+      + '</div>';
+  }
+
+  views.exam = function(){
+    var MC = MC_SETS[state.paket] || MC_SETS.A;
+    var answeredMc = Object.keys(state.mcAnswers).length;
+    var html = '';
+    html += '<div class="navgrid-wrap">'
+      + '<div class="navgrid-top">'
+      +   '<div><b>' + state.student.name + '</b> <span style="color:var(--ink-soft);font-size:13px;">&middot; Kelas ' + state.student.kelas + ' &middot; ' + (PAKET_LABEL[state.paket] || 'Paket A') + '</span></div>'
+      +   '<div class="timer">⏱ ' + fmtTime(state.timeLeft) + '</div>'
+      + '</div>'
+      + '<div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:8px;">Terjawab: ' + answeredMc + ' / ' + MC.length + ' pilihan ganda</div>'
+      + '<div class="navgrid">'
+      + MC.map(function(_, i){
+          var done = state.mcAnswers[i] !== undefined;
+          return '<button class="navdot ' + (done?'answered':'') + '" data-jump="mc-' + i + '">' + (i+1) + '</button>';
+        }).join('')
+      + '</div>'
+    + '</div>';
+
+    html += '<div class="qsection-label">Soal Pilihan Ganda</div>';
+    MC.forEach(function(q, i){
+      var qtext = q[0], opts = q[1];
+      html += '<div class="card qcard" id="mc-' + i + '">'
+        + '<div class="qhead"><span class="qnum">' + (i+1) + '</span><span class="qtext">' + qtext + '</span></div>'
+        + '<div class="options">'
+        + opts.map(function(opt, oi){
+            var sel = state.mcAnswers[i] === oi;
+            var letters = ["A","B","C","D"];
+            return '<button class="option ' + (sel?'selected':'') + '" data-mc="' + i + '" data-opt="' + oi + '">'
+              + '<span class="bubble">' + letters[oi] + '</span><span class="option-text">' + opt + '</span></button>';
+          }).join('')
+        + '</div>'
+      + '</div>';
+    });
+
+    html += '<div class="card" style="text-align:center;">'
+      + '<p style="color:var(--ink-soft);font-size:13.5px;margin-top:0;">Periksa kembali jawabanmu sebelum mengumpulkan. Jangan memuat ulang (refresh) halaman selama ujian berlangsung.</p>'
+      + '<button class="btn btn-primary" id="btn-submit">Kumpulkan Jawaban</button>'
+      + '</div>';
+
+    return html;
+  };
+
+  views.result = function(){
+    var s = state.lastSubmission;
+    if (!s) return views.home();
+    return ''
+    + '<div class="seal"><div class="seal-badge">✓</div><div><p class="seal-title">Jawaban Terkumpul</p><p class="seal-sub">Terima kasih, ' + s.name + '!</p></div></div>'
+    + '<div class="card">'
+    +   (s.autoSubmitted ? '<div class="banner warn">Waktu habis &mdash; jawabanmu dikumpulkan secara otomatis.</div>' : '')
+    +   '<div class="result-score"><div class="num">' + s.totalScore + '</div><div class="lbl">Nilai Akhir (dari ' + MAX_MC + ')</div></div>'
+    +   '<div class="code-box"><span>🔑</span><span class="code">' + s.id + '</span></div>'
+    +   '<p style="text-align:center;font-size:12.5px;color:var(--ink-soft);margin-top:8px;">Simpan kode ini untuk mengecek ulang nilaimu kapan saja.</p>'
+    +   renderReview(s)
+    +   '<div style="text-align:center;margin-top:20px;"><button class="btn btn-ghost" id="btn-home2">Kembali ke Beranda</button></div>'
+    + '</div>';
+  };
+
+  views["admin-login"] = function(){
+    return ''
+    + '<div class="seal"><div class="seal-badge">🔒</div><div><p class="seal-title">Akses Admin</p><p class="seal-sub">Masukkan kode admin untuk menilai ujian</p></div></div>'
+    + '<div class="card">'
+    +   '<div class="field"><label>Kode admin</label><input type="password" id="admin-code-input" placeholder="Masukkan kode akses"/></div>'
+    +   (state.adminError ? '<div class="banner warn">' + state.adminError + '</div>' : '')
+    +   '<div style="text-align:center;"><button class="btn btn-primary" id="btn-admin-login">Masuk</button></div>'
+    + '</div>'
+    + '<div style="text-align:center;margin-top:14px;"><button class="link-btn" id="btn-back-home2">&larr; Kembali ke beranda</button></div>';
+  };
+
+  views.admin = function(){
+    var subs = state.submissions;
+    var avg = subs.length ? Math.round(subs.reduce(function(a,s){return a+s.totalScore;},0) / subs.length) : 0;
+    var html = '<div class="seal"><div class="seal-badge">🗂</div><div><p class="seal-title">Panel Nilai</p><p class="seal-sub">' + subs.length + ' peserta &middot; rata-rata nilai ' + avg + '</p></div></div>';
+
+    html += '<div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">'
+      + '<button class="btn btn-ghost btn-sm" id="btn-refresh">↻ Muat Ulang Data</button>'
+      + '<div style="display:flex;gap:8px;">'
+      + '<button class="btn btn-ghost btn-sm" id="btn-show-key">Lihat Kunci PG</button>'
+      + '<button class="btn btn-danger btn-sm" id="btn-clear-all">Hapus Semua Data</button>'
+      + '</div>'
+      + '</div>';
+
+    if (state.adminMsg){
+      html += '<div class="banner ok">' + state.adminMsg + '</div>';
+    }
+
+    if (state.showKey){
+      html += '<div class="card"><h3 style="margin-top:0;">Kunci Jawaban Pilihan Ganda</h3>'
+        + PAKET_LIST.map(function(p){
+            return '<p style="font-weight:700;margin:14px 0 4px;">' + PAKET_LABEL[p] + '</p><table class="mc-key">' + mcKeyRows(p) + '</table>';
+          }).join('')
+        + '</div>';
+    }
+
+    if (state.adminLoading){
+      html += '<div class="card"><p class="empty">Memuat data peserta...</p></div>';
+    } else if (subs.length === 0){
+      html += '<div class="card"><p class="empty">Belum ada peserta yang mengumpulkan jawaban.</p></div>';
+    } else {
+      html += '<div class="card">';
+      subs.forEach(function(s){
+        html += renderAdminRow(s);
+      });
+      html += '</div>';
+    }
+
+    html += '<div style="text-align:center;margin-top:14px;"><button class="link-btn" id="btn-back-home3">&larr; Kembali ke beranda</button></div>';
+    return html;
+  };
+
+  function mcKeyRows(paket){
+    var MC = MC_SETS[paket] || MC_SETS.A;
+    var letters = ["A","B","C","D"];
+    var rows = "";
+    for (var i=0;i<MC.length;i+=5){
+      rows += "<tr>";
+      for (var j=i;j<i+5 && j<MC.length;j++){
+        rows += "<td><b>" + (j+1) + "</b>. " + letters[MC[j][2]] + "</td>";
+      }
+      rows += "</tr>";
+    }
+    return rows;
+  }
+
+  function renderAdminRow(s){
+    var expanded = state.adminExpanded === s.id;
+    var pill = '<span class="pill done">Nilai: ' + s.totalScore + '</span>';
+    var head = '<div class="admin-row">'
+      + '<div><b>' + s.name + '</b> <span style="color:var(--ink-soft);font-size:13px;">&middot; Kelas ' + s.kelas + ' &middot; ' + (PAKET_LABEL[s.paket] || 'Paket A') + '</span></div>'
+      + '<div style="display:flex;align-items:center;gap:8px;">' + pill + '<button class="btn btn-ghost btn-sm" data-expand="' + s.id + '">' + (expanded?'Tutup':'Lihat Pembahasan') + '</button></div>'
+      + '</div>';
+
+    if (!expanded) return head;
+
+    var body = '<div style="padding:6px 4px 18px;">' + renderReview(s) + '</div>';
+    return head + body;
+  }
+
+  /* ============ EVENT BINDING ============ */
+  function bindEvents(){
+    var b;
+    if (b = el("#btn-start")) b.onclick = startExam;
+    if (b = el("#btn-check")) b.onclick = function(){ state.screen="check"; state.checkResult=null; state.checkError=""; render(); };
+    if (b = el("#btn-admin")) b.onclick = function(){ state.screen="admin-login"; render(); };
+    if (b = el("#btn-back-home")) b.onclick = goHome;
+    if (b = el("#btn-back-home2")) b.onclick = goHome;
+    if (b = el("#btn-back-home3")) b.onclick = goHome;
+    if (b = el("#btn-home2")) b.onclick = goHome;
+    if (b = el("#btn-do-check")) b.onclick = checkStatus;
+    if (b = el("#btn-admin-login")) b.onclick = tryAdminLogin;
+    if (b = el("#btn-submit")) b.onclick = function(){ submitExam(false); };
+    if (b = el("#btn-refresh")) b.onclick = loadAllSubmissions;
+    if (b = el("#btn-clear-all")) b.onclick = clearAllData;
+    if (b = el("#btn-show-key")) b.onclick = function(){ state.showKey = !state.showKey; render(); };
+
+    els("[data-paket]").forEach(function(btn){
+      btn.onclick = function(){
+        state.paket = btn.getAttribute("data-paket");
+        state.homeError = "";
+        render();
+      };
+    });
+
+    els(".option").forEach(function(o){
+      o.onclick = function(){
+        var i = parseInt(o.getAttribute("data-mc"), 10);
+        var oi = parseInt(o.getAttribute("data-opt"), 10);
+        if (state.mcAnswers[i] === oi){ delete state.mcAnswers[i]; }
+        else { state.mcAnswers[i] = oi; }
+        render();
+        var target = el("#mc-" + i);
+        if (target) target.scrollIntoView({ block: "center", behavior: "instant" in window ? "instant" : "auto" });
+      };
+    });
+
+    els("[data-jump]").forEach(function(btn){
+      btn.onclick = function(){
+        var target = el("#" + btn.getAttribute("data-jump"));
+        if (target) target.scrollIntoView({ block: "start", behavior: "smooth" });
+      };
+    });
+
+    els("[data-expand]").forEach(function(btn){
+      btn.onclick = function(){
+        var id = btn.getAttribute("data-expand");
+        state.adminExpanded = state.adminExpanded === id ? null : id;
+        state.adminMsg = "";
+        render();
+      };
+    });
+
+    var enterHandlers = [
+      ["#in-kelas", startExam],
+      ["#check-code-input", checkStatus],
+      ["#admin-code-input", tryAdminLogin]
+    ];
+    enterHandlers.forEach(function(pair){
+      var input = el(pair[0]);
+      if (input){
+        input.onkeydown = function(ev){ if (ev.key === "Enter"){ pair[1](); } };
+      }
+    });
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
