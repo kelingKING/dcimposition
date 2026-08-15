@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ujian Olimpiade Matematika SD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f6f1e4;
+    --paper-line:#e1d6ba;
+    --ink:#1f2a37;
+    --ink-soft:#5b6472;
+    --navy:#1f3c5c;
+    --navy-dark:#122740;
+    --gold:#a9812f;
+    --gold-soft:#e7d8ab;
+    --red:#a4392f;
+    --red-soft:#f1ddd6;
+    --green:#3d6b4a;
+    --green-soft:#dde9e0;
+    --radius:14px;
+    --shadow: 0 10px 30px -12px rgba(18,39,64,0.25);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 10% -10%, #fffaf0 0%, transparent 60%),
+      var(--paper);
+    color:var(--ink);
+    font-family:'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  h1,h2,h3,.serif{font-family:'Fraunces', Georgia, serif;}
+  .mono{font-family:'IBM Plex Mono', monospace;}
+  #app{max-width:920px;margin:0 auto;padding:22px 16px 80px;}
+  a{color:inherit;}
+  button{font-family:inherit;cursor:pointer;}
+
+  /* ---------- Header stamp ---------- */
+  .seal{
+    display:flex;align-items:center;gap:14px;
+    padding:18px 22px;
+    background:var(--navy);
+    color:#fdf9ee;
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    position:relative;
+    overflow:hidden;
+  }
+  .seal::after{
+    content:"";
+    position:absolute; right:-40px; top:-40px;
+    width:160px;height:160px;border-radius:50%;
+    background:radial-gradient(circle, rgba(233,207,139,0.18), transparent 70%);
+  }
+  .seal-badge{
+    width:56px;height:56px;border-radius:50%;
+    border:2px solid var(--gold-soft);
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+    font-family:'Fraunces',serif;font-weight:700;font-size:20px;
+    color:var(--gold-soft);
+    background:rgba(255,255,255,0.05);
+  }
+  .seal-title{font-size:20px;font-weight:600;line-height:1.25;margin:0;}
+  .seal-sub{margin:2px 0 0;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;color:#cfe0f0;opacity:.85;}
+
+  /* ---------- Cards ---------- */
+  .card{
+    background:#fffdf7;
+    border:1px solid var(--paper-line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:24px;
+    margin-top:18px;
+  }
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:6px;letter-spacing:.02em;text-transform:uppercase;}
+  .field input[type=text], .field input[type=password], .field textarea{
+    width:100%;padding:12px 14px;border-radius:10px;
+    border:1.5px solid var(--paper-line);background:#fffefb;
+    font-size:15.5px;color:var(--ink);font-family:inherit;
+  }
+  .field input:focus, .field textarea:focus{outline:2px solid var(--navy);outline-offset:1px;border-color:var(--navy);}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    padding:12px 22px;border-radius:999px;border:none;
+    font-weight:700;font-size:15px;letter-spacing:.01em;
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn-primary{background:var(--navy);color:#fdf9ee;box-shadow:0 8px 18px -8px rgba(31,60,92,0.55);}
+  .btn-primary:hover{background:var(--navy-dark);}
+  .btn-ghost{background:transparent;color:var(--navy);border:1.5px solid var(--navy);}
+  .btn-ghost:hover{background:rgba(31,60,92,0.06);}
+  .btn-gold{background:var(--gold);color:#3a2c07;box-shadow:0 8px 18px -8px rgba(169,129,47,0.55);}
+  .btn-danger{background:var(--red);color:#fff6f2;}
+  .btn-sm{padding:8px 14px;font-size:13px;border-radius:999px;}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+  .link-btn{background:none;border:none;color:var(--ink-soft);text-decoration:underline;font-size:13.5px;padding:0;}
+
+  /* ---------- Home ---------- */
+  .home-hero{text-align:center;padding:6px 4px 2px;}
+  .home-hero h1{font-size:clamp(24px,4.5vw,32px);margin:0 0 6px;color:var(--navy-dark);}
+  .home-hero p{color:var(--ink-soft);font-size:14.5px;margin:0;}
+  .setgrid{display:grid;grid-template-columns:repeat(5, 1fr);gap:8px;}
+  @media (max-width:420px){.setgrid{grid-template-columns:repeat(5, 1fr);gap:6px;}}
+  .setdot{
+    aspect-ratio:1/1;border-radius:12px;
+    border:2px solid var(--paper-line);background:#fffefb;
+    font-family:'Fraunces',serif;font-weight:700;font-size:18px;color:var(--navy);
+  }
+  .setdot.selected{background:var(--navy);border-color:var(--navy);color:#fdf9ee;box-shadow:0 6px 14px -6px rgba(31,60,92,0.5);}
+  .set-hint{font-size:12.5px;color:var(--ink-soft);margin:8px 2px 0;}
+
+  .rules-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;}
+  @media (max-width:520px){.rules-grid{grid-template-columns:1fr;}}
+  .rule-item{
+    background:var(--gold-soft);
+    border-radius:10px;padding:10px 12px;font-size:13px;color:#4a3a10;
+    display:flex;justify-content:space-between;gap:8px;
+  }
+  .rule-item b{color:#2f2405;}
+
+  /* ---------- Nav grid (bubble sheet) ---------- */
+  .navgrid-wrap{
+    position:sticky;top:10px;z-index:20;
+    background:rgba(246,241,228,0.92);
+    backdrop-filter:blur(6px);
+    border:1px solid var(--paper-line);
+    border-radius:var(--radius);
+    padding:12px 14px;
+    margin-top:16px;
+    box-shadow:var(--shadow);
+  }
+  .navgrid-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;}
+  .timer{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:15px;color:var(--red);background:var(--red-soft);padding:5px 12px;border-radius:999px;}
+  .navgrid{display:grid;grid-template-columns:repeat(auto-fill, minmax(30px,1fr));gap:6px;}
+  .navdot{
+    width:30px;height:30px;border-radius:50%;
+    border:1.5px solid var(--paper-line);background:#fffefb;
+    font-size:11.5px;font-weight:700;color:var(--ink-soft);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .navdot.answered{background:var(--navy);border-color:var(--navy);color:#fff;}
+  .navdot.essay{border-style:dashed;}
+
+  /* ---------- Questions ---------- */
+  .qsection-label{
+    display:inline-block;background:var(--navy);color:#fdf9ee;
+    font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    padding:6px 14px;border-radius:999px;margin:22px 0 10px;
+  }
+  .qcard{scroll-margin-top:170px;}
+  .qnum{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:30px;height:30px;border-radius:50%;
+    background:var(--navy); color:#fff;font-weight:700;font-size:13.5px;
+    flex-shrink:0;
+  }
+  .qhead{display:flex;gap:12px;align-items:flex-start;margin-bottom:14px;}
+  .qtext{font-size:16px;line-height:1.55;padding-top:3px;}
+  .options{display:grid;gap:10px;margin-left:42px;}
+  .option{
+    display:flex;align-items:center;gap:12px;
+    border:1.5px solid var(--paper-line);border-radius:12px;
+    padding:10px 14px;background:#fffefb;
+  }
+  .option:hover{border-color:var(--navy);}
+  .bubble{
+    width:26px;height:26px;border-radius:50%;flex-shrink:0;
+    border:2px solid var(--navy);
+    display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:700;color:var(--navy);
+    background:#fff;
+  }
+  .option.selected{background:var(--navy);border-color:var(--navy);color:#fdf9ee;}
+  .option.selected .bubble{background:var(--gold);border-color:var(--gold);color:#3a2c07;}
+  .option-text{font-size:15px;}
+  .essay-points{font-size:12.5px;color:var(--ink-soft);font-style:italic;margin-left:42px;margin-top:-6px;margin-bottom:10px;}
+
+  /* ---------- Result ---------- */
+  .result-score{
+    text-align:center;padding:22px 10px 6px;
+  }
+  .result-score .num{font-family:'Fraunces',serif;font-size:52px;font-weight:700;color:var(--navy-dark);}
+  .result-score .lbl{color:var(--ink-soft);font-size:13.5px;text-transform:uppercase;letter-spacing:.05em;}
+  .code-box{
+    display:flex;align-items:center;justify-content:center;gap:10px;
+    background:var(--gold-soft);border:1.5px dashed var(--gold);
+    border-radius:12px;padding:14px;margin-top:14px;
+  }
+  .code-box .code{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;letter-spacing:.12em;color:#4a3a10;}
+
+  /* ---------- Admin ---------- */
+  .admin-row{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:14px 4px;border-bottom:1px solid var(--paper-line);
+    flex-wrap:wrap;
+  }
+  .admin-row:last-child{border-bottom:none;}
+  .pill{padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700;}
+  .pill.pending{background:var(--gold-soft);color:#4a3a10;}
+  .pill.done{background:var(--green-soft);color:var(--green);}
+  .score-input{width:64px;padding:6px 8px;border-radius:8px;border:1.5px solid var(--paper-line);font-family:'IBM Plex Mono',monospace;font-size:14px;text-align:center;}
+  .essay-review{background:var(--paper);border-radius:10px;padding:12px 14px;margin-top:8px;font-size:14px;line-height:1.5;white-space:pre-wrap;border:1px solid var(--paper-line);}
+  .rubric-box{background:var(--green-soft);border-radius:10px;padding:10px 14px;margin-top:8px;font-size:13px;color:#2c4a35;}
+  table.mc-key{width:100%;border-collapse:collapse;font-size:13px;}
+  table.mc-key td{padding:4px 6px;text-align:center;border-bottom:1px solid var(--paper-line);}
+  .banner{padding:10px 14px;border-radius:10px;font-size:13.5px;margin-bottom:14px;}
+  .banner.warn{background:var(--red-soft);color:var(--red);}
+  .banner.ok{background:var(--green-soft);color:var(--green);}
+  .empty{color:var(--ink-soft);font-size:14px;text-align:center;padding:30px 0;}
+  footer.tip{text-align:center;color:var(--ink-soft);font-size:12px;margin-top:26px;}
+
+  /* ---------- Review / pembahasan ---------- */
+  .review-item{border-radius:12px;border:1.5px solid var(--paper-line);padding:14px 16px;margin-top:12px;background:#fffefb;}
+  .review-item.correct{border-color:var(--green);background:var(--green-soft);}
+  .review-item.wrong{border-color:var(--red);background:var(--red-soft);}
+  .review-item.blank{border-color:var(--gold);background:var(--gold-soft);}
+  .review-top{display:flex;align-items:flex-start;gap:10px;}
+  .review-badge{
+    flex-shrink:0;width:26px;height:26px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;font-weight:800;color:#fff;
+  }
+  .review-badge.correct{background:var(--green);}
+  .review-badge.wrong{background:var(--red);}
+  .review-badge.blank{background:var(--gold);color:#3a2c07;}
+  .review-q{font-size:14.5px;font-weight:600;line-height:1.4;}
+  .review-ans{font-size:13.5px;margin:8px 0 0 36px;color:var(--ink-soft);}
+  .review-ans b{color:var(--ink);}
+  .review-explain{font-size:13.5px;margin:6px 0 0 36px;padding:8px 12px;background:rgba(255,255,255,0.6);border-radius:8px;line-height:1.5;}
+  .review-summary{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:14px 0 6px;}
+  .review-chip{padding:6px 14px;border-radius:999px;font-size:12.5px;font-weight:700;}
+  .review-chip.correct{background:var(--green-soft);color:var(--green);}
+  .review-chip.wrong{background:var(--red-soft);color:var(--red);}
+  .review-chip.blank{background:var(--gold-soft);color:#4a3a10;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============ DATA ============ */
+  var QUESTION_SETS = {"A":[["Lina mempunyai uang Rp5.000. Ia membeli jajan seharga Rp800. Uang kembaliannya adalah ...",["Rp4.400","Rp4.200","Rp4.100","Rp4.300"],1,"Rp5.000 - Rp800 = Rp4.200."],["Hasil dari 80 - 14 = ...",["65","66","68","67"],1,"80 - 14 = 66."],["Jika hari ini hari Selasa, maka 1 hari lagi adalah hari ...",["Selasa","Kamis","Jumat","Rabu"],3,"1 hari setelah Selasa adalah hari Rabu."],["Sebuah kotak berisi 35 pensil dibagikan sama rata kepada 5 anak. Setiap anak mendapat ... pensil",["9","8","6","7"],3,"35 dibagi 5 sama dengan 7 pensil untuk setiap anak."],["Perhatikan pola bilangan berikut: 2, 4, 6, 8, ... Bilangan selanjutnya adalah ...",["10","12","11","8"],0,"Polanya bertambah 2 setiap suku, sehingga bilangan selanjutnya adalah 8 + 2 = 10."],["Nilai angka 3 pada bilangan 35 adalah ...",["30","5","3","35"],0,"Pada bilangan 35, angka 3 berada di tempat puluhan, sehingga nilainya 30."],["Jam menunjukkan pukul 03.00 dibaca sebagai pukul ...",["Pukul 2 tepat","Pukul 4 tepat","Pukul 3 tepat","Setengah 5"],2,"Pukul 03.00 adalah tepat pukul 3."],["Sebuah tali panjangnya 72 cm dipotong menjadi 4 bagian sama panjang. Panjang setiap bagian adalah ...",["28 cm","18 cm","23 cm","13 cm"],1,"72 cm dibagi 4 sama dengan 18 cm untuk setiap bagian."],["Urutan bilangan 40, 83, 16, 7 dari yang terkecil ke terbesar adalah ...",["7, 83, 40, 16","7, 16, 40, 83","7, 16, 83, 40","16, 7, 40, 83"],1,"Urutan yang tepat adalah 7, 16, 40, 83."],["Banyak sudut pada bangun persegi adalah ...",["5","4","0","3"],1,"Persegi memiliki 4 sudut siku-siku."],["Hasil dari 10 + 17 = ...",["28","26","29","27"],3,"10 + 17 = 27."],["Ada 18 ekor kelinci di taman. Sebanyak 14 ekor kelinci pergi, kemudian datang lagi 2 ekor. Sekarang jumlah kelinci di taman adalah ...",["6","7","8","5"],0,"18 - 14 = 4, kemudian 4 + 2 = 6."],["Hasil dari 5 + 5 = ...",["10","11","15","5"],0,"5 + 5 = 5 x 2 = 10."],["Kirana berusia 7 tahun sekarang. 5 tahun yang akan datang, usianya adalah ...",["12","14","11","13"],0,"7 + 5 = 12 tahun."],["Banyak bilangan genap di antara 36 dan 44 (tidak termasuk 36 dan 44) adalah ...",["3","2","4","5"],0,"Bilangan genap di antara 36 dan 44 berjumlah 3 buah."],["Sebuah kotak berisi 12 pensil dibagikan sama rata kepada 3 anak. Setiap anak mendapat ... pensil",["6","5","3","4"],3,"12 dibagi 3 sama dengan 4 pensil untuk setiap anak."],["Ada 14 ekor kelinci di taman. Sebanyak 5 ekor kelinci pergi, kemudian datang lagi 7 ekor. Sekarang jumlah kelinci di taman adalah ...",["16","18","15","17"],0,"14 - 5 = 9, kemudian 9 + 7 = 16."],["Banyak bilangan genap di antara 12 dan 21 (tidak termasuk 12 dan 21) adalah ...",["4","5","3","6"],0,"Bilangan genap di antara 12 dan 21 berjumlah 4 buah."],["Banyak sisi pada bangun segitiga adalah ...",["5","4","3","2"],2,"Segitiga memiliki 3 sisi."],["Sebuah tali panjangnya 16 cm dipotong menjadi 2 bagian sama panjang. Panjang setiap bagian adalah ...",["18 cm","3 cm","8 cm","13 cm"],2,"16 cm dibagi 2 sama dengan 8 cm untuk setiap bagian."],["Hasil dari 55 - 46 = ...",["10","11","8","9"],3,"55 - 46 = 9."],["Jam menunjukkan pukul 09.00 dibaca sebagai pukul ...",["Pukul 10 tepat","Pukul 9 tepat","Pukul 8 tepat","Setengah 11"],1,"Pukul 09.00 adalah tepat pukul 9."],["Nilai angka 5 pada bilangan 55 adalah ...",["5","0","11","55"],0,"Pada bilangan 55, angka 5 berada di tempat satuan, sehingga nilainya 5."],["Jika hari ini hari Minggu, maka 4 hari lagi adalah hari ...",["Sabtu","Rabu","Jumat","Kamis"],3,"4 hari setelah Minggu adalah hari Kamis."],["Dedi berusia 5 tahun sekarang. 4 tahun yang akan datang, usianya adalah ...",["10","8","11","9"],3,"5 + 4 = 9 tahun."],["Gita mempunyai uang Rp5.000. Ia membeli jajan seharga Rp700. Uang kembaliannya adalah ...",["Rp4.300","Rp4.400","Rp4.200","Rp4.500"],0,"Rp5.000 - Rp700 = Rp4.300."],["Perhatikan pola bilangan berikut: 3, 6, 9, 12, ... Bilangan selanjutnya adalah ...",["12","15","18","16"],1,"Polanya bertambah 3 setiap suku, sehingga bilangan selanjutnya adalah 12 + 3 = 15."],["Urutan bilangan 14, 38, 18, 57 dari yang terbesar ke terkecil adalah ...",["38, 57, 18, 14","38, 57, 14, 18","57, 38, 18, 14","57, 18, 38, 14"],2,"Urutan yang tepat adalah 57, 38, 18, 14."],["Hasil dari 13 + 9 = ...",["21","23","22","24"],2,"13 + 9 = 22."],["Hasil dari 8 + 8 + 8 + 8 = ...",["33","40","32","24"],2,"8 + 8 + 8 + 8 = 8 x 4 = 32."]],"B":[["Sebuah kotak berisi 6 pensil dibagikan sama rata kepada 3 anak. Setiap anak mendapat ... pensil",["4","1","2","3"],2,"6 dibagi 3 sama dengan 2 pensil untuk setiap anak."],["Jika hari ini hari Kamis, maka 5 hari lagi adalah hari ...",["Rabu","Kamis","Selasa","Senin"],2,"5 hari setelah Kamis adalah hari Selasa."],["Hasil dari 43 - 38 = ...",["5","6","7","4"],0,"43 - 38 = 5."],["Ada 15 ekor ikan di kolam. Sebanyak 7 ekor ikan pergi, kemudian datang lagi 9 ekor. Sekarang jumlah ikan di kolam adalah ...",["17","16","18","19"],0,"15 - 7 = 8, kemudian 8 + 9 = 17."],["Hasil dari 8 + 8 + 8 + 8 = ...",["24","40","33","32"],3,"8 + 8 + 8 + 8 = 8 x 4 = 32."],["Hasil dari 10 + 18 = ...",["27","29","28","30"],2,"10 + 18 = 28."],["Nilai angka 7 pada bilangan 78 adalah ...",["78","70","7","8"],1,"Pada bilangan 78, angka 7 berada di tempat puluhan, sehingga nilainya 70."],["Perhatikan pola bilangan berikut: 1, 6, 11, 16, ... Bilangan selanjutnya adalah ...",["16","26","21","22"],2,"Polanya bertambah 5 setiap suku, sehingga bilangan selanjutnya adalah 16 + 5 = 21."],["Banyak bilangan ganjil di antara 32 dan 45 (tidak termasuk 32 dan 45) adalah ...",["6","5","7","8"],0,"Bilangan ganjil di antara 32 dan 45 berjumlah 6 buah."],["Urutan bilangan 14, 60, 7, 93 dari yang terbesar ke terkecil adalah ...",["93, 7, 60, 14","93, 60, 14, 7","7, 60, 14, 93","7, 93, 60, 14"],1,"Urutan yang tepat adalah 93, 60, 14, 7."],["Bangun datar yang memiliki 3 sisi disebut ...",["Persegi","Lingkaran","Segitiga","Persegi panjang"],2,"Bangun datar dengan 3 sisi dan 3 sudut adalah segitiga."],["Hana berusia 6 tahun sekarang. 2 tahun yang akan datang, usianya adalah ...",["7","10","8","9"],2,"6 + 2 = 8 tahun."],["Fajar mempunyai uang Rp500. Ia membeli jajan seharga Rp400. Uang kembaliannya adalah ...",["Rp0","Rp200","Rp300","Rp100"],3,"Rp500 - Rp400 = Rp100."],["Jam menunjukkan pukul 12.30 dibaca sebagai pukul ...",["Pukul 11 tepat","Setengah 2","Setengah 1","Pukul 1 tepat"],2,"Pukul 12.30 sudah setengah jam menuju pukul 1, sehingga dibaca 'Setengah 1'."],["Sebuah tali panjangnya 34 cm dipotong menjadi 2 bagian sama panjang. Panjang setiap bagian adalah ...",["27 cm","17 cm","12 cm","22 cm"],1,"34 cm dibagi 2 sama dengan 17 cm untuk setiap bagian."],["Perhatikan pola bilangan berikut: 7, 10, 13, 16, ... Bilangan selanjutnya adalah ...",["19","22","16","20"],0,"Polanya bertambah 3 setiap suku, sehingga bilangan selanjutnya adalah 16 + 3 = 19."],["Hasil dari 74 - 36 = ...",["40","39","37","38"],3,"74 - 36 = 38."],["Banyak bilangan ganjil di antara 40 dan 50 (tidak termasuk 40 dan 50) adalah ...",["5","6","4","7"],0,"Bilangan ganjil di antara 40 dan 50 berjumlah 5 buah."],["Joko berusia 8 tahun sekarang. 5 tahun yang akan datang, usianya adalah ...",["15","13","12","14"],1,"8 + 5 = 13 tahun."],["Urutan bilangan 6, 67, 32, 70 dari yang terkecil ke terbesar adalah ...",["6, 32, 70, 67","67, 70, 6, 32","70, 32, 67, 6","6, 32, 67, 70"],3,"Urutan yang tepat adalah 6, 32, 67, 70."],["Jam menunjukkan pukul 04.00 dibaca sebagai pukul ...",["Pukul 3 tepat","Pukul 4 tepat","Pukul 5 tepat","Setengah 6"],1,"Pukul 04.00 adalah tepat pukul 4."],["Hasil dari 6 + 6 + 6 + 6 + 6 = ...",["24","30","36","31"],1,"6 + 6 + 6 + 6 + 6 = 6 x 5 = 30."],["Ada 12 ekor bebek di kolam. Sebanyak 4 ekor bebek pergi, kemudian datang lagi 9 ekor. Sekarang jumlah bebek di kolam adalah ...",["19","17","18","16"],1,"12 - 4 = 8, kemudian 8 + 9 = 17."],["Sebuah tali panjangnya 76 cm dipotong menjadi 4 bagian sama panjang. Panjang setiap bagian adalah ...",["24 cm","14 cm","19 cm","29 cm"],2,"76 cm dibagi 4 sama dengan 19 cm untuk setiap bagian."],["Jika hari ini hari Minggu, maka 5 hari lagi adalah hari ...",["Minggu","Sabtu","Jumat","Kamis"],2,"5 hari setelah Minggu adalah hari Jumat."],["Hasil dari 43 + 25 = ...",["69","67","70","68"],3,"43 + 25 = 68."],["Dedi mempunyai uang Rp1.000. Ia membeli jajan seharga Rp800. Uang kembaliannya adalah ...",["Rp100","Rp300","Rp400","Rp200"],3,"Rp1.000 - Rp800 = Rp200."],["Nilai angka 5 pada bilangan 56 adalah ...",["50","6","5","56"],0,"Pada bilangan 56, angka 5 berada di tempat puluhan, sehingga nilainya 50."],["Banyak sudut pada bangun persegi adalah ...",["5","4","3","0"],1,"Persegi memiliki 4 sudut siku-siku."],["Sebuah kotak berisi 8 pensil dibagikan sama rata kepada 4 anak. Setiap anak mendapat ... pensil",["3","1","4","2"],3,"8 dibagi 4 sama dengan 2 pensil untuk setiap anak."]],"C":[["Jika hari ini hari Kamis, maka 2 hari lagi adalah hari ...",["Sabtu","Minggu","Jumat","Senin"],0,"2 hari setelah Kamis adalah hari Sabtu."],["Jam menunjukkan pukul 07.00 dibaca sebagai pukul ...",["Setengah 9","Pukul 6 tepat","Pukul 8 tepat","Pukul 7 tepat"],3,"Pukul 07.00 adalah tepat pukul 7."],["Ada 13 ekor bebek di kolam. Sebanyak 9 ekor bebek pergi, kemudian datang lagi 4 ekor. Sekarang jumlah bebek di kolam adalah ...",["9","8","10","7"],1,"13 - 9 = 4, kemudian 4 + 4 = 8."],["Nilai angka 7 pada bilangan 77 adalah ...",["70","77","7","74"],0,"Pada bilangan 77, angka 7 berada di tempat puluhan, sehingga nilainya 70."],["Hasil dari 2 + 2 = ...",["4","6","5","2"],0,"2 + 2 = 2 x 2 = 4."],["Hasil dari 26 + 39 = ...",["67","65","66","64"],1,"26 + 39 = 65."],["Banyak sudut pada bangun persegi adalah ...",["0","3","4","5"],2,"Persegi memiliki 4 sudut siku-siku."],["Perhatikan pola bilangan berikut: 2, 8, 14, 20, ... Bilangan selanjutnya adalah ...",["26","20","32","27"],0,"Polanya bertambah 6 setiap suku, sehingga bilangan selanjutnya adalah 20 + 6 = 26."],["Sebuah kotak berisi 35 pensil dibagikan sama rata kepada 5 anak. Setiap anak mendapat ... pensil",["7","8","9","6"],0,"35 dibagi 5 sama dengan 7 pensil untuk setiap anak."],["Hasil dari 88 - 75 = ...",["15","12","14","13"],3,"88 - 75 = 13."],["Banyak bilangan ganjil di antara 23 dan 37 (tidak termasuk 23 dan 37) adalah ...",["8","6","5","7"],1,"Bilangan ganjil di antara 23 dan 37 berjumlah 6 buah."],["Ani mempunyai uang Rp1.000. Ia membeli jajan seharga Rp400. Uang kembaliannya adalah ...",["Rp500","Rp600","Rp800","Rp700"],1,"Rp1.000 - Rp400 = Rp600."],["Urutan bilangan 13, 36, 43, 25 dari yang terbesar ke terkecil adalah ...",["43, 36, 25, 13","13, 43, 36, 25","25, 43, 36, 13","25, 36, 13, 43"],0,"Urutan yang tepat adalah 43, 36, 25, 13."],["Sebuah tali panjangnya 12 cm dipotong menjadi 2 bagian sama panjang. Panjang setiap bagian adalah ...",["11 cm","16 cm","6 cm","1 cm"],2,"12 cm dibagi 2 sama dengan 6 cm untuk setiap bagian."],["Kirana berusia 8 tahun sekarang. 8 tahun yang akan datang, usianya adalah ...",["18","15","17","16"],3,"8 + 8 = 16 tahun."],["Sebuah kotak berisi 4 pensil dibagikan sama rata kepada 2 anak. Setiap anak mendapat ... pensil",["2","4","3","1"],0,"4 dibagi 2 sama dengan 2 pensil untuk setiap anak."],["Perhatikan pola bilangan berikut: 6, 10, 14, 18, ... Bilangan selanjutnya adalah ...",["23","18","22","26"],2,"Polanya bertambah 4 setiap suku, sehingga bilangan selanjutnya adalah 18 + 4 = 22."],["Ada 18 ekor ikan di kolam. Sebanyak 11 ekor ikan pergi, kemudian datang lagi 8 ekor. Sekarang jumlah ikan di kolam adalah ...",["17","16","15","14"],2,"18 - 11 = 7, kemudian 7 + 8 = 15."],["Hasil dari 10 + 28 = ...",["37","38","39","40"],1,"10 + 28 = 38."],["Sebuah tali panjangnya 30 cm dipotong menjadi 2 bagian sama panjang. Panjang setiap bagian adalah ...",["25 cm","15 cm","20 cm","10 cm"],1,"30 cm dibagi 2 sama dengan 15 cm untuk setiap bagian."],["Nilai angka 6 pada bilangan 65 adalah ...",["65","5","60","6"],2,"Pada bilangan 65, angka 6 berada di tempat puluhan, sehingga nilainya 60."],["Gita mempunyai uang Rp1.000. Ia membeli jajan seharga Rp500. Uang kembaliannya adalah ...",["Rp500","Rp700","Rp600","Rp400"],0,"Rp1.000 - Rp500 = Rp500."],["Urutan bilangan 19, 84, 24, 63 dari yang terbesar ke terkecil adalah ...",["24, 63, 19, 84","63, 24, 84, 19","19, 84, 24, 63","84, 63, 24, 19"],3,"Urutan yang tepat adalah 84, 63, 24, 19."],["Hasil dari 5 + 5 + 5 = ...",["16","20","15","10"],2,"5 + 5 + 5 = 5 x 3 = 15."],["Jam menunjukkan pukul 12.00 dibaca sebagai pukul ...",["Setengah 2","Pukul 12 tepat","Pukul 1 tepat","Pukul 11 tepat"],1,"Pukul 12.00 adalah tepat pukul 12."],["Hana berusia 9 tahun sekarang. 4 tahun yang akan datang, usianya adalah ...",["15","13","14","12"],1,"9 + 4 = 13 tahun."],["Jika hari ini hari Jumat, maka 6 hari lagi adalah hari ...",["Kamis","Rabu","Sabtu","Jumat"],0,"6 hari setelah Jumat adalah hari Kamis."],["Banyak bilangan genap di antara 22 dan 35 (tidak termasuk 22 dan 35) adalah ...",["8","5","7","6"],3,"Bilangan genap di antara 22 dan 35 berjumlah 6 buah."],["Hasil dari 39 - 30 = ...",["10","9","11","8"],1,"39 - 30 = 9."],["Jika hari ini hari Selasa, maka 1 hari lagi adalah hari ...",["Selasa","Kamis","Rabu","Jumat"],2,"1 hari setelah Selasa adalah hari Rabu."]],"D":[["Fajar berusia 10 tahun sekarang. 3 tahun yang akan datang, usianya adalah ...",["14","13","15","12"],1,"10 + 3 = 13 tahun."],["Sebuah tali panjangnya 10 cm dipotong menjadi 2 bagian sama panjang. Panjang setiap bagian adalah ...",["10 cm","0 cm","15 cm","5 cm"],3,"10 cm dibagi 2 sama dengan 5 cm untuk setiap bagian."],["Sebuah kotak berisi 14 pensil dibagikan sama rata kepada 2 anak. Setiap anak mendapat ... pensil",["6","9","7","8"],2,"14 dibagi 2 sama dengan 7 pensil untuk setiap anak."],["Ada 16 ekor ikan di kolam. Sebanyak 4 ekor ikan pergi, kemudian datang lagi 4 ekor. Sekarang jumlah ikan di kolam adalah ...",["17","16","15","18"],1,"16 - 4 = 12, kemudian 12 + 4 = 16."],["Banyak bilangan ganjil di antara 33 dan 42 (tidak termasuk 33 dan 42) adalah ...",["3","4","5","6"],1,"Bilangan ganjil di antara 33 dan 42 berjumlah 4 buah."],["Bangun datar yang memiliki 4 sisi sama panjang dan 4 sudut siku-siku disebut ...",["Trapesium","Persegi","Segitiga","Lingkaran"],1,"Bangun dengan 4 sisi sama panjang dan 4 sudut siku-siku adalah persegi."],["Hasil dari 46 - 23 = ...",["22","25","23","24"],2,"46 - 23 = 23."],["Hasil dari 16 + 36 = ...",["52","51","53","54"],0,"16 + 36 = 52."],["Nilai angka 4 pada bilangan 46 adalah ...",["46","40","6","4"],1,"Pada bilangan 46, angka 4 berada di tempat puluhan, sehingga nilainya 40."],["Hasil dari 2 + 2 + 2 + 2 = ...",["9","8","6","10"],1,"2 + 2 + 2 + 2 = 2 x 4 = 8."],["Jika hari ini hari Senin, maka 1 hari lagi adalah hari ...",["Rabu","Selasa","Senin","Kamis"],1,"1 hari setelah Senin adalah hari Selasa."],["Kirana mempunyai uang Rp1.000. Ia membeli jajan seharga Rp900. Uang kembaliannya adalah ...",["Rp0","Rp300","Rp100","Rp200"],2,"Rp1.000 - Rp900 = Rp100."],["Urutan bilangan 23, 60, 86, 28 dari yang terbesar ke terkecil adalah ...",["86, 23, 28, 60","28, 23, 60, 86","86, 60, 28, 23","28, 86, 60, 23"],2,"Urutan yang tepat adalah 86, 60, 28, 23."],["Jam menunjukkan pukul 07.00 dibaca sebagai pukul ...",["Pukul 8 tepat","Pukul 6 tepat","Pukul 7 tepat","Setengah 9"],2,"Pukul 07.00 adalah tepat pukul 7."],["Perhatikan pola bilangan berikut: 2, 6, 10, 14, ... Bilangan selanjutnya adalah ...",["22","14","18","19"],2,"Polanya bertambah 4 setiap suku, sehingga bilangan selanjutnya adalah 14 + 4 = 18."],["Perhatikan pola bilangan berikut: 3, 5, 7, 9, ... Bilangan selanjutnya adalah ...",["9","13","11","12"],2,"Polanya bertambah 2 setiap suku, sehingga bilangan selanjutnya adalah 9 + 2 = 11."],["Hasil dari 2 + 2 = ...",["2","4","5","6"],1,"2 + 2 = 2 x 2 = 4."],["Sebuah kotak berisi 20 pensil dibagikan sama rata kepada 5 anak. Setiap anak mendapat ... pensil",["5","4","6","3"],1,"20 dibagi 5 sama dengan 4 pensil untuk setiap anak."],["Ada 17 ekor ayam di taman. Sebanyak 12 ekor ayam pergi, kemudian datang lagi 4 ekor. Sekarang jumlah ayam di taman adalah ...",["11","10","8","9"],3,"17 - 12 = 5, kemudian 5 + 4 = 9."],["Jam menunjukkan pukul 12.00 dibaca sebagai pukul ...",["Pukul 11 tepat","Setengah 2","Pukul 1 tepat","Pukul 12 tepat"],3,"Pukul 12.00 adalah tepat pukul 12."],["Lina berusia 10 tahun sekarang. 4 tahun yang akan datang, usianya adalah ...",["16","14","13","15"],1,"10 + 4 = 14 tahun."],["Nilai angka 9 pada bilangan 96 adalah ...",["6","96","9","90"],3,"Pada bilangan 96, angka 9 berada di tempat puluhan, sehingga nilainya 90."],["Jika hari ini hari Senin, maka 6 hari lagi adalah hari ...",["Selasa","Senin","Minggu","Sabtu"],2,"6 hari setelah Senin adalah hari Minggu."],["Hasil dari 35 + 41 = ...",["76","78","77","75"],0,"35 + 41 = 76."],["Hasil dari 61 - 21 = ...",["40","42","41","39"],0,"61 - 21 = 40."],["Urutan bilangan 33, 27, 74, 6 dari yang terbesar ke terkecil adalah ...",["6, 27, 33, 74","27, 6, 33, 74","6, 74, 27, 33","74, 33, 27, 6"],3,"Urutan yang tepat adalah 74, 33, 27, 6."],["Sebuah tali panjangnya 40 cm dipotong menjadi 2 bagian sama panjang. Panjang setiap bagian adalah ...",["25 cm","15 cm","30 cm","20 cm"],3,"40 cm dibagi 2 sama dengan 20 cm untuk setiap bagian."],["Banyak bilangan genap di antara 40 dan 48 (tidak termasuk 40 dan 48) adalah ...",["2","3","4","5"],1,"Bilangan genap di antara 40 dan 48 berjumlah 3 buah."],["Fajar mempunyai uang Rp500. Ia membeli jajan seharga Rp200. Uang kembaliannya adalah ...",["Rp300","Rp500","Rp400","Rp200"],0,"Rp500 - Rp200 = Rp300."],["Citra berusia 5 tahun sekarang. 2 tahun yang akan datang, usianya adalah ...",["9","7","8","6"],1,"5 + 2 = 7 tahun."]],"E":[["Hasil dari 8 + 8 + 8 + 8 + 8 = ...",["40","32","41","48"],0,"8 + 8 + 8 + 8 + 8 = 8 x 5 = 40."],["Sebuah tali panjangnya 40 cm dipotong menjadi 4 bagian sama panjang. Panjang setiap bagian adalah ...",["20 cm","10 cm","15 cm","5 cm"],1,"40 cm dibagi 4 sama dengan 10 cm untuk setiap bagian."],["Sebuah kotak berisi 30 pensil dibagikan sama rata kepada 5 anak. Setiap anak mendapat ... pensil",["8","7","5","6"],3,"30 dibagi 5 sama dengan 6 pensil untuk setiap anak."],["Perhatikan pola bilangan berikut: 1, 4, 7, 10, ... Bilangan selanjutnya adalah ...",["14","10","13","16"],2,"Polanya bertambah 3 setiap suku, sehingga bilangan selanjutnya adalah 10 + 3 = 13."],["Joko mempunyai uang Rp1.000. Ia membeli jajan seharga Rp800. Uang kembaliannya adalah ...",["Rp400","Rp200","Rp300","Rp100"],1,"Rp1.000 - Rp800 = Rp200."],["Banyak bilangan ganjil di antara 29 dan 43 (tidak termasuk 29 dan 43) adalah ...",["8","7","5","6"],3,"Bilangan ganjil di antara 29 dan 43 berjumlah 6 buah."],["Hasil dari 41 + 27 = ...",["70","67","69","68"],3,"41 + 27 = 68."],["Ada 16 ekor ikan di kolam. Sebanyak 12 ekor ikan pergi, kemudian datang lagi 3 ekor. Sekarang jumlah ikan di kolam adalah ...",["9","7","6","8"],1,"16 - 12 = 4, kemudian 4 + 3 = 7."],["Nilai angka 9 pada bilangan 91 adalah ...",["1","9","91","90"],3,"Pada bilangan 91, angka 9 berada di tempat puluhan, sehingga nilainya 90."],["Hasil dari 92 - 65 = ...",["28","27","29","26"],1,"92 - 65 = 27."],["Banyak sisi pada bangun segitiga adalah ...",["3","2","4","5"],0,"Segitiga memiliki 3 sisi."],["Fajar berusia 5 tahun sekarang. 6 tahun yang akan datang, usianya adalah ...",["13","12","11","10"],2,"5 + 6 = 11 tahun."],["Jam menunjukkan pukul 08.30 dibaca sebagai pukul ...",["Setengah 10","Pukul 9 tepat","Setengah 9","Pukul 7 tepat"],2,"Pukul 08.30 sudah setengah jam menuju pukul 9, sehingga dibaca 'Setengah 9'."],["Jika hari ini hari Kamis, maka 2 hari lagi adalah hari ...",["Minggu","Jumat","Sabtu","Senin"],2,"2 hari setelah Kamis adalah hari Sabtu."],["Urutan bilangan 71, 17, 12, 49 dari yang terkecil ke terbesar adalah ...",["17, 49, 71, 12","49, 12, 17, 71","71, 49, 12, 17","12, 17, 49, 71"],3,"Urutan yang tepat adalah 12, 17, 49, 71."],["Banyak bilangan genap di antara 12 dan 20 (tidak termasuk 12 dan 20) adalah ...",["2","5","3","4"],2,"Bilangan genap di antara 12 dan 20 berjumlah 3 buah."],["Hasil dari 44 + 29 = ...",["72","74","73","75"],2,"44 + 29 = 73."],["Hasil dari 6 + 6 + 6 = ...",["19","24","12","18"],3,"6 + 6 + 6 = 6 x 3 = 18."],["Sebuah tali panjangnya 36 cm dipotong menjadi 2 bagian sama panjang. Panjang setiap bagian adalah ...",["18 cm","23 cm","13 cm","28 cm"],0,"36 cm dibagi 2 sama dengan 18 cm untuk setiap bagian."],["Eka mempunyai uang Rp5.000. Ia membeli jajan seharga Rp200. Uang kembaliannya adalah ...",["Rp4.900","Rp4.800","Rp5.000","Rp4.700"],1,"Rp5.000 - Rp200 = Rp4.800."],["Sebuah kotak berisi 8 pensil dibagikan sama rata kepada 4 anak. Setiap anak mendapat ... pensil",["2","3","1","4"],0,"8 dibagi 4 sama dengan 2 pensil untuk setiap anak."],["Hasil dari 73 - 6 = ...",["68","67","66","69"],1,"73 - 6 = 67."],["Perhatikan pola bilangan berikut: 5, 11, 17, 23, ... Bilangan selanjutnya adalah ...",["35","30","29","23"],2,"Polanya bertambah 6 setiap suku, sehingga bilangan selanjutnya adalah 23 + 6 = 29."],["Lina berusia 10 tahun sekarang. 6 tahun yang akan datang, usianya adalah ...",["18","16","15","17"],1,"10 + 6 = 16 tahun."],["Ada 15 ekor kelinci di taman. Sebanyak 5 ekor kelinci pergi, kemudian datang lagi 6 ekor. Sekarang jumlah kelinci di taman adalah ...",["16","18","15","17"],0,"15 - 5 = 10, kemudian 10 + 6 = 16."],["Nilai angka 4 pada bilangan 47 adalah ...",["4","40","7","47"],1,"Pada bilangan 47, angka 4 berada di tempat puluhan, sehingga nilainya 40."],["Jam menunjukkan pukul 02.30 dibaca sebagai pukul ...",["Setengah 3","Pukul 3 tepat","Pukul 1 tepat","Setengah 4"],0,"Pukul 02.30 sudah setengah jam menuju pukul 3, sehingga dibaca 'Setengah 3'."],["Urutan bilangan 82, 27, 75, 95 dari yang terkecil ke terbesar adalah ...",["82, 75, 27, 95","95, 75, 27, 82","95, 75, 82, 27","27, 75, 82, 95"],3,"Urutan yang tepat adalah 27, 75, 82, 95."],["Jika hari ini hari Jumat, maka 4 hari lagi adalah hari ...",["Rabu","Selasa","Senin","Kamis"],1,"4 hari setelah Jumat adalah hari Selasa."],["Hasil dari 4 + 4 = ...",["12","8","4","9"],1,"4 + 4 = 4 x 2 = 8."]],"F":[["Nilai angka 1 pada bilangan 81 adalah ...",["8","81","1","5"],2,"Pada bilangan 81, angka 1 berada di tempat satuan, sehingga nilainya 1."],["Banyak bilangan genap di antara 14 dan 27 (tidak termasuk 14 dan 27) adalah ...",["8","7","5","6"],3,"Bilangan genap di antara 14 dan 27 berjumlah 6 buah."],["Kirana mempunyai uang Rp2.000. Ia membeli jajan seharga Rp600. Uang kembaliannya adalah ...",["Rp1.600","Rp1.400","Rp1.500","Rp1.300"],1,"Rp2.000 - Rp600 = Rp1.400."],["Eka berusia 9 tahun sekarang. 6 tahun yang akan datang, usianya adalah ...",["17","14","16","15"],3,"9 + 6 = 15 tahun."],["Sebuah tali panjangnya 52 cm dipotong menjadi 4 bagian sama panjang. Panjang setiap bagian adalah ...",["13 cm","8 cm","18 cm","23 cm"],0,"52 cm dibagi 4 sama dengan 13 cm untuk setiap bagian."],["Jika hari ini hari Rabu, maka 4 hari lagi adalah hari ...",["Senin","Sabtu","Selasa","Minggu"],3,"4 hari setelah Rabu adalah hari Minggu."],["Sebuah kotak berisi 14 pensil dibagikan sama rata kepada 2 anak. Setiap anak mendapat ... pensil",["9","7","8","6"],1,"14 dibagi 2 sama dengan 7 pensil untuk setiap anak."],["Hasil dari 9 + 9 + 9 + 9 + 9 = ...",["54","36","45","46"],2,"9 + 9 + 9 + 9 + 9 = 9 x 5 = 45."],["Urutan bilangan 65, 82, 63, 92 dari yang terbesar ke terkecil adalah ...",["63, 65, 82, 92","82, 65, 92, 63","92, 63, 82, 65","92, 82, 65, 63"],3,"Urutan yang tepat adalah 92, 82, 65, 63."],["Hasil dari 30 + 32 = ...",["63","62","61","64"],1,"30 + 32 = 62."],["Ada 10 ekor ikan di kolam. Sebanyak 3 ekor ikan pergi, kemudian datang lagi 3 ekor. Sekarang jumlah ikan di kolam adalah ...",["11","12","10","9"],2,"10 - 3 = 7, kemudian 7 + 3 = 10."],["Jam menunjukkan pukul 08.30 dibaca sebagai pukul ...",["Setengah 9","Setengah 10","Pukul 9 tepat","Pukul 7 tepat"],0,"Pukul 08.30 sudah setengah jam menuju pukul 9, sehingga dibaca 'Setengah 9'."],["Perhatikan pola bilangan berikut: 7, 10, 13, 16, ... Bilangan selanjutnya adalah ...",["16","22","20","19"],3,"Polanya bertambah 3 setiap suku, sehingga bilangan selanjutnya adalah 16 + 3 = 19."],["Hasil dari 80 - 60 = ...",["20","19","21","22"],0,"80 - 60 = 20."],["Bangun datar yang memiliki 4 sisi dengan 2 pasang sisi sejajar sama panjang, namun bukan semua sisi sama panjang, disebut ...",["Persegi panjang","Segitiga","Lingkaran","Persegi"],0,"Persegi panjang memiliki 2 pasang sisi sejajar sama panjang dan 4 sudut siku-siku."],["Fajar mempunyai uang Rp2.000. Ia membeli jajan seharga Rp900. Uang kembaliannya adalah ...",["Rp1.300","Rp1.200","Rp1.000","Rp1.100"],3,"Rp2.000 - Rp900 = Rp1.100."],["Perhatikan pola bilangan berikut: 7, 13, 19, 25, ... Bilangan selanjutnya adalah ...",["25","37","31","32"],2,"Polanya bertambah 6 setiap suku, sehingga bilangan selanjutnya adalah 25 + 6 = 31."],["Jam menunjukkan pukul 11.00 dibaca sebagai pukul ...",["Pukul 11 tepat","Setengah 1","Pukul 12 tepat","Pukul 10 tepat"],0,"Pukul 11.00 adalah tepat pukul 11."],["Hasil dari 45 + 29 = ...",["73","76","75","74"],3,"45 + 29 = 74."],["Joko berusia 7 tahun sekarang. 4 tahun yang akan datang, usianya adalah ...",["11","12","13","10"],0,"7 + 4 = 11 tahun."],["Nilai angka 3 pada bilangan 13 adalah ...",["13","1","7","3"],3,"Pada bilangan 13, angka 3 berada di tempat satuan, sehingga nilainya 3."],["Hasil dari 9 + 9 + 9 + 9 = ...",["45","36","27","37"],1,"9 + 9 + 9 + 9 = 9 x 4 = 36."],["Sebuah tali panjangnya 32 cm dipotong menjadi 2 bagian sama panjang. Panjang setiap bagian adalah ...",["21 cm","26 cm","11 cm","16 cm"],3,"32 cm dibagi 2 sama dengan 16 cm untuk setiap bagian."],["Bangun datar yang tidak memiliki sudut adalah ...",["Lingkaran","Segitiga","Persegi","Persegi panjang"],0,"Lingkaran tidak memiliki sudut maupun sisi lurus."],["Urutan bilangan 5, 13, 43, 36 dari yang terbesar ke terkecil adalah ...",["43, 36, 13, 5","36, 43, 13, 5","36, 13, 5, 43","36, 43, 5, 13"],0,"Urutan yang tepat adalah 43, 36, 13, 5."],["Hasil dari 69 - 52 = ...",["17","19","16","18"],0,"69 - 52 = 17."],["Ada 12 ekor bebek di kolam. Sebanyak 8 ekor bebek pergi, kemudian datang lagi 4 ekor. Sekarang jumlah bebek di kolam adalah ...",["7","8","10","9"],1,"12 - 8 = 4, kemudian 4 + 4 = 8."],["Jika hari ini hari Kamis, maka 3 hari lagi adalah hari ...",["Selasa","Senin","Minggu","Sabtu"],2,"3 hari setelah Kamis adalah hari Minggu."],["Banyak bilangan genap di antara 28 dan 40 (tidak termasuk 28 dan 40) adalah ...",["6","7","5","4"],2,"Bilangan genap di antara 28 dan 40 berjumlah 5 buah."],["Sebuah kotak berisi 18 pensil dibagikan sama rata kepada 2 anak. Setiap anak mendapat ... pensil",["8","11","9","10"],2,"18 dibagi 2 sama dengan 9 pensil untuk setiap anak."]],"G":[["Jika hari ini hari Kamis, maka 1 hari lagi adalah hari ...",["Sabtu","Kamis","Jumat","Minggu"],2,"1 hari setelah Kamis adalah hari Jumat."],["Ada 13 ekor bebek di kolam. Sebanyak 2 ekor bebek pergi, kemudian datang lagi 3 ekor. Sekarang jumlah bebek di kolam adalah ...",["16","14","15","13"],1,"13 - 2 = 11, kemudian 11 + 3 = 14."],["Sebuah kotak berisi 20 pensil dibagikan sama rata kepada 5 anak. Setiap anak mendapat ... pensil",["5","3","6","4"],3,"20 dibagi 5 sama dengan 4 pensil untuk setiap anak."],["Sebuah tali panjangnya 36 cm dipotong menjadi 4 bagian sama panjang. Panjang setiap bagian adalah ...",["14 cm","9 cm","4 cm","19 cm"],1,"36 cm dibagi 4 sama dengan 9 cm untuk setiap bagian."],["Banyak bilangan ganjil di antara 16 dan 29 (tidak termasuk 16 dan 29) adalah ...",["7","6","5","8"],1,"Bilangan ganjil di antara 16 dan 29 berjumlah 6 buah."],["Perhatikan pola bilangan berikut: 8, 11, 14, 17, ... Bilangan selanjutnya adalah ...",["21","20","23","17"],1,"Polanya bertambah 3 setiap suku, sehingga bilangan selanjutnya adalah 17 + 3 = 20."],["Hana mempunyai uang Rp2.000. Ia membeli jajan seharga Rp900. Uang kembaliannya adalah ...",["Rp1.000","Rp1.200","Rp1.100","Rp1.300"],2,"Rp2.000 - Rp900 = Rp1.100."],["Lina berusia 9 tahun sekarang. 3 tahun yang akan datang, usianya adalah ...",["13","11","14","12"],3,"9 + 3 = 12 tahun."],["Hasil dari 77 - 70 = ...",["6","9","7","8"],2,"77 - 70 = 7."],["Banyak sisi pada bangun segitiga adalah ...",["3","4","5","2"],0,"Segitiga memiliki 3 sisi."],["Hasil dari 13 + 28 = ...",["41","43","40","42"],0,"13 + 28 = 41."],["Urutan bilangan 20, 17, 79, 91 dari yang terkecil ke terbesar adalah ...",["91, 79, 17, 20","17, 20, 79, 91","91, 17, 79, 20","91, 20, 17, 79"],1,"Urutan yang tepat adalah 17, 20, 79, 91."],["Jam menunjukkan pukul 02.30 dibaca sebagai pukul ...",["Setengah 4","Setengah 3","Pukul 1 tepat","Pukul 3 tepat"],1,"Pukul 02.30 sudah setengah jam menuju pukul 3, sehingga dibaca 'Setengah 3'."],["Hasil dari 6 + 6 + 6 = ...",["12","18","19","24"],1,"6 + 6 + 6 = 6 x 3 = 18."],["Nilai angka 0 pada bilangan 40 adalah ...",["0","40","4","3"],0,"Pada bilangan 40, angka 0 berada di tempat satuan, sehingga nilainya 0."],["Hasil dari 41 + 42 = ...",["82","83","84","85"],1,"41 + 42 = 83."],["Hana mempunyai uang Rp1.000. Ia membeli jajan seharga Rp400. Uang kembaliannya adalah ...",["Rp600","Rp800","Rp500","Rp700"],0,"Rp1.000 - Rp400 = Rp600."],["Jam menunjukkan pukul 05.00 dibaca sebagai pukul ...",["Pukul 6 tepat","Setengah 7","Pukul 5 tepat","Pukul 4 tepat"],2,"Pukul 05.00 adalah tepat pukul 5."],["Iwan berusia 9 tahun sekarang. 2 tahun yang akan datang, usianya adalah ...",["13","11","10","12"],1,"9 + 2 = 11 tahun."],["Hasil dari 8 + 8 + 8 + 8 = ...",["32","40","24","33"],0,"8 + 8 + 8 + 8 = 8 x 4 = 32."],["Hasil dari 69 - 46 = ...",["25","23","22","24"],1,"69 - 46 = 23."],["Sebuah tali panjangnya 60 cm dipotong menjadi 4 bagian sama panjang. Panjang setiap bagian adalah ...",["20 cm","25 cm","15 cm","10 cm"],2,"60 cm dibagi 4 sama dengan 15 cm untuk setiap bagian."],["Perhatikan pola bilangan berikut: 3, 8, 13, 18, ... Bilangan selanjutnya adalah ...",["24","18","23","28"],2,"Polanya bertambah 5 setiap suku, sehingga bilangan selanjutnya adalah 18 + 5 = 23."],["Jika hari ini hari Jumat, maka 6 hari lagi adalah hari ...",["Rabu","Sabtu","Jumat","Kamis"],3,"6 hari setelah Jumat adalah hari Kamis."],["Banyak bilangan genap di antara 40 dan 48 (tidak termasuk 40 dan 48) adalah ...",["2","3","5","4"],1,"Bilangan genap di antara 40 dan 48 berjumlah 3 buah."],["Ada 8 ekor burung di taman. Sebanyak 3 ekor burung pergi, kemudian datang lagi 6 ekor. Sekarang jumlah burung di taman adalah ...",["11","10","13","12"],0,"8 - 3 = 5, kemudian 5 + 6 = 11."],["Sebuah kotak berisi 24 pensil dibagikan sama rata kepada 4 anak. Setiap anak mendapat ... pensil",["5","6","7","8"],1,"24 dibagi 4 sama dengan 6 pensil untuk setiap anak."],["Urutan bilangan 85, 80, 51, 91 dari yang terbesar ke terkecil adalah ...",["85, 80, 91, 51","91, 51, 80, 85","80, 91, 51, 85","91, 85, 80, 51"],3,"Urutan yang tepat adalah 91, 85, 80, 51."],["Nilai angka 7 pada bilangan 87 adalah ...",["87","13","7","8"],2,"Pada bilangan 87, angka 7 berada di tempat satuan, sehingga nilainya 7."],["Jika hari ini hari Minggu, maka 4 hari lagi adalah hari ...",["Jumat","Kamis","Sabtu","Rabu"],1,"4 hari setelah Minggu adalah hari Kamis."]],"H":[["Hasil dari 39 - 11 = ...",["29","27","30","28"],3,"39 - 11 = 28."],["Urutan bilangan 91, 68, 49, 10 dari yang terbesar ke terkecil adalah ...",["10, 49, 68, 91","68, 10, 91, 49","49, 91, 68, 10","91, 68, 49, 10"],3,"Urutan yang tepat adalah 91, 68, 49, 10."],["Sebuah tali panjangnya 38 cm dipotong menjadi 2 bagian sama panjang. Panjang setiap bagian adalah ...",["19 cm","14 cm","24 cm","29 cm"],0,"38 cm dibagi 2 sama dengan 19 cm untuk setiap bagian."],["Perhatikan pola bilangan berikut: 6, 9, 12, 15, ... Bilangan selanjutnya adalah ...",["21","19","18","15"],2,"Polanya bertambah 3 setiap suku, sehingga bilangan selanjutnya adalah 15 + 3 = 18."],["Sebuah kotak berisi 35 pensil dibagikan sama rata kepada 5 anak. Setiap anak mendapat ... pensil",["7","8","9","6"],0,"35 dibagi 5 sama dengan 7 pensil untuk setiap anak."],["Hana berusia 6 tahun sekarang. 8 tahun yang akan datang, usianya adalah ...",["16","15","13","14"],3,"6 + 8 = 14 tahun."],["Ada 10 ekor kelinci di taman. Sebanyak 3 ekor kelinci pergi, kemudian datang lagi 4 ekor. Sekarang jumlah kelinci di taman adalah ...",["12","13","11","10"],2,"10 - 3 = 7, kemudian 7 + 4 = 11."],["Banyak bilangan ganjil di antara 10 dan 24 (tidak termasuk 10 dan 24) adalah ...",["7","6","9","8"],0,"Bilangan ganjil di antara 10 dan 24 berjumlah 7 buah."],["Jika hari ini hari Kamis, maka 6 hari lagi adalah hari ...",["Rabu","Kamis","Jumat","Selasa"],0,"6 hari setelah Kamis adalah hari Rabu."],["Nilai angka 6 pada bilangan 63 adalah ...",["6","60","3","63"],1,"Pada bilangan 63, angka 6 berada di tempat puluhan, sehingga nilainya 60."],["Jam menunjukkan pukul 08.30 dibaca sebagai pukul ...",["Setengah 10","Setengah 9","Pukul 7 tepat","Pukul 9 tepat"],1,"Pukul 08.30 sudah setengah jam menuju pukul 9, sehingga dibaca 'Setengah 9'."],["Hasil dari 19 + 36 = ...",["57","56","55","54"],2,"19 + 36 = 55."],["Hasil dari 2 + 2 + 2 + 2 = ...",["8","10","9","6"],0,"2 + 2 + 2 + 2 = 2 x 4 = 8."],["Banyak sisi pada bangun segitiga adalah ...",["3","5","4","2"],0,"Segitiga memiliki 3 sisi."],["Gita mempunyai uang Rp500. Ia membeli jajan seharga Rp200. Uang kembaliannya adalah ...",["Rp400","Rp300","Rp500","Rp200"],1,"Rp500 - Rp200 = Rp300."],["Perhatikan pola bilangan berikut: 5, 8, 11, 14, ... Bilangan selanjutnya adalah ...",["14","18","17","20"],2,"Polanya bertambah 3 setiap suku, sehingga bilangan selanjutnya adalah 14 + 3 = 17."],["Hasil dari 37 - 11 = ...",["26","28","25","27"],0,"37 - 11 = 26."],["Hasil dari 5 + 5 + 5 + 5 = ...",["21","15","20","25"],2,"5 + 5 + 5 + 5 = 5 x 4 = 20."],["Urutan bilangan 33, 59, 51, 83 dari yang terbesar ke terkecil adalah ...",["51, 59, 83, 33","59, 33, 51, 83","83, 51, 59, 33","83, 59, 51, 33"],3,"Urutan yang tepat adalah 83, 59, 51, 33."],["Banyak bilangan genap di antara 34 dan 47 (tidak termasuk 34 dan 47) adalah ...",["5","7","8","6"],3,"Bilangan genap di antara 34 dan 47 berjumlah 6 buah."],["Nilai angka 1 pada bilangan 21 adalah ...",["2","1","3","21"],1,"Pada bilangan 21, angka 1 berada di tempat satuan, sehingga nilainya 1."],["Hasil dari 24 + 10 = ...",["36","35","33","34"],3,"24 + 10 = 34."],["Ada 8 ekor ayam di taman. Sebanyak 5 ekor ayam pergi, kemudian datang lagi 2 ekor. Sekarang jumlah ayam di taman adalah ...",["7","6","5","4"],2,"8 - 5 = 3, kemudian 3 + 2 = 5."],["Jam menunjukkan pukul 05.30 dibaca sebagai pukul ...",["Pukul 4 tepat","Setengah 7","Pukul 6 tepat","Setengah 6"],3,"Pukul 05.30 sudah setengah jam menuju pukul 6, sehingga dibaca 'Setengah 6'."],["Dedi berusia 7 tahun sekarang. 5 tahun yang akan datang, usianya adalah ...",["13","12","11","14"],1,"7 + 5 = 12 tahun."],["Jika hari ini hari Jumat, maka 2 hari lagi adalah hari ...",["Selasa","Minggu","Senin","Sabtu"],1,"2 hari setelah Jumat adalah hari Minggu."],["Bangun datar yang memiliki 4 sisi sama panjang dan 4 sudut siku-siku disebut ...",["Lingkaran","Persegi","Trapesium","Segitiga"],1,"Bangun dengan 4 sisi sama panjang dan 4 sudut siku-siku adalah persegi."],["Sebuah kotak berisi 40 pensil dibagikan sama rata kepada 5 anak. Setiap anak mendapat ... pensil",["10","9","7","8"],3,"40 dibagi 5 sama dengan 8 pensil untuk setiap anak."],["Sebuah tali panjangnya 32 cm dipotong menjadi 2 bagian sama panjang. Panjang setiap bagian adalah ...",["11 cm","21 cm","16 cm","26 cm"],2,"32 cm dibagi 2 sama dengan 16 cm untuk setiap bagian."],["Citra mempunyai uang Rp1.000. Ia membeli jajan seharga Rp200. Uang kembaliannya adalah ...",["Rp700","Rp1.000","Rp900","Rp800"],3,"Rp1.000 - Rp200 = Rp800."]],"I":[["Hasil dari 77 - 64 = ...",["12","13","15","14"],1,"77 - 64 = 13."],["Jika hari ini hari Rabu, maka 1 hari lagi adalah hari ...",["Jumat","Kamis","Sabtu","Rabu"],1,"1 hari setelah Rabu adalah hari Kamis."],["Nilai angka 5 pada bilangan 52 adalah ...",["50","52","2","5"],0,"Pada bilangan 52, angka 5 berada di tempat puluhan, sehingga nilainya 50."],["Sebuah kotak berisi 6 pensil dibagikan sama rata kepada 3 anak. Setiap anak mendapat ... pensil",["2","4","1","3"],0,"6 dibagi 3 sama dengan 2 pensil untuk setiap anak."],["Perhatikan pola bilangan berikut: 6, 8, 10, 12, ... Bilangan selanjutnya adalah ...",["14","16","12","15"],0,"Polanya bertambah 2 setiap suku, sehingga bilangan selanjutnya adalah 12 + 2 = 14."],["Budi berusia 6 tahun sekarang. 3 tahun yang akan datang, usianya adalah ...",["8","9","10","11"],1,"6 + 3 = 9 tahun."],["Banyak bilangan genap di antara 31 dan 42 (tidak termasuk 31 dan 42) adalah ...",["7","4","6","5"],3,"Bilangan genap di antara 31 dan 42 berjumlah 5 buah."],["Hasil dari 40 + 40 = ...",["81","80","82","79"],1,"40 + 40 = 80."],["Ada 12 ekor ikan di kolam. Sebanyak 7 ekor ikan pergi, kemudian datang lagi 4 ekor. Sekarang jumlah ikan di kolam adalah ...",["10","9","8","11"],1,"12 - 7 = 5, kemudian 5 + 4 = 9."],["Urutan bilangan 7, 10, 30, 36 dari yang terbesar ke terkecil adalah ...",["7, 36, 10, 30","36, 7, 30, 10","7, 10, 30, 36","36, 30, 10, 7"],3,"Urutan yang tepat adalah 36, 30, 10, 7."],["Dedi mempunyai uang Rp1.000. Ia membeli jajan seharga Rp800. Uang kembaliannya adalah ...",["Rp200","Rp300","Rp100","Rp400"],0,"Rp1.000 - Rp800 = Rp200."],["Bangun datar yang memiliki 4 sisi sama panjang dan 4 sudut siku-siku disebut ...",["Persegi","Trapesium","Segitiga","Lingkaran"],0,"Bangun dengan 4 sisi sama panjang dan 4 sudut siku-siku adalah persegi."],["Jam menunjukkan pukul 05.00 dibaca sebagai pukul ...",["Pukul 4 tepat","Pukul 5 tepat","Setengah 7","Pukul 6 tepat"],1,"Pukul 05.00 adalah tepat pukul 5."],["Hasil dari 3 + 3 = ...",["3","6","7","9"],1,"3 + 3 = 3 x 2 = 6."],["Sebuah tali panjangnya 30 cm dipotong menjadi 2 bagian sama panjang. Panjang setiap bagian adalah ...",["25 cm","15 cm","10 cm","20 cm"],1,"30 cm dibagi 2 sama dengan 15 cm untuk setiap bagian."],["Sebuah tali panjangnya 28 cm dipotong menjadi 2 bagian sama panjang. Panjang setiap bagian adalah ...",["14 cm","9 cm","19 cm","24 cm"],0,"28 cm dibagi 2 sama dengan 14 cm untuk setiap bagian."],["Sebuah kotak berisi 6 pensil dibagikan sama rata kepada 2 anak. Setiap anak mendapat ... pensil",["5","3","4","2"],1,"6 dibagi 2 sama dengan 3 pensil untuk setiap anak."],["Nilai angka 3 pada bilangan 33 adalah ...",["3","33","7","1"],0,"Pada bilangan 33, angka 3 berada di tempat satuan, sehingga nilainya 3."],["Gita berusia 6 tahun sekarang. 8 tahun yang akan datang, usianya adalah ...",["13","15","16","14"],3,"6 + 8 = 14 tahun."],["Jika hari ini hari Rabu, maka 2 hari lagi adalah hari ...",["Jumat","Sabtu","Kamis","Minggu"],0,"2 hari setelah Rabu adalah hari Jumat."],["Banyak sudut pada bangun persegi adalah ...",["0","3","5","4"],3,"Persegi memiliki 4 sudut siku-siku."],["Urutan bilangan 66, 65, 87, 80 dari yang terkecil ke terbesar adalah ...",["87, 80, 66, 65","80, 66, 87, 65","80, 87, 65, 66","65, 66, 80, 87"],3,"Urutan yang tepat adalah 65, 66, 80, 87."],["Ada 10 ekor kelinci di taman. Sebanyak 4 ekor kelinci pergi, kemudian datang lagi 8 ekor. Sekarang jumlah kelinci di taman adalah ...",["15","14","16","13"],1,"10 - 4 = 6, kemudian 6 + 8 = 14."],["Jam menunjukkan pukul 04.30 dibaca sebagai pukul ...",["Pukul 5 tepat","Pukul 3 tepat","Setengah 6","Setengah 5"],3,"Pukul 04.30 sudah setengah jam menuju pukul 5, sehingga dibaca 'Setengah 5'."],["Joko mempunyai uang Rp5.000. Ia membeli jajan seharga Rp700. Uang kembaliannya adalah ...",["Rp4.400","Rp4.500","Rp4.300","Rp4.200"],2,"Rp5.000 - Rp700 = Rp4.300."],["Hasil dari 32 - 11 = ...",["21","20","23","22"],0,"32 - 11 = 21."],["Hasil dari 32 + 28 = ...",["62","61","59","60"],3,"32 + 28 = 60."],["Hasil dari 6 + 6 = ...",["18","13","6","12"],3,"6 + 6 = 6 x 2 = 12."],["Perhatikan pola bilangan berikut: 9, 12, 15, 18, ... Bilangan selanjutnya adalah ...",["24","22","18","21"],3,"Polanya bertambah 3 setiap suku, sehingga bilangan selanjutnya adalah 18 + 3 = 21."],["Banyak bilangan genap di antara 22 dan 35 (tidak termasuk 22 dan 35) adalah ...",["6","7","8","5"],0,"Bilangan genap di antara 22 dan 35 berjumlah 6 buah."]],"J":[["Gita mempunyai uang Rp2.000. Ia membeli jajan seharga Rp600. Uang kembaliannya adalah ...",["Rp1.500","Rp1.600","Rp1.300","Rp1.400"],3,"Rp2.000 - Rp600 = Rp1.400."],["Sebuah tali panjangnya 24 cm dipotong menjadi 2 bagian sama panjang. Panjang setiap bagian adalah ...",["7 cm","17 cm","12 cm","22 cm"],2,"24 cm dibagi 2 sama dengan 12 cm untuk setiap bagian."],["Ada 14 ekor kelinci di taman. Sebanyak 11 ekor kelinci pergi, kemudian datang lagi 7 ekor. Sekarang jumlah kelinci di taman adalah ...",["10","9","12","11"],0,"14 - 11 = 3, kemudian 3 + 7 = 10."],["Jam menunjukkan pukul 05.30 dibaca sebagai pukul ...",["Setengah 7","Setengah 6","Pukul 4 tepat","Pukul 6 tepat"],1,"Pukul 05.30 sudah setengah jam menuju pukul 6, sehingga dibaca 'Setengah 6'."],["Banyak bilangan genap di antara 34 dan 42 (tidak termasuk 34 dan 42) adalah ...",["5","2","3","4"],2,"Bilangan genap di antara 34 dan 42 berjumlah 3 buah."],["Hasil dari 34 + 16 = ...",["49","51","52","50"],3,"34 + 16 = 50."],["Ani berusia 10 tahun sekarang. 8 tahun yang akan datang, usianya adalah ...",["17","18","20","19"],1,"10 + 8 = 18 tahun."],["Urutan bilangan 40, 12, 77, 87 dari yang terkecil ke terbesar adalah ...",["87, 77, 12, 40","12, 40, 77, 87","40, 77, 87, 12","77, 12, 87, 40"],1,"Urutan yang tepat adalah 12, 40, 77, 87."],["Bangun datar yang memiliki 4 sisi dengan 2 pasang sisi sejajar sama panjang, namun bukan semua sisi sama panjang, disebut ...",["Lingkaran","Persegi panjang","Persegi","Segitiga"],1,"Persegi panjang memiliki 2 pasang sisi sejajar sama panjang dan 4 sudut siku-siku."],["Hasil dari 89 - 6 = ...",["82","85","83","84"],2,"89 - 6 = 83."],["Nilai angka 8 pada bilangan 81 adalah ...",["1","8","80","81"],2,"Pada bilangan 81, angka 8 berada di tempat puluhan, sehingga nilainya 80."],["Jika hari ini hari Jumat, maka 5 hari lagi adalah hari ...",["Jumat","Selasa","Kamis","Rabu"],3,"5 hari setelah Jumat adalah hari Rabu."],["Sebuah kotak berisi 28 pensil dibagikan sama rata kepada 4 anak. Setiap anak mendapat ... pensil",["8","6","7","9"],2,"28 dibagi 4 sama dengan 7 pensil untuk setiap anak."],["Perhatikan pola bilangan berikut: 8, 11, 14, 17, ... Bilangan selanjutnya adalah ...",["20","23","21","17"],0,"Polanya bertambah 3 setiap suku, sehingga bilangan selanjutnya adalah 17 + 3 = 20."],["Hasil dari 3 + 3 + 3 + 3 + 3 = ...",["12","15","16","18"],1,"3 + 3 + 3 + 3 + 3 = 3 x 5 = 15."],["Jika hari ini hari Jumat, maka 6 hari lagi adalah hari ...",["Rabu","Jumat","Sabtu","Kamis"],3,"6 hari setelah Jumat adalah hari Kamis."],["Jam menunjukkan pukul 12.00 dibaca sebagai pukul ...",["Pukul 1 tepat","Setengah 2","Pukul 11 tepat","Pukul 12 tepat"],3,"Pukul 12.00 adalah tepat pukul 12."],["Ada 17 ekor kelinci di taman. Sebanyak 13 ekor kelinci pergi, kemudian datang lagi 4 ekor. Sekarang jumlah kelinci di taman adalah ...",["9","8","7","10"],1,"17 - 13 = 4, kemudian 4 + 4 = 8."],["Sebuah tali panjangnya 80 cm dipotong menjadi 4 bagian sama panjang. Panjang setiap bagian adalah ...",["20 cm","25 cm","30 cm","15 cm"],0,"80 cm dibagi 4 sama dengan 20 cm untuk setiap bagian."],["Urutan bilangan 29, 18, 36, 51 dari yang terkecil ke terbesar adalah ...",["29, 18, 51, 36","51, 36, 29, 18","51, 36, 18, 29","18, 29, 36, 51"],3,"Urutan yang tepat adalah 18, 29, 36, 51."],["Perhatikan pola bilangan berikut: 8, 10, 12, 14, ... Bilangan selanjutnya adalah ...",["18","14","17","16"],3,"Polanya bertambah 2 setiap suku, sehingga bilangan selanjutnya adalah 14 + 2 = 16."],["Joko mempunyai uang Rp1.000. Ia membeli jajan seharga Rp700. Uang kembaliannya adalah ...",["Rp200","Rp400","Rp300","Rp500"],2,"Rp1.000 - Rp700 = Rp300."],["Hasil dari 77 - 48 = ...",["30","29","31","28"],1,"77 - 48 = 29."],["Iwan berusia 5 tahun sekarang. 8 tahun yang akan datang, usianya adalah ...",["14","13","15","12"],1,"5 + 8 = 13 tahun."],["Hasil dari 32 + 24 = ...",["56","58","57","55"],0,"32 + 24 = 56."],["Nilai angka 7 pada bilangan 87 adalah ...",["7","8","87","4"],0,"Pada bilangan 87, angka 7 berada di tempat satuan, sehingga nilainya 7."],["Sebuah kotak berisi 32 pensil dibagikan sama rata kepada 4 anak. Setiap anak mendapat ... pensil",["7","8","10","9"],1,"32 dibagi 4 sama dengan 8 pensil untuk setiap anak."],["Banyak bilangan ganjil di antara 38 dan 48 (tidak termasuk 38 dan 48) adalah ...",["6","4","7","5"],3,"Bilangan ganjil di antara 38 dan 48 berjumlah 5 buah."],["Hasil dari 7 + 7 + 7 = ...",["28","14","22","21"],3,"7 + 7 + 7 = 7 x 3 = 21."],["Joko mempunyai uang Rp5.000. Ia membeli jajan seharga Rp400. Uang kembaliannya adalah ...",["Rp4.700","Rp4.800","Rp4.600","Rp4.500"],2,"Rp5.000 - Rp400 = Rp4.600."]]};
+  var SET_LETTERS = ["A","B","C","D","E","F","G","H","I","J"];
+  var ADMIN_CODE = "kelingking";
+  var TIME_LIMIT_SEC = 40 * 60;
+  var MAX_MC = 30 * 4;
+
+  /* ============ IN-MEMORY STATE ============ */
+  var state = {
+    screen: "home",
+    student: { name: "", kelas: "" },
+    selectedSet: null,
+    currentMC: null,
+    nameDraft: "",
+    kelasDraft: "",
+    mcAnswers: {},      // index -> 0..3
+    timeLeft: TIME_LIMIT_SEC,
+    timerId: null,
+    examStarted: false,
+    lastSubmission: null,
+    checkCode: "",
+    checkResult: null,
+    checkError: "",
+    adminUnlocked: false,
+    adminCodeInput: "",
+    adminError: "",
+    submissions: [],
+    adminLoading: false,
+    adminExpanded: null,
+    adminMsg: "",
+    showKey: false,
+    keySet: "A"
+  };
+
+  var app = document.getElementById("app");
+
+  function render(){ app.innerHTML = views[state.screen](); bindEvents(); }
+
+  function el(sel){ return app.querySelector(sel); }
+  function els(sel){ return Array.prototype.slice.call(app.querySelectorAll(sel)); }
+
+  /* ============ STORAGE HELPERS ============ */
+  function genId(){
+    var chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+    var out = "";
+    for (var i=0;i<6;i++) out += chars[Math.floor(Math.random()*chars.length)];
+    return out;
+  }
+
+  function getIndex(){
+    return window.storage.get("submission-index", true)
+      .then(function(r){ return r ? JSON.parse(r.value) : []; })
+      .catch(function(){ return []; });
+  }
+
+  function saveSubmission(sub){
+    return getIndex().then(function(idx){
+      idx.push(sub.id);
+      return window.storage.set("submission-index", JSON.stringify(idx), true);
+    }).then(function(){
+      return window.storage.set("submission:" + sub.id, JSON.stringify(sub), true);
+    });
+  }
+
+  function getSubmission(id){
+    return window.storage.get("submission:" + id, true)
+      .then(function(r){ return r ? JSON.parse(r.value) : null; })
+      .catch(function(){ return null; });
+  }
+
+  function loadAllSubmissions(){
+    state.adminLoading = true; render();
+    return getIndex().then(function(idx){
+      var uniq = idx.filter(function(v,i,a){ return a.indexOf(v)===i; });
+      return Promise.all(uniq.map(function(id){ return getSubmission(id); }));
+    }).then(function(list){
+      state.submissions = list.filter(Boolean).sort(function(a,b){ return (b.submittedAt||0) - (a.submittedAt||0); });
+      state.adminLoading = false;
+      render();
+    }).catch(function(){
+      state.adminLoading = false; render();
+    });
+  }
+
+  /* ============ SCORING ============ */
+  function computeMcScore(mcAnswers, questions){
+    var score = 0, answered = 0;
+    questions.forEach(function(q, i){
+      var a = mcAnswers[i];
+      if (a === undefined || a === null){ return; }
+      answered++;
+      if (a === q[2]) score += 4; else score -= 1;
+    });
+    return { score: score, answered: answered };
+  }
+
+  /* ============ TIMER ============ */
+  function fmtTime(sec){
+    sec = Math.max(0, sec);
+    var m = Math.floor(sec/60), s = sec%60;
+    return (m<10?"0":"")+m+":"+(s<10?"0":"")+s;
+  }
+  function startTimer(){
+    if (state.timerId) return;
+    state.timerId = setInterval(function(){
+      state.timeLeft--;
+      if (state.timeLeft <= 0){
+        clearInterval(state.timerId);
+        state.timerId = null;
+        submitExam(true);
+        return;
+      }
+      var t = el(".timer");
+      if (t) t.textContent = "⏱ " + fmtTime(state.timeLeft);
+    }, 1000);
+  }
+
+  /* ============ ACTIONS ============ */
+  function goHome(){
+    if (state.timerId){ clearInterval(state.timerId); state.timerId = null; }
+    state.screen = "home"; render();
+  }
+
+  function escAttr(str){
+    return String(str||"").replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  }
+
+  function selectSet(letter){
+    state.selectedSet = letter;
+    state.homeError = "";
+    render();
+  }
+
+  function startExam(){
+    var name = state.nameDraft || "";
+    var kelas = state.kelasDraft || "";
+    if (!state.selectedSet){
+      state.homeError = "Pilih salah satu paket soal (A - J) terlebih dahulu.";
+      render();
+      return;
+    }
+    if (!name.trim() || !kelas.trim()){
+      state.homeError = "Isi nama dan kelas terlebih dahulu.";
+      render();
+      return;
+    }
+    state.student = { name: name.trim(), kelas: kelas.trim() };
+    state.currentMC = QUESTION_SETS[state.selectedSet];
+    state.mcAnswers = {};
+    state.timeLeft = TIME_LIMIT_SEC;
+    state.examStarted = true;
+    state.screen = "exam";
+    render();
+    startTimer();
+  }
+
+  function submitExam(auto){
+    if (state.timerId){ clearInterval(state.timerId); state.timerId = null; }
+    var unanswered = state.currentMC.length - Object.keys(state.mcAnswers).length;
+    if (!auto && unanswered > 0){
+      var ok = confirm("Masih ada " + unanswered + " soal pilihan ganda yang belum dijawab. Yakin ingin mengumpulkan jawaban sekarang?");
+      if (!ok) { startTimer(); return; }
+    }
+    var mc = computeMcScore(state.mcAnswers, state.currentMC);
+    var sub = {
+      id: genId(),
+      name: state.student.name,
+      kelas: state.student.kelas,
+      set: state.selectedSet,
+      mcAnswers: state.mcAnswers,
+      mcScore: mc.score,
+      mcAnswered: mc.answered,
+      totalScore: mc.score,
+      submittedAt: Date.now(),
+      autoSubmitted: !!auto
+    };
+    state.lastSubmission = sub;
+    state.screen = "result";
+    render();
+    saveSubmission(sub).catch(function(){});
+  }
+
+  function checkStatus(){
+    var code = (el("#check-code-input")||{}).value || "";
+    code = code.trim().toUpperCase();
+    if (!code){ return; }
+    state.checkError = ""; state.checkResult = null;
+    getSubmission(code).then(function(sub){
+      if (!sub){ state.checkError = "Kode tidak ditemukan. Periksa kembali kode ujian Anda."; }
+      else { state.checkResult = sub; }
+      render();
+    });
+  }
+
+  function tryAdminLogin(){
+    var code = (el("#admin-code-input")||{}).value || "";
+    if (code.trim().toLowerCase() === ADMIN_CODE){
+      state.adminUnlocked = true;
+      state.adminError = "";
+      state.screen = "admin";
+      render();
+      loadAllSubmissions();
+    } else {
+      state.adminError = "Kode admin salah.";
+      render();
+    }
+  }
+
+  function clearAllData(){
+    var ok = confirm("Hapus SEMUA data ujian yang tersimpan? Tindakan ini tidak dapat dibatalkan.");
+    if (!ok) return;
+    getIndex().then(function(idx){
+      var jobs = idx.map(function(id){ return window.storage.delete("submission:" + id, true).catch(function(){}); });
+      return Promise.all(jobs);
+    }).then(function(){
+      return window.storage.set("submission-index", JSON.stringify([]), true);
+    }).then(function(){
+      state.submissions = [];
+      state.adminMsg = "Semua data ujian telah dihapus.";
+      render();
+    });
+  }
+
+  /* ============ VIEWS ============ */
+  var views = {};
+
+  views.home = function(){
+    return ''
+    + '<div class="seal">'
+    +   '<div class="seal-badge">σ</div>'
+    +   '<div><p class="seal-title">Ujian Olimpiade Matematika</p><p class="seal-sub">Sekolah Dasar &middot; Kelas 1&ndash;2</p></div>'
+    + '</div>'
+    + '<div class="card">'
+    +   '<div class="home-hero"><h1>Selamat datang, Juara Kecil! 🎯</h1><p>Pilih paket soal, isi datamu, lalu tekan mulai.</p></div>'
+    +   (state.homeError ? '<div class="banner warn">' + state.homeError + '</div>' : '')
+    +   '<div class="field"><label>Pilih paket soal</label>'
+    +     '<div class="setgrid">'
+    +     SET_LETTERS.map(function(letter){
+            var sel = state.selectedSet === letter;
+            return '<button class="setdot ' + (sel?'selected':'') + '" data-set="' + letter + '">' + letter + '</button>';
+          }).join('')
+    +     '</div>'
+    +     '<p class="set-hint">' + (state.selectedSet ? ('Paket ' + state.selectedSet + ' dipilih &middot; 30 soal pilihan ganda.') : 'Setiap paket berisi 30 soal berbeda dengan tingkat kesulitan yang setara.') + '</p>'
+    +   '</div>'
+    +   '<div class="field"><label>Nama lengkap</label><input type="text" id="in-name" value="' + escAttr(state.nameDraft) + '" placeholder="Contoh: Kirana Ayu"/></div>'
+    +   '<div class="field"><label>Kelas</label><input type="text" id="in-kelas" value="' + escAttr(state.kelasDraft) + '" placeholder="Contoh: 2A"/></div>'
+    +   '<div class="rules-grid">'
+    +     '<div class="rule-item"><span>Benar</span><b>+4 poin</b></div>'
+    +     '<div class="rule-item"><span>Salah</span><b>&minus;1 poin</b></div>'
+    +     '<div class="rule-item"><span>Kosong</span><b>0 poin</b></div>'
+    +     '<div class="rule-item"><span>Waktu</span><b>40 menit</b></div>'
+    +   '</div>'
+    +   '<div style="margin-top:20px;text-align:center;">'
+    +     '<button class="btn btn-primary" id="btn-start">Mulai Ujian &rarr;</button>'
+    +   '</div>'
+    + '</div>'
+    + '<div class="card" style="text-align:center;">'
+    +   '<p style="margin:0 0 10px;font-size:14px;color:var(--ink-soft);">Sudah pernah mengumpulkan jawaban?</p>'
+    +   '<button class="btn btn-ghost btn-sm" id="btn-check">Cek Status Nilai</button>'
+    + '</div>'
+    + '<footer class="tip">Halaman untuk guru/panitia &middot; <button class="link-btn" id="btn-admin">Masuk sebagai Admin</button></footer>';
+  };
+
+  views.check = function(){
+    var r = state.checkResult;
+    return ''
+    + '<div class="seal"><div class="seal-badge">σ</div><div><p class="seal-title">Cek Status Nilai</p><p class="seal-sub">Masukkan kode ujian kamu</p></div></div>'
+    + '<div class="card">'
+    +   '<div class="field"><label>Kode ujian (6 karakter)</label><input type="text" id="check-code-input" class="mono" style="text-transform:uppercase;letter-spacing:.08em;" placeholder="Contoh: A1B2C3" maxlength="8"/></div>'
+    +   (state.checkError ? '<div class="banner warn">' + state.checkError + '</div>' : '')
+    +   '<div style="text-align:center;"><button class="btn btn-primary" id="btn-do-check">Cek Sekarang</button></div>'
+    +   (r ? renderCheckResult(r) : '')
+    + '</div>'
+    + '<div style="text-align:center;margin-top:14px;"><button class="link-btn" id="btn-back-home">&larr; Kembali ke beranda</button></div>';
+  };
+
+  function renderCheckResult(r){
+    var statusHtml = '<div class="result-score"><div class="lbl">Nilai Akhir</div><div class="num">' + r.totalScore + '</div><div class="lbl">dari ' + MAX_MC + '</div></div>';
+    return '<div style="margin-top:16px;border-top:1px dashed var(--paper-line);padding-top:14px;">'
+      + '<p style="margin:0 0 4px;font-weight:700;">' + r.name + ' &middot; Kelas ' + r.kelas + '</p>'
+      + statusHtml
+      + renderReview(r)
+      + '</div>';
+  }
+
+  function renderReview(sub){
+    var letters = ["A","B","C","D"];
+    var qs = QUESTION_SETS[sub.set] || [];
+    var nCorrect=0, nWrong=0, nBlank=0;
+    var items = qs.map(function(q, i){
+      var qtext=q[0], opts=q[1], correctIdx=q[2], explain=q[3];
+      var given = sub.mcAnswers[i];
+      var status = (given===undefined) ? "blank" : (given===correctIdx ? "correct" : "wrong");
+      if (status==="correct") nCorrect++; else if (status==="wrong") nWrong++; else nBlank++;
+      var badgeChar = status==="correct" ? "✓" : (status==="wrong" ? "✕" : "?");
+      var yourAnsText = (given===undefined) ? "Tidak dijawab" : (letters[given] + ". " + opts[given]);
+      var extra = status==="wrong"
+        ? '<div class="review-ans">Jawaban benar: <b>' + letters[correctIdx] + '. ' + opts[correctIdx] + '</b></div>'
+        : (status==="blank" ? '<div class="review-ans">Jawaban benar: <b>' + letters[correctIdx] + '. ' + opts[correctIdx] + '</b></div>' : '');
+      return '<div class="review-item ' + status + '">'
+        + '<div class="review-top"><span class="review-badge ' + status + '">' + badgeChar + '</span>'
+        + '<span class="review-q">' + (i+1) + '. ' + qtext + '</span></div>'
+        + '<div class="review-ans">Jawabanmu: <b>' + yourAnsText + '</b></div>'
+        + extra
+        + '<div class="review-explain">💡 ' + explain + '</div>'
+      + '</div>';
+    }).join('');
+
+    return '<div style="margin-top:10px;">'
+      + '<div class="review-summary">'
+      +   '<span class="review-chip correct">Benar: ' + nCorrect + '</span>'
+      +   '<span class="review-chip wrong">Salah: ' + nWrong + '</span>'
+      +   '<span class="review-chip blank">Kosong: ' + nBlank + '</span>'
+      + '</div>'
+      + '<div class="qsection-label" style="margin-top:18px;">Pembahasan Soal</div>'
+      + items
+      + '</div>';
+  }
+
+  views.exam = function(){
+    var qs = state.currentMC;
+    var answeredMc = Object.keys(state.mcAnswers).length;
+    var html = '';
+    html += '<div class="navgrid-wrap">'
+      + '<div class="navgrid-top">'
+      +   '<div><b>' + state.student.name + '</b> <span style="color:var(--ink-soft);font-size:13px;">&middot; Kelas ' + state.student.kelas + ' &middot; Paket ' + state.selectedSet + '</span></div>'
+      +   '<div class="timer">⏱ ' + fmtTime(state.timeLeft) + '</div>'
+      + '</div>'
+      + '<div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:8px;">Terjawab: ' + answeredMc + ' / ' + qs.length + ' pilihan ganda</div>'
+      + '<div class="navgrid">'
+      + qs.map(function(_, i){
+          var done = state.mcAnswers[i] !== undefined;
+          return '<button class="navdot ' + (done?'answered':'') + '" data-jump="mc-' + i + '">' + (i+1) + '</button>';
+        }).join('')
+      + '</div>'
+    + '</div>';
+
+    html += '<div class="qsection-label">Soal Pilihan Ganda &middot; Paket ' + state.selectedSet + '</div>';
+    qs.forEach(function(q, i){
+      var qtext = q[0], opts = q[1];
+      html += '<div class="card qcard" id="mc-' + i + '">'
+        + '<div class="qhead"><span class="qnum">' + (i+1) + '</span><span class="qtext">' + qtext + '</span></div>'
+        + '<div class="options">'
+        + opts.map(function(opt, oi){
+            var sel = state.mcAnswers[i] === oi;
+            var letters = ["A","B","C","D"];
+            return '<button class="option ' + (sel?'selected':'') + '" data-mc="' + i + '" data-opt="' + oi + '">'
+              + '<span class="bubble">' + letters[oi] + '</span><span class="option-text">' + opt + '</span></button>';
+          }).join('')
+        + '</div>'
+      + '</div>';
+    });
+
+    html += '<div class="card" style="text-align:center;">'
+      + '<p style="color:var(--ink-soft);font-size:13.5px;margin-top:0;">Periksa kembali jawabanmu sebelum mengumpulkan. Jangan memuat ulang (refresh) halaman selama ujian berlangsung.</p>'
+      + '<button class="btn btn-primary" id="btn-submit">Kumpulkan Jawaban</button>'
+      + '</div>';
+
+    return html;
+  };
+
+  views.result = function(){
+    var s = state.lastSubmission;
+    if (!s) return views.home();
+    return ''
+    + '<div class="seal"><div class="seal-badge">✓</div><div><p class="seal-title">Jawaban Terkumpul</p><p class="seal-sub">Terima kasih, ' + s.name + '!</p></div></div>'
+    + '<div class="card">'
+    +   (s.autoSubmitted ? '<div class="banner warn">Waktu habis &mdash; jawabanmu dikumpulkan secara otomatis.</div>' : '')
+    +   '<div class="result-score"><div class="num">' + s.totalScore + '</div><div class="lbl">Nilai Akhir (dari ' + MAX_MC + ')</div></div>'
+    +   '<div class="code-box"><span>🔑</span><span class="code">' + s.id + '</span></div>'
+    +   '<p style="text-align:center;font-size:12.5px;color:var(--ink-soft);margin-top:8px;">Simpan kode ini untuk mengecek ulang nilaimu kapan saja.</p>'
+    +   renderReview(s)
+    +   '<div style="text-align:center;margin-top:20px;"><button class="btn btn-ghost" id="btn-home2">Kembali ke Beranda</button></div>'
+    + '</div>';
+  };
+
+  views["admin-login"] = function(){
+    return ''
+    + '<div class="seal"><div class="seal-badge">🔒</div><div><p class="seal-title">Akses Admin</p><p class="seal-sub">Masukkan kode admin untuk menilai ujian</p></div></div>'
+    + '<div class="card">'
+    +   '<div class="field"><label>Kode admin</label><input type="password" id="admin-code-input" placeholder="Masukkan kode akses"/></div>'
+    +   (state.adminError ? '<div class="banner warn">' + state.adminError + '</div>' : '')
+    +   '<div style="text-align:center;"><button class="btn btn-primary" id="btn-admin-login">Masuk</button></div>'
+    + '</div>'
+    + '<div style="text-align:center;margin-top:14px;"><button class="link-btn" id="btn-back-home2">&larr; Kembali ke beranda</button></div>';
+  };
+
+  views.admin = function(){
+    var subs = state.submissions;
+    var avg = subs.length ? Math.round(subs.reduce(function(a,s){return a+s.totalScore;},0) / subs.length) : 0;
+    var html = '<div class="seal"><div class="seal-badge">🗂</div><div><p class="seal-title">Panel Nilai</p><p class="seal-sub">' + subs.length + ' peserta &middot; rata-rata nilai ' + avg + '</p></div></div>';
+
+    html += '<div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">'
+      + '<button class="btn btn-ghost btn-sm" id="btn-refresh">↻ Muat Ulang Data</button>'
+      + '<div style="display:flex;gap:8px;">'
+      + '<button class="btn btn-ghost btn-sm" id="btn-show-key">Lihat Kunci PG</button>'
+      + '<button class="btn btn-danger btn-sm" id="btn-clear-all">Hapus Semua Data</button>'
+      + '</div>'
+      + '</div>';
+
+    if (state.adminMsg){
+      html += '<div class="banner ok">' + state.adminMsg + '</div>';
+    }
+
+    if (state.showKey){
+      html += '<div class="card">'
+        + '<h3 style="margin-top:0;">Kunci Jawaban Pilihan Ganda</h3>'
+        + '<div class="setgrid" style="grid-template-columns:repeat(10,1fr);max-width:480px;margin-bottom:14px;">'
+        + SET_LETTERS.map(function(letter){
+            var sel = state.keySet === letter;
+            return '<button class="setdot ' + (sel?'selected':'') + '" data-keyset="' + letter + '" style="font-size:14px;">' + letter + '</button>';
+          }).join('')
+        + '</div>'
+        + '<table class="mc-key">' + mcKeyRows(state.keySet) + '</table>'
+        + '</div>';
+    }
+
+    if (state.adminLoading){
+      html += '<div class="card"><p class="empty">Memuat data peserta...</p></div>';
+    } else if (subs.length === 0){
+      html += '<div class="card"><p class="empty">Belum ada peserta yang mengumpulkan jawaban.</p></div>';
+    } else {
+      html += '<div class="card">';
+      subs.forEach(function(s){
+        html += renderAdminRow(s);
+      });
+      html += '</div>';
+    }
+
+    html += '<div style="text-align:center;margin-top:14px;"><button class="link-btn" id="btn-back-home3">&larr; Kembali ke beranda</button></div>';
+    return html;
+  };
+
+  function mcKeyRows(setLetter){
+    var letters = ["A","B","C","D"];
+    var qs = QUESTION_SETS[setLetter] || [];
+    var rows = "";
+    for (var i=0;i<qs.length;i+=5){
+      rows += "<tr>";
+      for (var j=i;j<Math.min(i+5, qs.length);j++){
+        rows += "<td><b>" + (j+1) + "</b>. " + letters[qs[j][2]] + "</td>";
+      }
+      rows += "</tr>";
+    }
+    return rows;
+  }
+
+  function renderAdminRow(s){
+    var expanded = state.adminExpanded === s.id;
+    var pill = '<span class="pill done">Nilai: ' + s.totalScore + '</span>';
+    var head = '<div class="admin-row">'
+      + '<div><b>' + s.name + '</b> <span style="color:var(--ink-soft);font-size:13px;">&middot; Kelas ' + s.kelas + ' &middot; Paket ' + s.set + '</span></div>'
+      + '<div style="display:flex;align-items:center;gap:8px;">' + pill + '<button class="btn btn-ghost btn-sm" data-expand="' + s.id + '">' + (expanded?'Tutup':'Lihat Pembahasan') + '</button></div>'
+      + '</div>';
+
+    if (!expanded) return head;
+
+    var body = '<div style="padding:6px 4px 18px;">' + renderReview(s) + '</div>';
+    return head + body;
+  }
+
+  /* ============ EVENT BINDING ============ */
+  function bindEvents(){
+    var b;
+    if (b = el("#btn-start")) b.onclick = startExam;
+    var nameInput = el("#in-name");
+    if (nameInput) nameInput.oninput = function(){ state.nameDraft = nameInput.value; };
+    var kelasInput = el("#in-kelas");
+    if (kelasInput) kelasInput.oninput = function(){ state.kelasDraft = kelasInput.value; };
+    els("[data-set]").forEach(function(btn){
+      btn.onclick = function(){ selectSet(btn.getAttribute("data-set")); };
+    });
+    if (b = el("#btn-check")) b.onclick = function(){ state.screen="check"; state.checkResult=null; state.checkError=""; render(); };
+    if (b = el("#btn-admin")) b.onclick = function(){ state.screen="admin-login"; render(); };
+    if (b = el("#btn-back-home")) b.onclick = goHome;
+    if (b = el("#btn-back-home2")) b.onclick = goHome;
+    if (b = el("#btn-back-home3")) b.onclick = goHome;
+    if (b = el("#btn-home2")) b.onclick = goHome;
+    if (b = el("#btn-do-check")) b.onclick = checkStatus;
+    if (b = el("#btn-admin-login")) b.onclick = tryAdminLogin;
+    if (b = el("#btn-submit")) b.onclick = function(){ submitExam(false); };
+    if (b = el("#btn-refresh")) b.onclick = loadAllSubmissions;
+    if (b = el("#btn-clear-all")) b.onclick = clearAllData;
+    if (b = el("#btn-show-key")) b.onclick = function(){ state.showKey = !state.showKey; render(); };
+    els("[data-keyset]").forEach(function(btn){
+      btn.onclick = function(){ state.keySet = btn.getAttribute("data-keyset"); render(); };
+    });
+
+    els(".option").forEach(function(o){
+      o.onclick = function(){
+        var i = parseInt(o.getAttribute("data-mc"), 10);
+        var oi = parseInt(o.getAttribute("data-opt"), 10);
+        if (state.mcAnswers[i] === oi){ delete state.mcAnswers[i]; }
+        else { state.mcAnswers[i] = oi; }
+        render();
+        var target = el("#mc-" + i);
+        if (target && target.scrollIntoView) target.scrollIntoView({ block: "center", behavior: "instant" in window ? "instant" : "auto" });
+      };
+    });
+
+    els("[data-jump]").forEach(function(btn){
+      btn.onclick = function(){
+        var target = el("#" + btn.getAttribute("data-jump"));
+        if (target && target.scrollIntoView) target.scrollIntoView({ block: "start", behavior: "smooth" });
+      };
+    });
+
+    els("[data-expand]").forEach(function(btn){
+      btn.onclick = function(){
+        var id = btn.getAttribute("data-expand");
+        state.adminExpanded = state.adminExpanded === id ? null : id;
+        state.adminMsg = "";
+        render();
+      };
+    });
+
+    var enterHandlers = [
+      ["#in-kelas", startExam],
+      ["#check-code-input", checkStatus],
+      ["#admin-code-input", tryAdminLogin]
+    ];
+    enterHandlers.forEach(function(pair){
+      var input = el(pair[0]);
+      if (input){
+        input.onkeydown = function(ev){ if (ev.key === "Enter"){ pair[1](); } };
+      }
+    });
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
