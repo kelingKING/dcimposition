@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Olimpiade Matematika Kelas 1–2</title>
+<style>
+  :root{
+    --navy:#132A46;
+    --navy-deep:#0B1B30;
+    --gold:#F2B441;
+    --coral:#F0654A;
+    --mint:#3FB89B;
+    --cream:#FBF6EA;
+    --line:#25406B;
+    --ok:#2E9E6E;
+    --bad:#D64545;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Trebuchet MS', Verdana, sans-serif;
+    background:radial-gradient(circle at 20% -10%, #1c3b63 0%, var(--navy) 45%, var(--navy-deep) 100%);
+    color:var(--cream);
+    min-height:100vh;
+  }
+  h1,h2,h3{ font-family:'Georgia', 'Times New Roman', serif; margin:0; }
+  .wrap{ max-width:760px; margin:0 auto; padding:22px 16px 60px; }
+
+  .badge-header{
+    display:flex; align-items:center; gap:14px;
+    background:linear-gradient(135deg,var(--gold),#e08f2c);
+    color:var(--navy-deep);
+    border-radius:18px;
+    padding:16px 18px;
+    box-shadow:0 8px 0 #a86a12, 0 14px 24px rgba(0,0,0,.35);
+    position:relative;
+    overflow:hidden;
+  }
+  .badge-header::after{
+    content:"✦"; position:absolute; right:-10px; top:-18px; font-size:110px; opacity:.15;
+  }
+  .badge-header .ribbon{
+    width:52px;height:52px;border-radius:50%;
+    background:var(--navy-deep); color:var(--gold);
+    display:flex;align-items:center;justify-content:center;
+    font-size:24px; font-weight:bold; flex:none;
+    border:3px solid var(--cream);
+  }
+  .badge-header h1{ font-size:1.35rem; line-height:1.15; }
+  .badge-header p{ margin:4px 0 0; font-size:.85rem; font-weight:bold; letter-spacing:.03em;}
+
+  .card{
+    background:#16304F;
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:18px;
+    margin-top:16px;
+    box-shadow:0 4px 14px rgba(0,0,0,.25);
+  }
+  .kisi{ font-size:.82rem; line-height:1.55; color:#cfe0f5; }
+  .kisi ol{ margin:8px 0 0 18px; padding:0; }
+
+  label.field-label{ display:block; font-size:.8rem; color:#a9c3e0; margin-bottom:6px; font-weight:bold; }
+  input#student-name{
+    width:100%; padding:12px 14px; border-radius:12px; border:2px solid var(--line);
+    background:var(--navy-deep); color:var(--cream); font-size:1rem; outline:none;
+  }
+  input#student-name:focus{ border-color:var(--gold); }
+  #name-hint{ font-size:.72rem; color:#ff9a9a; margin-top:6px; min-height:14px; }
+
+  .grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px; }
+  .paket-btn{
+    background:var(--navy-deep);
+    border:2px solid var(--mint);
+    color:var(--cream);
+    border-radius:14px;
+    padding:16px 10px;
+    text-align:center;
+    cursor:pointer;
+    transition:transform .12s ease, background .12s ease;
+    font-family:'Georgia',serif;
+  }
+  .paket-btn .num{ font-size:1.8rem; font-weight:bold; color:var(--mint); display:block; }
+  .paket-btn small{ display:block; margin-top:4px; font-size:.72rem; color:#a9c3e0; }
+  .paket-btn:hover{ transform:translateY(-3px); background:#1c3b63; }
+  .paket-btn:active{ transform:translateY(0); }
+
+  .toolbar{ display:flex; gap:10px; margin-top:16px; flex-wrap:wrap; }
+  .ghost-btn{
+    flex:1; min-width:140px;
+    background:transparent; border:1.5px dashed #6b88ac; color:#cfe0f5;
+    border-radius:12px; padding:10px; cursor:pointer; font-size:.85rem;
+  }
+  .ghost-btn:hover{ background:rgba(255,255,255,.05); }
+
+  .quiz-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;}
+  .quiz-head h2{ font-size:1.1rem; color:var(--gold); }
+  .quiz-name{ font-size:.75rem; color:#a9c3e0; margin-bottom:8px; }
+
+  .timer-bar{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    background:var(--navy-deep); border:2px solid var(--mint);
+    border-radius:12px; padding:8px 12px; margin:10px 0 14px;
+  }
+  .timer-bar .clock-icon{ font-size:1.1rem; }
+  .timer-bar #timer-display{
+    font-family:'Georgia',serif; font-size:1.3rem; font-weight:bold;
+    color:var(--mint); letter-spacing:.05em;
+  }
+  .timer-bar.low{ border-color:var(--coral); animation:pulse 1s infinite; }
+  .timer-bar.low #timer-display{ color:var(--coral); }
+  @keyframes pulse{
+    0%,100%{ box-shadow:0 0 0 rgba(240,101,74,0); }
+    50%{ box-shadow:0 0 14px rgba(240,101,74,.55); }
+  }
+  .progress-track{ background:#0B1B30; border-radius:8px; height:10px; overflow:hidden; margin:8px 0 4px;}
+  .progress-fill{ background:linear-gradient(90deg,var(--mint),var(--gold)); height:100%; width:0%; transition:width .2s ease;}
+  .progress-label{ font-size:.75rem; color:#a9c3e0; }
+
+  .qcard{ display:none; }
+  .qcard.active{ display:block; }
+  .cat-tag{
+    display:inline-block; background:var(--coral); color:#fff;
+    font-size:.68rem; font-weight:bold; padding:3px 9px; border-radius:20px;
+    margin-bottom:10px; letter-spacing:.03em;
+  }
+  .qnum{ color:var(--gold); font-weight:bold; }
+  .qtext{ font-size:1.05rem; line-height:1.5; margin:8px 0 14px; }
+  .opt{
+    display:flex; align-items:center; gap:10px;
+    background:var(--navy-deep); border:2px solid var(--line);
+    border-radius:12px; padding:11px 13px; margin-bottom:9px;
+    cursor:pointer; font-size:.95rem;
+  }
+  .opt:hover{ border-color:var(--mint); }
+  .opt.selected{ border-color:var(--gold); background:#1c3b63; }
+  .opt .letter{
+    width:26px;height:26px;border-radius:50%;background:var(--line);
+    color:var(--cream); display:flex;align-items:center;justify-content:center;
+    font-size:.8rem; font-weight:bold; flex:none;
+  }
+  .opt.selected .letter{ background:var(--gold); color:var(--navy-deep); }
+
+  .nav-row{ display:flex; justify-content:space-between; gap:10px; margin-top:14px; }
+  .nav-btn{
+    flex:1; padding:12px; border-radius:12px; border:none; font-weight:bold;
+    cursor:pointer; font-size:.9rem;
+  }
+  .nav-btn.prev{ background:#1c3b63; color:var(--cream); }
+  .nav-btn.next{ background:var(--mint); color:var(--navy-deep); }
+  .nav-btn.submit{ background:var(--coral); color:#fff; }
+  .nav-btn:disabled{ opacity:.4; cursor:not-allowed; }
+
+  .jumpgrid{ display:grid; grid-template-columns:repeat(6,1fr); gap:6px; margin-top:14px; }
+  .jump{
+    aspect-ratio:1; border-radius:8px; border:1.5px solid var(--line);
+    background:var(--navy-deep); color:#a9c3e0; font-size:.75rem;
+    cursor:pointer; display:flex;align-items:center;justify-content:center;
+  }
+  .jump.answered{ border-color:var(--mint); color:var(--mint); }
+  .jump.current{ background:var(--gold); color:var(--navy-deep); border-color:var(--gold); font-weight:bold;}
+
+  .score-hero{
+    text-align:center; padding:22px 10px;
+    background:linear-gradient(160deg,#1c3b63,var(--navy-deep));
+    border-radius:16px; border:1px solid var(--line);
+  }
+  .score-hero .who{ font-size:.85rem; color:var(--gold); font-weight:bold; margin-bottom:6px; }
+  .score-hero .big{ font-size:3rem; font-weight:bold; color:var(--gold); font-family:'Georgia',serif; }
+  .score-hero .sub{ font-size:.85rem; color:#a9c3e0; margin-top:4px; }
+  .medal{ font-size:2.2rem; margin-bottom:4px; }
+
+  .review-item{
+    border-radius:12px; padding:12px 14px; margin-top:10px;
+    border-left:5px solid var(--line); background:var(--navy-deep);
+  }
+  .review-item.correct{ border-left-color:var(--ok); }
+  .review-item.wrong{ border-left-color:var(--bad); }
+  .review-item .rq{ font-size:.92rem; margin-bottom:6px; }
+  .review-item .rline{ font-size:.82rem; color:#cfe0f5; }
+  .review-item .rline.you-wrong{ color:#ff9a9a; }
+  .review-item .rline.correct-ans{ color:#8ce0bc; }
+  .pembahasan{
+    margin-top:8px; padding:9px 11px; border-radius:10px;
+    background:rgba(242,180,65,.09); border:1px dashed rgba(242,180,65,.4);
+    font-size:.8rem; color:#f5dfaf; line-height:1.5;
+  }
+  .pembahasan b{ color:var(--gold); }
+
+  .badge-small{ display:inline-block; font-size:.68rem; font-weight:bold; padding:2px 8px; border-radius:10px; margin-right:6px;}
+  .badge-small.correct{ background:rgba(46,158,110,.25); color:#8ce0bc; }
+  .badge-small.wrong{ background:rgba(214,69,69,.25); color:#ff9a9a; }
+
+  .filter-row{ display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
+  .filter-btn{
+    flex:1; min-width:100px; padding:8px; border-radius:10px; border:1.5px solid var(--line);
+    background:var(--navy-deep); color:#cfe0f5; font-size:.75rem; cursor:pointer;
+  }
+  .filter-btn.active{ border-color:var(--gold); color:var(--gold); }
+
+  footer{ text-align:center; font-size:.7rem; color:#5f7ba0; margin-top:30px; }
+  .hidden{ display:none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="badge-header">
+    <div class="ribbon">OM</div>
+    <div>
+      <h1>Olimpiade Matematika — Kelas 1 &amp; 2</h1>
+      <p>5 PAKET · 30 SOAL/PAKET · TINGKAT SANGAT SULIT</p>
+    </div>
+  </div>
+
+  <!-- HOME VIEW -->
+  <div id="view-home">
+    <div class="card">
+      <label class="field-label" for="student-name">Nama Peserta</label>
+      <input id="student-name" type="text" placeholder="Tulis nama lengkap di sini..." maxlength="40">
+      <div id="name-hint"></div>
+    </div>
+
+    <div class="card">
+      <h3 style="color:var(--gold);margin-bottom:6px;">Kisi-kisi</h3>
+      <div class="kisi">
+        Setiap paket berisi 30 soal (3 soal untuk tiap indikator berikut), disusun berurutan:
+        <ol>
+          <li>Menentukan pola bilangan kompleks</li>
+          <li>Menentukan pola gambar kompleks</li>
+          <li>Menyelesaikan teka-teki matematika sederhana</li>
+          <li>Menentukan strategi berhitung</li>
+          <li>Menyelesaikan soal non-rutin</li>
+          <li>Visualisasi bangun sederhana</li>
+          <li>Penalaran kuantitatif</li>
+          <li>Melengkapi pola angka</li>
+          <li>Mengidentifikasi hubungan bentuk</li>
+          <li>Menyelesaikan masalah berdasarkan informasi &amp; strategi penyelesaian</li>
+        </ol>
+        Waktu pengerjaan tiap paket adalah <b>40 menit</b>. Tekan tombol <b>Submit Jawaban</b> kapan saja untuk langsung dikoreksi (soal yang belum dijawab dianggap salah), lengkap dengan pembahasan tiap soal.
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="color:var(--gold);">Pilih Paket</h3>
+      <div class="grid" id="paket-grid"></div>
+      <div class="toolbar">
+        <button class="ghost-btn" onclick="showAnswerKey()">📋 Lihat kunci jawaban semua paket</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUIZ VIEW -->
+  <div id="view-quiz" class="hidden">
+    <div class="card">
+      <div class="quiz-head">
+        <h2 id="quiz-title">Paket 1</h2>
+        <button class="ghost-btn" style="min-width:auto;padding:6px 12px;" onclick="backHome()">✕ Keluar</button>
+      </div>
+      <div class="quiz-name" id="quiz-name">Peserta: —</div>
+
+      <div class="timer-bar" id="timer-bar">
+        <span class="clock-icon">⏱</span>
+        <span id="timer-display">40:00</span>
+      </div>
+
+      <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="progress-label" id="progress-label">Soal 1 dari 30</div>
+
+      <div id="qcards"></div>
+
+      <div class="nav-row">
+        <button class="nav-btn prev" id="btn-prev" onclick="navQ(-1)">← Sebelumnya</button>
+        <button class="nav-btn next" id="btn-next" onclick="navQ(1)">Selanjutnya →</button>
+      </div>
+      <button class="nav-btn submit" style="width:100%;margin-top:10px;" onclick="submitQuiz(false)">✔ Submit Jawaban</button>
+      <div id="submit-hint" style="font-size:.72rem;color:#a9c3e0;text-align:center;margin-top:6px;">Waktu pengerjaan 40 menit. Tekan Submit kapan saja untuk langsung dikoreksi.</div>
+
+      <div class="jumpgrid" id="jumpgrid"></div>
+    </div>
+  </div>
+
+  <!-- RESULT VIEW -->
+  <div id="view-result" class="hidden">
+    <div class="score-hero">
+      <div class="who" id="result-name">Peserta: —</div>
+      <div class="medal" id="medal">🏅</div>
+      <div class="big" id="score-big">0/30</div>
+      <div class="sub" id="score-sub">Nilai: 0</div>
+    </div>
+    <div class="toolbar">
+      <button class="ghost-btn" onclick="backHome()">🏠 Kembali ke daftar paket</button>
+      <button class="ghost-btn" onclick="retryQuiz()">↻ Ulangi paket ini</button>
+    </div>
+    <div class="filter-row">
+      <button class="filter-btn active" data-f="all" onclick="filterReview('all')">Semua (30)</button>
+      <button class="filter-btn" data-f="wrong" onclick="filterReview('wrong')">Hanya Salah</button>
+      <button class="filter-btn" data-f="correct" onclick="filterReview('correct')">Hanya Benar</button>
+    </div>
+    <div id="review-list"></div>
+  </div>
+
+  <!-- ANSWER KEY VIEW -->
+  <div id="view-key" class="hidden">
+    <div class="card">
+      <div class="quiz-head">
+        <h2>Kunci Jawaban — Semua Paket</h2>
+        <button class="ghost-btn" style="min-width:auto;padding:6px 12px;" onclick="backHome()">✕ Tutup</button>
+      </div>
+      <div id="key-content" style="font-size:.85rem;line-height:1.7;"></div>
+    </div>
+  </div>
+
+  <footer>Dibuat sebagai alat latihan &amp; koreksi otomatis olimpiade matematika kelas 1–2.</footer>
+</div>
+
+<script>
+/* ================= BANK SOAL (10 kategori x 15 soal, dengan pembahasan) ================= */
+const BANK = {
+pb:[
+{q:"2, 4, 8, 16, ...", o:["24","30","32","64"], a:2, e:"Setiap suku dikalikan 2 (×2): 2→4→8→16→32."},
+{q:"1, 2, 4, 7, 11, ...", o:["14","15","16","18"], a:2, e:"Selisih antar suku naik 1,2,3,4, jadi selisih berikutnya 5: 11+5=16."},
+{q:"3, 6, 9, 15, 24, ...", o:["33","36","39","42"], a:2, e:"Setiap suku = jumlah dua suku sebelumnya: 9+15=24, maka 15+24=39."},
+{q:"2, 5, 10, 17, 26, ...", o:["35","36","37","39"], a:2, e:"Selisihnya 3,5,7,9 (naik 2 tiap kali), selisih berikutnya 11: 26+11=37."},
+{q:"1, 4, 9, 16, 25, ...", o:["30","32","36","49"], a:2, e:"Ini barisan bilangan kuadrat 1²,2²,3²,4²,5², jadi berikutnya 6²=36."},
+{q:"5, 10, 20, 40, ...", o:["60","70","80","90"], a:2, e:"Setiap suku dikalikan 2: 5→10→20→40→80."},
+{q:"2, 3, 5, 8, 13, 21, ...", o:["26","29","34","36"], a:2, e:"Setiap suku = jumlah dua suku sebelumnya (Fibonacci): 13+21=34."},
+{q:"90, 81, 72, 63, ...", o:["52","53","54","55"], a:2, e:"Setiap suku dikurangi 9: 90→81→72→63→54."},
+{q:"1, 3, 6, 10, 15, ...", o:["18","20","21","25"], a:2, e:"Selisihnya naik 2,3,4,5 (bilangan segitiga), selisih berikutnya 6: 15+6=21."},
+{q:"4, 7, 6, 9, 8, 11, 10, ...", o:["12","13","14","9"], a:1, e:"Pola berselang: +3, −1, +3, −1, ... Setelah 10, langkah berikutnya +3 = 13."},
+{q:"1, 2, 4, 7, 11, 16, 22, ...", o:["26","27","28","29"], a:3, e:"Selisih naik 1,2,3,4,5,6, selisih berikutnya 7: 22+7=29."},
+{q:"64, 32, 16, 8, ...", o:["2","3","4","6"], a:2, e:"Setiap suku dibagi 2: 64→32→16→8→4."},
+{q:"2, 6, 12, 20, 30, ...", o:["36","40","42","45"], a:2, e:"Pola n×(n+1): 1×2,2×3,3×4,4×5,5×6, berikutnya 6×7=42."},
+{q:"1, 1, 2, 3, 5, 8, ...", o:["11","12","13","14"], a:2, e:"Barisan Fibonacci: setiap suku = jumlah dua suku sebelumnya, 5+8=13."},
+{q:"5, 11, 23, 47, ...", o:["93","94","95","96"], a:2, e:"Setiap suku = (suku sebelumnya ×2) + 1: 47×2+1=95."},
+],
+pg:[
+{q:"🔺🔵🔺🔺🔵🔺🔺🔺🔵🔺🔺🔺🔺 → bentuk selanjutnya?", o:["🔺","🔵","🔻","🔷"], a:1, e:"Jumlah segitiga sebelum simbol biru bertambah 1 tiap kelompok (1,2,3,4...). Setelah 4 segitiga, muncul simbol biru."},
+{q:"△▽△▽△▽△ → bentuk selanjutnya?", o:["△","▽","◇","○"], a:1, e:"Pola berselang-seling dua bentuk: posisi ganjil selalu △, posisi genap selalu ▽. Simbol terakhir yang diberikan (ke-7) adalah △, jadi simbol ke-8 (genap) adalah ▽."},
+{q:"●●○●●○●●○ → bentuk selanjutnya?", o:["●","○","◐","◑"], a:0, e:"Pola berulang tiap 3 simbol (●●○). Posisi ke-10 sama dengan posisi ke-1 dalam siklus (10 mod 3 = 1), yaitu ●."},
+{q:"□ ▢ ▣ ■ → bentuk selanjutnya (makin gelap)?", o:["⬜","▢","⬛","■"], a:2, e:"Warna isi bertambah gelap secara bertahap; setelah paling gelap (■) berikutnya bentuk hitam pekat yang lebih besar (⬛)."},
+{q:"▲▶▼◀▲▶ → bentuk selanjutnya (berputar searah jarum jam)?", o:["▲","▶","▼","◀"], a:2, e:"Segitiga berputar 90° searah jarum jam tiap langkah: ▲→▶→▼→◀→▲→▶→▼."},
+{q:"🔴🔵🟡🔴🔵🟡🔴🔵 → bentuk selanjutnya?", o:["🔴","🔵","🟡","🟢"], a:2, e:"Pola 3 warna berulang (merah, biru, kuning). Posisi ke-9 sama dengan posisi ke-3 dalam siklus, yaitu kuning."},
+{q:"Segitiga (3 sisi) → Persegi (4 sisi) → Segilima (5 sisi) → bentuk selanjutnya?", o:["Segiempat","Segilima","Segienam","Segitujuh"], a:2, e:"Jumlah sisi bertambah 1 tiap bentuk: 3→4→5→6, jadi bentuk berikutnya segienam (6 sisi)."},
+{q:"Bagian kiri simetris: 🔺🔵🔺 | ? Agar simetris (cerminan), bagian kanan yang tepat adalah?", o:["🔺🔵🔺","🔵🔺🔵","🔺🔺🔵","🔵🔵🔺"], a:0, e:"Cerminan dari susunan simetris menghasilkan susunan yang sama persis: 🔺🔵🔺."},
+{q:"↑→↓←↑→ → bentuk selanjutnya (berputar 90° searah jarum jam)?", o:["↑","→","↓","←"], a:2, e:"Arah panah berputar 90° searah jarum jam tiap langkah: ↑→→→↓→←→↑→→→↓."},
+{q:"Titik kelereng: 2, 4, 6, 8, ... → jumlah selanjutnya?", o:["9","10","11","12"], a:1, e:"Jumlah kelereng bertambah 2 tiap kali: 2,4,6,8,10."},
+{q:"Pola A,B,A,B,A → bentuk selanjutnya?", o:["A","B","C","D"], a:1, e:"Pola berselang dua simbol (A,B). Setelah A, giliran berikutnya adalah B."},
+{q:"Kotak terisi: ▤(1/4) ▥(1/2) ▦(3/4) → bentuk selanjutnya (penuh)?", o:["░","▤","▦","█"], a:3, e:"Bagian terisi bertambah 1/4 tiap tahap (1/4, 2/4, 3/4), berikutnya penuh (4/4) yaitu █."},
+{q:"Segi4 (4 sisi), Segi6 (6 sisi), Segi8 (8 sisi) → bentuk selanjutnya?", o:["Segi9","Segi10","Segi12","Segi7"], a:1, e:"Jumlah sisi bertambah 2 tiap bentuk: 4→6→8→10, jadi berikutnya segi10."},
+{q:"Panah berputar 45° searah jarum jam: ↑,↗,→,↘,↓ → bentuk selanjutnya?", o:["↙","↖","←","↑"], a:0, e:"Arah panah berputar 45° searah jarum jam tiap langkah, setelah ↓ berikutnya ↙."},
+{q:"Ukuran kotak Fibonacci: 1, 1, 2, 3, 5, ... → ukuran selanjutnya?", o:["6","7","8","9"], a:2, e:"Pola Fibonacci: tiap ukuran = jumlah dua ukuran sebelumnya, 3+5=8."},
+],
+tt:[
+{q:"Aku bilangan dua angka. Angka puluhanku 2 lebih besar dari angka satuanku. Jumlah kedua angkaku 8. Aku adalah?", o:["53","35","62","44"], a:0, e:"Misal satuan=u, puluhan=u+2. (u+2)+u=8 → 2u=6 → u=3, puluhan=5. Bilangannya 53."},
+{q:"Sebuah bilangan jika dikurangi 7 hasilnya 15. Bilangan itu adalah?", o:["20","21","22","23"], a:2, e:"x − 7 = 15 → x = 15 + 7 = 22."},
+{q:"Aku bilangan genap antara 20 dan 30. Jumlah angka-angkaku 8. Aku adalah?", o:["24","26","28","22"], a:1, e:"Cek bilangan genap 20-30: 26 → 2+6=8, sesuai syarat."},
+{q:"Umur Ani 3 tahun lebih tua dari Budi. Jumlah umur mereka 15 tahun. Umur Budi adalah?", o:["5","6","7","9"], a:1, e:"Budi + (Budi+3) = 15 → 2×Budi = 12 → Budi = 6."},
+{q:"Sebuah kotak berisi kelereng. Jika ditambah 5 menjadi 12. Isi kotak semula adalah?", o:["6","7","8","9"], a:1, e:"x + 5 = 12 → x = 7."},
+{q:"Aku bilangan ganjil satu angka yang paling besar. Aku adalah?", o:["5","7","9","1"], a:2, e:"Bilangan ganjil satu angka: 1,3,5,7,9. Yang terbesar adalah 9."},
+{q:"Jumlah dua bilangan adalah 10, selisihnya 2. Bilangan yang lebih besar adalah?", o:["4","5","6","8"], a:2, e:"Besar+kecil=10, besar−kecil=2. Jumlahkan: 2×besar=12 → besar=6."},
+{q:"Ibu punya 20 permen dibagi rata ke 4 anak, lalu tiap anak makan 2 permen. Sisa permen tiap anak adalah?", o:["2","3","4","5"], a:1, e:"20÷4=5 permen/anak, lalu 5−2=3 sisa."},
+{q:"Sebuah bilangan dikali 2 lalu dikurangi 3 hasilnya 9. Bilangan itu adalah?", o:["5","6","7","8"], a:1, e:"2x − 3 = 9 → 2x = 12 → x = 6."},
+{q:"Aku bilangan antara 40–50. Jika angkaku dibalik, nilainya 9 lebih kecil dariku. Aku adalah?", o:["41","42","43","45"], a:2, e:"43 dibalik menjadi 34; 43−34=9, sesuai syarat."},
+{q:"Tiga bilangan berurutan jumlahnya 18. Bilangan tengahnya adalah?", o:["5","6","7","8"], a:1, e:"(t−1)+t+(t+1)=18 → 3t=18 → t=6."},
+{q:"Aku adalah separuh dari 30 ditambah separuh dari 10. Aku adalah?", o:["15","18","20","25"], a:2, e:"30÷2=15, 10÷2=5, 15+5=20."},
+{q:"Jika hari ini Rabu, 15 hari lagi adalah hari?", o:["Selasa","Rabu","Kamis","Jumat"], a:2, e:"15 hari = 2 minggu + 1 hari. 1 hari setelah Rabu adalah Kamis."},
+{q:"Sebuah bilangan ditambah dirinya sendiri hasilnya 24. Bilangan itu adalah?", o:["10","11","12","14"], a:2, e:"x + x = 24 → 2x = 24 → x = 12."},
+{q:"Aku bilangan antara 1–20 yang habis dibagi 3 dan 4 sekaligus. Aku adalah?", o:["6","9","12","15"], a:2, e:"Bilangan yang habis dibagi 3 dan 4 adalah kelipatan KPK-nya, yaitu 12."},
+],
+sh:[
+{q:"Cara termudah menghitung 99 + 45 adalah?", o:["99+45 langsung","100+45−1","90+9+45","Semua sama mudah"], a:1, e:"Mendekatkan 99 ke 100 lalu mengoreksi (−1) membuat penjumlahan lebih cepat: 100+45−1=144."},
+{q:"25 + 38 + 25, jika dihitung dengan mengelompokkan 25+25 dulu, hasilnya?", o:["83","88","93","98"], a:1, e:"25+25=50 (mudah dijumlah), lalu 50+38=88."},
+{q:"8 × 5 dihitung cepat dengan cara 8×5 = 4×10 = ?", o:["30","35","40","45"], a:2, e:"Mengubah ke bentuk perkalian dengan 10 lebih mudah: 4×10=40."},
+{q:"Strategi 'buat 10' untuk 7+8: 7+3=10, sisa 5, jadi 10+5 = ?", o:["13","14","15","16"], a:2, e:"7+8 dipecah agar salah satu bagian membentuk 10 lebih dulu: 10+5=15."},
+{q:"1000 − 998 paling cepat dihitung, hasilnya?", o:["1","2","3","198"], a:1, e:"Karena kedua bilangan berdekatan, cukup hitung selisihnya langsung: 1000−998=2."},
+{q:"15 × 4 dihitung cepat sebagai 15×2×2, hasilnya?", o:["50","55","60","65"], a:2, e:"15×2=30, lalu 30×2=60."},
+{q:"49 + 51 paling cepat dihitung sebagai 50+50, hasilnya?", o:["99","100","101","102"], a:1, e:"Mendekatkan kedua bilangan ke puluhan penuh (50+50) memudahkan: hasilnya 100."},
+{q:"6+6+6+6 sama dengan 6×4, hasilnya?", o:["20","22","24","26"], a:2, e:"Penjumlahan berulang sama dengan perkalian: 6×4=24."},
+{q:"100 − 37 dihitung cepat sebagai 100−40+3, hasilnya?", o:["60","61","62","63"], a:3, e:"Mendekatkan 37 ke 40 lalu mengoreksi (+3): 100−40=60, 60+3=63."},
+{q:"12 × 11 dihitung cepat sebagai 12×10+12, hasilnya?", o:["120","122","130","132"], a:3, e:"12×10=120, ditambah 12 lagi = 132."},
+{q:"Strategi dekati puluhan: 29+34 = 30+34−1, hasilnya?", o:["62","63","64","65"], a:1, e:"30+34=64, lalu dikurangi 1 (karena 29 dibulatkan naik 1): 64−1=63."},
+{q:"45 : 5 dihitung cepat: 45=40+5, jadi 8+1, hasilnya?", o:["7","8","9","10"], a:2, e:"40÷5=8 dan 5÷5=1, jadi 8+1=9."},
+{q:"1+2+3+...+10 dihitung cepat dengan (1+10)×10÷2, hasilnya?", o:["45","50","55","60"], a:2, e:"Rumus Gauss: (suku pertama+suku terakhir)×banyak suku÷2 = (1+10)×10÷2=55."},
+{q:"9 × 9 dihitung cepat sebagai 10×9−9, hasilnya?", o:["71","79","80","81"], a:3, e:"10×9=90, dikurangi 9 (karena sebenarnya hanya 9×9): 90−9=81."},
+{q:"24 : 4 dihitung cepat: 24=20+4, jadi 5+1, hasilnya?", o:["5","6","7","8"], a:1, e:"20÷4=5 dan 4÷4=1, jadi 5+1=6."},
+],
+nr:[
+{q:"Di kandang ada 5 ekor ayam dan beberapa ekor kucing. Total kaki semuanya 26. Jumlah kucing adalah?", o:["3","4","5","6"], a:1, e:"Kaki ayam = 5×2=10. Sisa kaki kucing = 26−10=16. Jumlah kucing = 16÷4=4."},
+{q:"Dalam satu baris ada 10 anak. Dari kiri, Ani urutan ke-4. Jumlah anak di sebelah kanan Ani adalah?", o:["5","6","7","8"], a:1, e:"Anak di kanan Ani = total − posisi Ani = 10−4=6."},
+{q:"Sebuah tangga punya 7 anak tangga. Jumlah langkah untuk naik dari bawah ke atas adalah?", o:["5","6","7","8"], a:1, e:"Jumlah langkah = jumlah anak tangga − 1 = 7−1=6."},
+{q:"3 anak saling berjabat tangan (tiap pasang sekali). Total jabatan tangan adalah?", o:["2","3","4","6"], a:1, e:"Pasangan yang mungkin: A-B, A-C, B-C = 3 jabatan tangan."},
+{q:"Sebuah kue bundar dipotong 3 kali lurus melewati titik tengah. Jumlah potongan yang dihasilkan adalah?", o:["4","5","6","8"], a:2, e:"3 potongan lurus yang melewati titik tengah membagi kue menjadi 6 bagian sama besar."},
+{q:"Ulat naik 3cm tiap siang dan turun 1cm tiap malam. Setelah 2 hari penuh, posisi ulat naik sejauh?", o:["2 cm","3 cm","4 cm","5 cm"], a:2, e:"Kenaikan bersih tiap hari = 3−1=2cm. Setelah 2 hari = 2×2=4cm."},
+{q:"5 orang saling berjabat tangan sekali dengan semua yang lain. Total jabatan tangan adalah?", o:["8","9","10","12"], a:2, e:"Rumus jabat tangan n orang = n×(n−1)÷2 = 5×4÷2=10."},
+{q:"Pak Tani menghitung 10 kepala dan 28 kaki hewan (ayam 2 kaki, kambing 4 kaki). Jumlah kambing adalah?", o:["3","4","5","6"], a:1, e:"Jika semua ayam: 10×2=20 kaki. Kelebihan 28−20=8 kaki berasal dari kambing (tiap kambing menambah 2 kaki lebih dari ayam): 8÷2=4 kambing."},
+{q:"Sebuah tali dipotong jadi 3 bagian sama panjang, lalu tiap bagian dipotong lagi jadi 2. Total potongan adalah?", o:["4","5","6","8"], a:2, e:"3 bagian × 2 potongan tiap bagian = 6 potongan."},
+{q:"Budi berada di posisi ke-5 dari depan dan ke-6 dari belakang dalam antrian. Jumlah orang dalam antrian adalah?", o:["9","10","11","12"], a:1, e:"Total = posisi dari depan + posisi dari belakang − 1 (Budi dihitung dua kali) = 5+6−1=10."},
+{q:"Jam berdentang sesuai jumlah jam, jeda antar dentang 2 detik. Saat jam 4 berdentang, waktu dari dentang pertama ke terakhir adalah?", o:["4 detik","6 detik","8 detik","10 detik"], a:1, e:"4 dentang memiliki 3 jeda. 3×2 detik=6 detik."},
+{q:"3 kotak berisi total 12 apel. Kotak kedua 2 lebih banyak dari kotak pertama, kotak ketiga 2 lebih banyak dari kotak kedua. Isi kotak pertama adalah?", o:["2","3","4","5"], a:0, e:"Misal kotak1=a, kotak2=a+2, kotak3=a+4. a+(a+2)+(a+4)=12 → 3a+6=12 → a=2."},
+{q:"Sebuah kolam terisi penuh hari ke-6, luas terisi berlipat dua tiap hari mulai dari hari pertama. Kolam terisi setengah pada hari ke?", o:["3","4","5","6"], a:2, e:"Karena luas berlipat dua tiap hari, sehari sebelum penuh pasti tepat setengah, yaitu hari ke-5."},
+{q:"4 anak duduk melingkar, tiap anak hanya berjabat tangan dengan tetangga kiri-kanan. Total jabatan tangan adalah?", o:["3","4","5","6"], a:1, e:"Dalam lingkaran 4 anak, setiap anak berjabat dengan 2 tetangga, membentuk 4 jabatan tangan unik."},
+{q:"Bus mulai kosong. Halte 1: naik 4. Halte 2: naik 3, turun 2. Halte 3: naik 2, turun 5. Penumpang setelah halte 3 adalah?", o:["1","2","3","4"], a:1, e:"0+4=4; 4+3−2=5; 5+2−5=2 penumpang."},
+],
+vb:[
+{q:"Sebuah kubus memiliki berapa sisi (permukaan)?", o:["4","5","6","8"], a:2, e:"Kubus memiliki 6 sisi berbentuk persegi yang sama besar."},
+{q:"Sebuah kubus memiliki berapa titik sudut?", o:["6","7","8","10"], a:2, e:"Kubus memiliki 8 titik sudut (pojok)."},
+{q:"Sebuah kubus memiliki berapa rusuk?", o:["8","10","12","14"], a:2, e:"Kubus memiliki 12 rusuk (garis tepi)."},
+{q:"Bangun datar yang memiliki 3 sisi disebut?", o:["Persegi","Segitiga","Lingkaran","Segilima"], a:1, e:"Bangun dengan 3 sisi dan 3 sudut disebut segitiga."},
+{q:"Jika persegi dilipat dua sama besar melalui garis tengah, bentuk yang terjadi adalah?", o:["Segitiga","Persegipanjang","Lingkaran","Trapesium"], a:1, e:"Melipat persegi tepat di tengah menghasilkan dua persegipanjang."},
+{q:"Bola memiliki berapa sisi datar?", o:["0","1","2","4"], a:0, e:"Bola berbentuk bulat sempurna dan tidak memiliki sisi datar sama sekali."},
+{q:"Sebuah balok memiliki berapa sisi (permukaan)?", o:["4","6","8","10"], a:1, e:"Balok memiliki 6 sisi berbentuk persegi/persegipanjang."},
+{q:"Jika kubus dilihat dari atas, bentuk yang terlihat adalah?", o:["Persegi","Lingkaran","Segitiga","Persegipanjang"], a:0, e:"Dilihat dari atas, sisi kubus tampak sebagai persegi."},
+{q:"Sebuah kerucut memiliki berapa titik puncak?", o:["0","1","2","3"], a:1, e:"Kerucut memiliki 1 titik puncak yang lancip."},
+{q:"Dua segitiga sama besar disatukan pada sisi miringnya membentuk?", o:["Persegipanjang","Lingkaran","Segilima","Trapesium"], a:0, e:"Dua segitiga siku-siku sama besar yang digabung pada sisi miring membentuk persegipanjang."},
+{q:"Kubus dipotong tepat di tengah sejajar salah satu sisi, bentuk potongannya adalah?", o:["Persegi","Segitiga","Lingkaran","Segilima"], a:0, e:"Potongan sejajar sisi kubus tetap berbentuk persegi."},
+{q:"Kubus besar berukuran 2×2×2 tersusun dari berapa kubus satuan?", o:["4","6","8","9"], a:2, e:"Volume = panjang×lebar×tinggi = 2×2×2=8 kubus satuan."},
+{q:"Tabung dilihat dari samping berbentuk?", o:["Lingkaran","Persegipanjang","Segitiga","Persegi"], a:1, e:"Dilihat dari samping, sisi tabung tampak sebagai persegipanjang."},
+{q:"Balok berukuran 3×2×1 tersusun dari berapa kubus satuan?", o:["5","6","7","8"], a:1, e:"Volume = 3×2×1=6 kubus satuan."},
+{q:"Bangun ruang yang semua sisinya berbentuk persegi disebut?", o:["Balok","Kubus","Prisma","Limas"], a:1, e:"Bangun ruang dengan semua sisi persegi yang sama besar disebut kubus."},
+],
+pk:[
+{q:"Ani punya uang Rp5.000 lebih banyak dari Budi. Uang Budi Rp8.000. Uang Ani adalah?", o:["Rp11.000","Rp12.000","Rp13.000","Rp14.000"], a:2, e:"Uang Ani = 8.000+5.000=13.000."},
+{q:"24 permen dibagi rata ke 6 anak. Tiap anak mendapat?", o:["3","4","5","6"], a:1, e:"24÷6=4 permen tiap anak."},
+{q:"3 pensil harganya Rp3.000. Harga 7 pensil adalah?", o:["Rp6.000","Rp7.000","Rp8.000","Rp9.000"], a:1, e:"Harga per pensil = 3.000÷3=1.000. 7×1.000=7.000."},
+{q:"Suhu pagi 18°C, siang naik 9°C, sore turun 5°C. Suhu sore adalah?", o:["20°C","21°C","22°C","23°C"], a:2, e:"18+9=27, lalu 27−5=22."},
+{q:"Mobil menempuh 40 km dalam 1 jam. Jarak dalam 3 jam dengan kecepatan sama adalah?", o:["100 km","110 km","120 km","130 km"], a:2, e:"40×3=120 km."},
+{q:"Berat 1 karung beras 10kg. Berat 6 karung adalah?", o:["50 kg","55 kg","60 kg","65 kg"], a:2, e:"10×6=60 kg."},
+{q:"Sebuah kelas punya 30 siswa, 12 di antaranya laki-laki. Jumlah siswa perempuan adalah?", o:["16","17","18","20"], a:2, e:"30−12=18 siswa perempuan."},
+{q:"Harga 1 buku Rp2.500. Kembalian dari Rp10.000 untuk membeli 3 buku adalah?", o:["Rp2.000","Rp2.500","Rp3.000","Rp3.500"], a:1, e:"3×2.500=7.500. Kembalian=10.000−7.500=2.500."},
+{q:"Kolam diisi 15 liter tiap 5 menit. Setelah 20 menit, air terkumpul sebanyak?", o:["45 liter","50 liter","60 liter","65 liter"], a:2, e:"15 liter per 5 menit = 3 liter/menit. 3×20=60 liter."},
+{q:"Rina membaca 8 halaman tiap hari. Setelah 6 hari, halaman yang dibaca adalah?", o:["42","46","48","50"], a:2, e:"8×6=48 halaman."},
+{q:"Sebuah truk memuat 8 kotak, tiap kotak berisi 12 apel. Total apel adalah?", o:["84","90","96","100"], a:2, e:"8×12=96 apel."},
+{q:"Pita 100cm dipotong jadi 4 bagian sama panjang. Panjang tiap potongan adalah?", o:["20 cm","25 cm","30 cm","35 cm"], a:1, e:"100÷4=25 cm."},
+{q:"Jika 1 lusin = 12 buah, jumlah buah dalam 3,5 lusin adalah?", o:["36","40","42","48"], a:2, e:"3,5×12=42 buah."},
+{q:"45 mangga dibagi rata ke 5 keranjang, lalu 1 keranjang diambil 3 mangga. Sisa di keranjang itu adalah?", o:["5","6","7","8"], a:1, e:"45÷5=9 mangga/keranjang, 9−3=6 sisa."},
+{q:"Doni menabung Rp2.000 tiap hari selama 7 hari. Total tabungan Doni adalah?", o:["Rp12.000","Rp13.000","Rp14.000","Rp15.000"], a:2, e:"2.000×7=14.000."},
+],
+lp:[
+{q:"3, 6, __, 12, 15", o:["7","8","9","10"], a:2, e:"Pola +3: 3,6,9,12,15."},
+{q:"10, __, 30, 40, 50", o:["15","18","20","25"], a:2, e:"Pola +10: 10,20,30,40,50."},
+{q:"2, __, 8, 16, 32", o:["3","4","5","6"], a:1, e:"Pola ×2: 2,4,8,16,32."},
+{q:"100, 90, __, 70, 60", o:["75","78","80","85"], a:2, e:"Pola −10: 100,90,80,70,60."},
+{q:"1, 4, __, 16, 25", o:["7","8","9","10"], a:2, e:"Barisan kuadrat: 1,4,9,16,25."},
+{q:"5, __, 15, 20, 25", o:["8","9","10","12"], a:2, e:"Pola +5: 5,10,15,20,25."},
+{q:"__, 4, 9, 16, 25", o:["0","1","2","3"], a:1, e:"Barisan kuadrat dimulai dari 1: 1,4,9,16,25."},
+{q:"7, 14, __, 28, 35", o:["18","20","21","24"], a:2, e:"Pola +7: 7,14,21,28,35."},
+{q:"1, 3, __, 7, 9", o:["4","5","6","7"], a:1, e:"Pola +2: 1,3,5,7,9."},
+{q:"2, __, 6, 8, 10", o:["3","4","5","6"], a:1, e:"Pola +2: 2,4,6,8,10."},
+{q:"12, __, 8, 6, 4", o:["9","10","11","12"], a:1, e:"Pola −2: 12,10,8,6,4."},
+{q:"1, 2, 4, __, 16, 32", o:["6","7","8","9"], a:2, e:"Pola ×2: 1,2,4,8,16,32."},
+{q:"9, 18, __, 36, 45", o:["24","25","27","30"], a:2, e:"Pola +9: 9,18,27,36,45."},
+{q:"20, 17, __, 11, 8", o:["12","13","14","15"], a:2, e:"Pola −3: 20,17,14,11,8."},
+{q:"0, 5, __, 15, 20", o:["8","9","10","12"], a:2, e:"Pola +5: 0,5,10,15,20."},
+],
+hb:[
+{q:"Manakah bentuk yang TIDAK memiliki sudut?", o:["Lingkaran","Segitiga","Persegi","Segilima"], a:0, e:"Lingkaran memiliki sisi melengkung tanpa sudut sama sekali."},
+{q:"Bentuk apa yang jumlah sisinya sama dengan jumlah sudutnya, yaitu 4?", o:["Segitiga","Persegi","Lingkaran","Segilima"], a:1, e:"Persegi memiliki 4 sisi dan 4 sudut."},
+{q:"Manakah yang BUKAN termasuk bangun datar?", o:["Persegi","Kubus","Segitiga","Lingkaran"], a:1, e:"Kubus adalah bangun ruang (3 dimensi), bukan bangun datar."},
+{q:"Jika segitiga punya 3 sisi dan segiempat punya 4 sisi, segilima punya berapa sisi?", o:["4","5","6","7"], a:1, e:"Sesuai namanya, segilima memiliki 5 sisi."},
+{q:"Manakah pasangan bentuk yang sebangun (bentuk sama, ukuran beda)?", o:["Dua lingkaran ukuran beda","Lingkaran dan persegi","Segitiga dan persegi","Persegi dan segilima"], a:0, e:"Dua lingkaran dengan ukuran berbeda tetap memiliki bentuk yang sama (sebangun)."},
+{q:"Dua segitiga siku-siku sama besar digabung pada sisi miring membentuk?", o:["Lingkaran","Persegipanjang","Segilima","Trapesium"], a:1, e:"Penggabungan itu membentuk persegipanjang."},
+{q:"Berapa jumlah sudut pada trapesium?", o:["3","4","5","6"], a:1, e:"Trapesium adalah segiempat, sehingga memiliki 4 sudut."},
+{q:"Manakah bentuk dengan sisi terbanyak?", o:["Segilima","Segienam","Segitiga","Persegi"], a:1, e:"Segienam memiliki 6 sisi, paling banyak di antara pilihan."},
+{q:"Bentuk dengan 6 sisi sama panjang dan 6 sudut sama besar disebut?", o:["Segilima","Segienam","Segitujuh","Segidelapan"], a:1, e:"Bentuk itu adalah segienam beraturan."},
+{q:"Persegi dan belah ketupat sama-sama memiliki berapa sisi?", o:["3","4","5","6"], a:1, e:"Keduanya adalah segiempat dengan 4 sisi."},
+{q:"Manakah yang merupakan bangun RUANG, bukan bangun datar?", o:["Segitiga","Kubus","Persegi","Lingkaran"], a:1, e:"Kubus memiliki volume (3 dimensi), sehingga tergolong bangun ruang."},
+{q:"Bentuk apa yang memiliki sisi lengkung dan tidak memiliki sudut sama sekali?", o:["Oval lonjong","Lingkaran","Setengah lingkaran","Elips memanjang"], a:1, e:"Lingkaran adalah bentuk lengkung sempurna tanpa sudut."},
+{q:"Jajar genjang memiliki berapa pasang sisi yang sejajar?", o:["1","2","3","4"], a:1, e:"Jajar genjang memiliki 2 pasang sisi yang saling sejajar."},
+{q:"Manakah bentuk yang semua sudutnya siku-siku (90°)?", o:["Segitiga sembarang","Persegi","Segilima","Jajar genjang"], a:1, e:"Persegi memiliki empat sudut siku-siku (90°)."},
+{q:"Jumlah total sudut pada 2 buah segitiga adalah?", o:["4","5","6","8"], a:2, e:"Tiap segitiga punya 3 sudut, jadi 2 segitiga = 3+3=6 sudut."},
+],
+is:[
+{q:"Toko A: pensil Rp1.500/buah. Toko B: pensil Rp1.200/buah + ongkos kirim Rp500. Untuk membeli 3 pensil, toko mana lebih murah?", o:["Toko A","Toko B","Sama saja","Tidak bisa ditentukan"], a:1, e:"Toko A: 3×1.500=4.500. Toko B: 3×1.200+500=4.100. Toko B lebih murah."},
+{q:"Andi punya Rp15.000, membeli buku Rp7.000 dan pensil Rp2.500. Sisa uangnya adalah?", o:["Rp4.500","Rp5.000","Rp5.500","Rp6.000"], a:2, e:"15.000−7.000−2.500=5.500."},
+{q:"Kereta berangkat jam 08.00 dan tiba jam 10.30. Lama perjalanan adalah?", o:["2 jam","2 jam 30 menit","3 jam","1 jam 30 menit"], a:1, e:"Dari 08.00 ke 10.30 selisihnya 2 jam 30 menit."},
+{q:"24 anak menghadiri pesta, tiap meja diisi 6 anak. Jumlah meja yang dibutuhkan adalah?", o:["3","4","5","6"], a:1, e:"24÷6=4 meja."},
+{q:"Rani punya 3 kotak pensil warna berisi 8 pensil tiap kotak, lalu memberi 5 pensil ke temannya. Sisa pensil Rani adalah?", o:["18","19","20","21"], a:1, e:"3×8=24, lalu 24−5=19."},
+{q:"Perpustakaan buka pukul 08.00–15.00. Lama perpustakaan buka adalah?", o:["6 jam","7 jam","8 jam","9 jam"], a:1, e:"Dari 08.00 ke 15.00 selisihnya 7 jam."},
+{q:"Harga 1kg apel Rp20.000. Bu Sari membeli 2,5kg. Uang yang harus dibayar adalah?", o:["Rp40.000","Rp45.000","Rp50.000","Rp55.000"], a:2, e:"20.000×2,5=50.000."},
+{q:"Sebuah bis maksimal memuat 40 orang. Jika ada 95 orang, jumlah bis minimal yang dibutuhkan adalah?", o:["2","3","4","5"], a:1, e:"95÷40=2,375. Karena tidak boleh ada orang tersisa, dibulatkan ke atas menjadi 3 bis."},
+{q:"Pak Budi memanen 120 mangga, menjual 3/4 bagian, sisanya dibagi rata ke 6 tetangga. Tiap tetangga mendapat?", o:["4","5","6","7"], a:1, e:"Sisa = 120×1/4=30. 30÷6=5 mangga tiap tetangga."},
+{q:"Sebuah proyek selesai 12 hari oleh 1 orang. Jika dikerjakan 3 orang dengan kecepatan sama, selesai dalam?", o:["3 hari","4 hari","5 hari","6 hari"], a:1, e:"Semakin banyak orang, waktu makin sedikit (berbanding terbalik): 12÷3=4 hari."},
+{q:"36 kue dibagi rata ke 4 toples, lalu 1 toples dibagikan ke 3 anak sama rata. Tiap anak mendapat?", o:["2","3","4","5"], a:1, e:"36÷4=9 kue/toples, lalu 9÷3=3 kue tiap anak."},
+{q:"Dony menabung Rp3.000/hari selama 5 hari, lalu Rp5.000/hari selama 3 hari berikutnya. Total tabungan Dony adalah?", o:["Rp25.000","Rp28.000","Rp30.000","Rp32.000"], a:2, e:"5×3.000=15.000, 3×5.000=15.000, total=15.000+15.000=30.000."},
+{q:"Pipa A mengisi 10 liter/menit, pipa B 15 liter/menit. Jika keduanya dibuka bersama 4 menit, air yang terkumpul adalah?", o:["80 liter","90 liter","100 liter","110 liter"], a:2, e:"(10+15)×4=100 liter."},
+{q:"Toko memberi diskon Rp2.000 untuk pembelian di atas Rp10.000. Rina membeli barang seharga Rp15.000, ia harus membayar?", o:["Rp11.000","Rp12.000","Rp13.000","Rp14.000"], a:2, e:"15.000−2.000=13.000."},
+{q:"50 permen dibagikan rata ke 4 anak, sisanya disimpan. Sisa permen adalah?", o:["1","2","3","4"], a:1, e:"50÷4=12 sisa 2 (karena 12×4=48, 50−48=2)."},
+]
+};
+const CATLABEL = {pb:"Pola Bilangan", pg:"Pola Gambar", tt:"Teka-teki", sh:"Strategi Berhitung", nr:"Soal Non-Rutin", vb:"Visualisasi Bangun", pk:"Penalaran Kuantitatif", lp:"Lengkapi Pola", hb:"Hubungan Bentuk", is:"Informasi & Strategi"};
+const CATORDER = ["pb","pg","tt","sh","nr","vb","pk","lp","hb","is"];
+const LETTERS = ["A","B","C","D"];
+
+function buildPaket(n){
+  let list = [];
+  CATORDER.forEach(k=>{
+    BANK[k].slice(n*3, n*3+3).forEach(item=>{
+      list.push({q:item.q, o:item.o, a:item.a, e:item.e, cat:CATLABEL[k]});
+    });
+  });
+  return list;
+}
+const PAKETS = [0,1,2,3,4].map(buildPaket);
+
+/* ================= STATE ================= */
+let studentName = "";
+let current = { paket:-1, idx:0, answers:[] };
+let lastReview = [];
+const QUIZ_SECONDS = 40*60;
+let secondsLeft = QUIZ_SECONDS;
+let timerInterval = null;
+
+function formatTime(s){
+  const m = Math.floor(s/60);
+  const sec = s%60;
+  return String(m).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
+}
+
+function startTimer(){
+  stopTimer();
+  secondsLeft = QUIZ_SECONDS;
+  const disp = document.getElementById('timer-display');
+  const bar = document.getElementById('timer-bar');
+  disp.textContent = formatTime(secondsLeft);
+  bar.classList.remove('low');
+  timerInterval = setInterval(()=>{
+    secondsLeft--;
+    if(secondsLeft<=0){
+      secondsLeft = 0;
+      disp.textContent = formatTime(secondsLeft);
+      stopTimer();
+      alert('Waktu 40 menit telah habis! Jawabanmu akan langsung dikoreksi.');
+      submitQuiz(true);
+      return;
+    }
+    disp.textContent = formatTime(secondsLeft);
+    if(secondsLeft<=60) bar.classList.add('low');
+  }, 1000);
+}
+
+function stopTimer(){
+  if(timerInterval){ clearInterval(timerInterval); timerInterval=null; }
+}
+
+function renderHome(){
+  const grid = document.getElementById('paket-grid');
+  grid.innerHTML='';
+  for(let i=0;i<5;i++){
+    const b = document.createElement('div');
+    b.className='paket-btn';
+    b.onclick=()=>tryStartQuiz(i);
+    b.innerHTML = `<span class="num">${i+1}</span>Paket ${i+1}<small>30 soal</small>`;
+    grid.appendChild(b);
+  }
+  const saved = sessionStorage.getItem('om_name');
+  if(saved){ document.getElementById('student-name').value = saved; studentName = saved; }
+}
+
+function showView(id){
+  ['view-home','view-quiz','view-result','view-key'].forEach(v=>{
+    document.getElementById(v).classList.toggle('hidden', v!==id);
+  });
+}
+
+function backHome(){ stopTimer(); showView('view-home'); }
+
+function tryStartQuiz(n){
+  const val = document.getElementById('student-name').value.trim();
+  const hint = document.getElementById('name-hint');
+  if(!val){
+    hint.textContent = "⚠ Isi nama terlebih dahulu sebelum memulai paket.";
+    document.getElementById('student-name').focus();
+    return;
+  }
+  hint.textContent = "";
+  studentName = val;
+  try{ sessionStorage.setItem('om_name', val); }catch(e){}
+  startQuiz(n);
+}
+
+function startQuiz(n){
+  current = { paket:n, idx:0, answers:new Array(30).fill(null) };
+  document.getElementById('quiz-title').textContent = 'Paket ' + (n+1);
+  document.getElementById('quiz-name').textContent = 'Peserta: ' + studentName;
+  renderQCards();
+  renderJumpgrid();
+  goToQ(0);
+  showView('view-quiz');
+  startTimer();
+}
+
+function retryQuiz(){ startQuiz(current.paket); }
+
+function renderQCards(){
+  const wrap = document.getElementById('qcards');
+  wrap.innerHTML='';
+  const list = PAKETS[current.paket];
+  list.forEach((item, i)=>{
+    const div = document.createElement('div');
+    div.className='qcard';
+    div.id='qc-'+i;
+    let optsHtml = item.o.map((opt, oi)=>`
+      <div class="opt" data-oi="${oi}" onclick="selectOpt(${i},${oi})">
+        <span class="letter">${LETTERS[oi]}</span><span>${opt}</span>
+      </div>`).join('');
+    div.innerHTML = `
+      <span class="cat-tag">${item.cat}</span>
+      <div class="qtext"><span class="qnum">Soal ${i+1}.</span> ${item.q}</div>
+      ${optsHtml}
+    `;
+    wrap.appendChild(div);
+  });
+}
+
+function renderJumpgrid(){
+  const jg = document.getElementById('jumpgrid');
+  jg.innerHTML='';
+  for(let i=0;i<30;i++){
+    const d = document.createElement('div');
+    d.className='jump';
+    d.id='jump-'+i;
+    d.textContent = i+1;
+    d.onclick=()=>goToQ(i);
+    jg.appendChild(d);
+  }
+}
+
+function selectOpt(i, oi){
+  current.answers[i] = oi;
+  const qc = document.getElementById('qc-'+i);
+  qc.querySelectorAll('.opt').forEach(o=>o.classList.remove('selected'));
+  qc.querySelector('.opt[data-oi="'+oi+'"]').classList.add('selected');
+  document.getElementById('jump-'+i).classList.add('answered');
+  updateSubmitHint();
+}
+
+function goToQ(i){
+  current.idx = i;
+  document.querySelectorAll('.qcard').forEach(c=>c.classList.remove('active'));
+  document.getElementById('qc-'+i).classList.add('active');
+  document.querySelectorAll('.jump').forEach(j=>j.classList.remove('current'));
+  document.getElementById('jump-'+i).classList.add('current');
+  document.getElementById('progress-label').textContent = `Soal ${i+1} dari 30`;
+  document.getElementById('progress-fill').style.width = ((i+1)/30*100)+'%';
+  document.getElementById('btn-prev').disabled = (i===0);
+  document.getElementById('btn-next').disabled = (i===29);
+}
+
+function navQ(dir){
+  const ni = current.idx + dir;
+  if(ni>=0 && ni<30) goToQ(ni);
+}
+
+function updateSubmitHint(){
+  const remaining = current.answers.filter(a=>a===null).length;
+  const hint = document.getElementById('submit-hint');
+  hint.textContent = remaining>0
+    ? `Masih ${remaining} soal belum dijawab. Kamu tetap bisa Submit kapan saja.`
+    : `Semua soal terjawab. Silakan tekan "Submit Jawaban".`;
+}
+
+function submitQuiz(auto){
+  const remaining = current.answers.filter(a=>a===null).length;
+  if(!auto && remaining>0){
+    const ok = confirm(`Masih ada ${remaining} soal yang belum dijawab. Soal kosong akan dianggap salah.\nYakin ingin Submit sekarang?`);
+    if(!ok) return;
+  }
+  stopTimer();
+
+  const list = PAKETS[current.paket];
+  let score = 0;
+  lastReview = [];
+  list.forEach((item, i)=>{
+    const chosen = current.answers[i];
+    const correct = chosen !== null && chosen === item.a;
+    if(correct) score++;
+    lastReview.push({ i, item, chosen, correct });
+  });
+
+  const nilai = Math.round(score/30*100);
+  const waktuPakai = QUIZ_SECONDS - secondsLeft;
+  document.getElementById('result-name').textContent = 'Peserta: ' + studentName + ' — Paket ' + (current.paket+1);
+  document.getElementById('score-big').textContent = score + '/30';
+  document.getElementById('score-sub').textContent = `Nilai: ${nilai} · Waktu dipakai: ${formatTime(waktuPakai)}`;
+  let medal = '📘';
+  if(nilai>=90) medal='🏆';
+  else if(nilai>=75) medal='🥇';
+  else if(nilai>=60) medal='🥈';
+  else if(nilai>=40) medal='🥉';
+  document.getElementById('medal').textContent = medal;
+
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector('.filter-btn[data-f="all"]').classList.add('active');
+  renderReview('all');
+  showView('view-result');
+}
+
+function renderReview(filter){
+  const reviewWrap = document.getElementById('review-list');
+  reviewWrap.innerHTML='';
+  lastReview
+    .filter(r => filter==='all' ? true : (filter==='wrong' ? !r.correct : r.correct))
+    .forEach(r=>{
+      const { i, item, chosen, correct } = r;
+      const div = document.createElement('div');
+      div.className = 'review-item ' + (correct ? 'correct' : 'wrong');
+      div.innerHTML = `
+        <span class="badge-small ${correct?'correct':'wrong'}">${correct?'BENAR':'SALAH'}</span>
+        <span class="cat-tag" style="margin-left:2px;">${item.cat}</span>
+        <div class="rq"><b>Soal ${i+1}.</b> ${item.q}</div>
+        <div class="rline ${correct?'':'you-wrong'}">Jawabanmu: ${chosen===null ? '(tidak dijawab)' : LETTERS[chosen]+'. '+item.o[chosen]}</div>
+        ${!correct ? `<div class="rline correct-ans">Jawaban benar: ${LETTERS[item.a]}. ${item.o[item.a]}</div>` : ''}
+        <div class="pembahasan"><b>Pembahasan:</b> ${item.e}</div>
+      `;
+      reviewWrap.appendChild(div);
+    });
+  if(reviewWrap.innerHTML===''){
+    reviewWrap.innerHTML = '<div class="review-item">Tidak ada soal pada kategori filter ini. 🎉</div>';
+  }
+}
+
+function filterReview(f){
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.toggle('active', b.dataset.f===f));
+  renderReview(f);
+}
+
+function showAnswerKey(){
+  const wrap = document.getElementById('key-content');
+  wrap.innerHTML='';
+  for(let p=0;p<5;p++){
+    const list = PAKETS[p];
+    const h = document.createElement('h3');
+    h.style.color='var(--mint)';
+    h.style.marginTop='14px';
+    h.textContent = 'Paket ' + (p+1);
+    wrap.appendChild(h);
+    const cols = document.createElement('div');
+    cols.style.display='grid';
+    cols.style.gridTemplateColumns='repeat(5,1fr)';
+    cols.style.gap='4px';
+    list.forEach((item,i)=>{
+      const c = document.createElement('div');
+      c.textContent = (i+1)+'. '+LETTERS[item.a];
+      cols.appendChild(c);
+    });
+    wrap.appendChild(cols);
+  }
+  showView('view-key');
+}
+
+renderHome();
+</script>
+</body>
+</html>
