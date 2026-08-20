@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Olimpiade Bahasa Inggris Kelas 1–2</title>
+<style>
+  :root{
+    --navy:#1B2E4A;
+    --navy-deep:#0E1B30;
+    --gold:#5FB4E0;
+    --coral:#F0654A;
+    --mint:#8CC63F;
+    --cream:#FBF6EA;
+    --line:#2A4468;
+    --ok:#2E9E6E;
+    --bad:#D64545;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Trebuchet MS', Verdana, sans-serif;
+    background:radial-gradient(circle at 20% -10%, #1c3b63 0%, var(--navy) 45%, var(--navy-deep) 100%);
+    color:var(--cream);
+    min-height:100vh;
+  }
+  h1,h2,h3{ font-family:'Georgia', 'Times New Roman', serif; margin:0; }
+  .wrap{ max-width:760px; margin:0 auto; padding:22px 16px 60px; }
+
+  .badge-header{
+    display:flex; align-items:center; gap:14px;
+    background:linear-gradient(135deg,var(--gold),#e08f2c);
+    color:var(--navy-deep);
+    border-radius:18px;
+    padding:16px 18px;
+    box-shadow:0 8px 0 #a86a12, 0 14px 24px rgba(0,0,0,.35);
+    position:relative;
+    overflow:hidden;
+  }
+  .badge-header::after{
+    content:"✦"; position:absolute; right:-10px; top:-18px; font-size:110px; opacity:.15;
+  }
+  .badge-header .ribbon{
+    width:52px;height:52px;border-radius:50%;
+    background:var(--navy-deep); color:var(--gold);
+    display:flex;align-items:center;justify-content:center;
+    font-size:24px; font-weight:bold; flex:none;
+    border:3px solid var(--cream);
+  }
+  .badge-header h1{ font-size:1.35rem; line-height:1.15; }
+  .badge-header p{ margin:4px 0 0; font-size:.85rem; font-weight:bold; letter-spacing:.03em;}
+
+  .card{
+    background:#16304F;
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:18px;
+    margin-top:16px;
+    box-shadow:0 4px 14px rgba(0,0,0,.25);
+  }
+  .kisi{ font-size:.82rem; line-height:1.55; color:#cfe0f5; }
+  .kisi ol{ margin:8px 0 0 18px; padding:0; }
+
+  label.field-label{ display:block; font-size:.8rem; color:#a9c3e0; margin-bottom:6px; font-weight:bold; }
+  input#student-name{
+    width:100%; padding:12px 14px; border-radius:12px; border:2px solid var(--line);
+    background:var(--navy-deep); color:var(--cream); font-size:1rem; outline:none;
+  }
+  input#student-name:focus{ border-color:var(--gold); }
+  #name-hint{ font-size:.72rem; color:#ff9a9a; margin-top:6px; min-height:14px; }
+
+  .grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px; }
+  .paket-btn{
+    background:var(--navy-deep);
+    border:2px solid var(--mint);
+    color:var(--cream);
+    border-radius:14px;
+    padding:16px 10px;
+    text-align:center;
+    cursor:pointer;
+    transition:transform .12s ease, background .12s ease;
+    font-family:'Georgia',serif;
+  }
+  .paket-btn .num{ font-size:1.8rem; font-weight:bold; color:var(--mint); display:block; }
+  .paket-btn small{ display:block; margin-top:4px; font-size:.72rem; color:#a9c3e0; }
+  .paket-btn:hover{ transform:translateY(-3px); background:#1c3b63; }
+  .paket-btn:active{ transform:translateY(0); }
+
+  .toolbar{ display:flex; gap:10px; margin-top:16px; flex-wrap:wrap; }
+  .ghost-btn{
+    flex:1; min-width:140px;
+    background:transparent; border:1.5px dashed #6b88ac; color:#cfe0f5;
+    border-radius:12px; padding:10px; cursor:pointer; font-size:.85rem;
+  }
+  .ghost-btn:hover{ background:rgba(255,255,255,.05); }
+
+  .quiz-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;}
+  .quiz-head h2{ font-size:1.1rem; color:var(--gold); }
+  .quiz-name{ font-size:.75rem; color:#a9c3e0; margin-bottom:8px; }
+
+  .timer-bar{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    background:var(--navy-deep); border:2px solid var(--mint);
+    border-radius:12px; padding:8px 12px; margin:10px 0 14px;
+  }
+  .timer-bar .clock-icon{ font-size:1.1rem; }
+  .timer-bar #timer-display{
+    font-family:'Georgia',serif; font-size:1.3rem; font-weight:bold;
+    color:var(--mint); letter-spacing:.05em;
+  }
+  .timer-bar.low{ border-color:var(--coral); animation:pulse 1s infinite; }
+  .timer-bar.low #timer-display{ color:var(--coral); }
+  @keyframes pulse{
+    0%,100%{ box-shadow:0 0 0 rgba(240,101,74,0); }
+    50%{ box-shadow:0 0 14px rgba(240,101,74,.55); }
+  }
+  .progress-track{ background:#0B1B30; border-radius:8px; height:10px; overflow:hidden; margin:8px 0 4px;}
+  .progress-fill{ background:linear-gradient(90deg,var(--mint),var(--gold)); height:100%; width:0%; transition:width .2s ease;}
+  .progress-label{ font-size:.75rem; color:#a9c3e0; }
+
+  .qcard{ display:none; }
+  .qcard.active{ display:block; }
+  .cat-tag{
+    display:inline-block; background:var(--coral); color:#fff;
+    font-size:.68rem; font-weight:bold; padding:3px 9px; border-radius:20px;
+    margin-bottom:10px; letter-spacing:.03em;
+  }
+  .qnum{ color:var(--gold); font-weight:bold; }
+  .qtext{ font-size:1.05rem; line-height:1.5; margin:8px 0 14px; }
+  .opt{
+    display:flex; align-items:center; gap:10px;
+    background:var(--navy-deep); border:2px solid var(--line);
+    border-radius:12px; padding:11px 13px; margin-bottom:9px;
+    cursor:pointer; font-size:.95rem;
+  }
+  .opt:hover{ border-color:var(--mint); }
+  .opt.selected{ border-color:var(--gold); background:#1c3b63; }
+  .opt .letter{
+    width:26px;height:26px;border-radius:50%;background:var(--line);
+    color:var(--cream); display:flex;align-items:center;justify-content:center;
+    font-size:.8rem; font-weight:bold; flex:none;
+  }
+  .opt.selected .letter{ background:var(--gold); color:var(--navy-deep); }
+
+  .nav-row{ display:flex; justify-content:space-between; gap:10px; margin-top:14px; }
+  .nav-btn{
+    flex:1; padding:12px; border-radius:12px; border:none; font-weight:bold;
+    cursor:pointer; font-size:.9rem;
+  }
+  .nav-btn.prev{ background:#1c3b63; color:var(--cream); }
+  .nav-btn.next{ background:var(--mint); color:var(--navy-deep); }
+  .nav-btn.submit{ background:var(--coral); color:#fff; }
+  .nav-btn:disabled{ opacity:.4; cursor:not-allowed; }
+
+  .jumpgrid{ display:grid; grid-template-columns:repeat(6,1fr); gap:6px; margin-top:14px; }
+  .jump{
+    aspect-ratio:1; border-radius:8px; border:1.5px solid var(--line);
+    background:var(--navy-deep); color:#a9c3e0; font-size:.75rem;
+    cursor:pointer; display:flex;align-items:center;justify-content:center;
+  }
+  .jump.answered{ border-color:var(--mint); color:var(--mint); }
+  .jump.current{ background:var(--gold); color:var(--navy-deep); border-color:var(--gold); font-weight:bold;}
+
+  .score-hero{
+    text-align:center; padding:22px 10px;
+    background:linear-gradient(160deg,#1c3b63,var(--navy-deep));
+    border-radius:16px; border:1px solid var(--line);
+  }
+  .score-hero .who{ font-size:.85rem; color:var(--gold); font-weight:bold; margin-bottom:6px; }
+  .score-hero .big{ font-size:3rem; font-weight:bold; color:var(--gold); font-family:'Georgia',serif; }
+  .score-hero .sub{ font-size:.85rem; color:#a9c3e0; margin-top:4px; }
+  .medal{ font-size:2.2rem; margin-bottom:4px; }
+
+  .review-item{
+    border-radius:12px; padding:12px 14px; margin-top:10px;
+    border-left:5px solid var(--line); background:var(--navy-deep);
+  }
+  .review-item.correct{ border-left-color:var(--ok); }
+  .review-item.wrong{ border-left-color:var(--bad); }
+  .review-item .rq{ font-size:.92rem; margin-bottom:6px; }
+  .review-item .rline{ font-size:.82rem; color:#cfe0f5; }
+  .review-item .rline.you-wrong{ color:#ff9a9a; }
+  .review-item .rline.correct-ans{ color:#8ce0bc; }
+  .pembahasan{
+    margin-top:8px; padding:9px 11px; border-radius:10px;
+    background:rgba(242,180,65,.09); border:1px dashed rgba(242,180,65,.4);
+    font-size:.8rem; color:#f5dfaf; line-height:1.5;
+  }
+  .pembahasan b{ color:var(--gold); }
+
+  .badge-small{ display:inline-block; font-size:.68rem; font-weight:bold; padding:2px 8px; border-radius:10px; margin-right:6px;}
+  .badge-small.correct{ background:rgba(46,158,110,.25); color:#8ce0bc; }
+  .badge-small.wrong{ background:rgba(214,69,69,.25); color:#ff9a9a; }
+
+  .filter-row{ display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
+  .filter-btn{
+    flex:1; min-width:100px; padding:8px; border-radius:10px; border:1.5px solid var(--line);
+    background:var(--navy-deep); color:#cfe0f5; font-size:.75rem; cursor:pointer;
+  }
+  .filter-btn.active{ border-color:var(--gold); color:var(--gold); }
+
+  footer{ text-align:center; font-size:.7rem; color:#5f7ba0; margin-top:30px; }
+  .hidden{ display:none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="badge-header">
+    <div class="ribbon">EO</div>
+    <div>
+      <h1>English Olympiad — Grade 1 &amp; 2</h1>
+      <p>5 PAKET · 30 SOAL/PAKET · TINGKAT SANGAT SULIT</p>
+    </div>
+  </div>
+
+  <!-- HOME VIEW -->
+  <div id="view-home">
+    <div class="card">
+      <label class="field-label" for="student-name">Nama Peserta</label>
+      <input id="student-name" type="text" placeholder="Tulis nama lengkap di sini..." maxlength="40">
+      <div id="name-hint"></div>
+    </div>
+
+    <div class="card">
+      <h3 style="color:var(--gold);margin-bottom:6px;">Kisi-kisi</h3>
+      <div class="kisi">
+        Setiap paket berisi 30 soal (3 soal untuk tiap indikator berikut), disusun acak agar tidak berurutan per kisi-kisi:
+        <ol>
+          <li>Menentukan makna kata melalui gambar atau konteks</li>
+          <li>Menafsirkan informasi dari gambar</li>
+          <li>Menentukan informasi penting dari bacaan</li>
+          <li>Mencocokkan kata dengan gambar atau fungsi</li>
+          <li>Menentukan urutan cerita sederhana</li>
+          <li>Mengelompokkan kosakata berdasarkan kategori</li>
+          <li>Menentukan arti kata berdasarkan konteks sederhana</li>
+          <li>Menyelesaikan soal logika berbahasa Inggris</li>
+          <li>Menafsirkan instruksi sederhana</li>
+          <li>Menyelesaikan soal berbasis situasi sederhana</li>
+        </ol>
+        Waktu pengerjaan tiap paket adalah <b>40 menit</b>. Tekan tombol <b>Submit Jawaban</b> kapan saja untuk langsung dikoreksi, lengkap dengan pembahasan tiap soal.<br>
+        Penilaian: jawaban <b>benar = +4</b>, <b>salah = −1</b>, <b>tidak dijawab = 0</b>.
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="color:var(--gold);">Pilih Paket</h3>
+      <div class="grid" id="paket-grid"></div>
+      <div class="toolbar">
+        <button class="ghost-btn" onclick="showAnswerKey()">📋 Lihat kunci jawaban semua paket</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUIZ VIEW -->
+  <div id="view-quiz" class="hidden">
+    <div class="card">
+      <div class="quiz-head">
+        <h2 id="quiz-title">Paket 1</h2>
+        <button class="ghost-btn" style="min-width:auto;padding:6px 12px;" onclick="backHome()">✕ Keluar</button>
+      </div>
+      <div class="quiz-name" id="quiz-name">Peserta: —</div>
+
+      <div class="timer-bar" id="timer-bar">
+        <span class="clock-icon">⏱</span>
+        <span id="timer-display">40:00</span>
+      </div>
+
+      <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="progress-label" id="progress-label">Soal 1 dari 30</div>
+
+      <div id="qcards"></div>
+
+      <div class="nav-row">
+        <button class="nav-btn prev" id="btn-prev" onclick="navQ(-1)">← Sebelumnya</button>
+        <button class="nav-btn next" id="btn-next" onclick="navQ(1)">Selanjutnya →</button>
+      </div>
+      <button class="nav-btn submit" style="width:100%;margin-top:10px;" onclick="submitQuiz(false)">✔ Submit Jawaban</button>
+      <div id="submit-hint" style="font-size:.72rem;color:#a9c3e0;text-align:center;margin-top:6px;">Waktu pengerjaan 40 menit. Tekan Submit kapan saja untuk langsung dikoreksi.</div>
+
+      <div class="jumpgrid" id="jumpgrid"></div>
+    </div>
+  </div>
+
+  <!-- RESULT VIEW -->
+  <div id="view-result" class="hidden">
+    <div class="score-hero">
+      <div class="who" id="result-name">Peserta: —</div>
+      <div class="medal" id="medal">🏅</div>
+      <div class="big" id="score-big">0 Poin</div>
+      <div class="sub" id="score-sub">Nilai: 0</div>
+    </div>
+    <div class="toolbar">
+      <button class="ghost-btn" onclick="backHome()">🏠 Kembali ke daftar paket</button>
+      <button class="ghost-btn" onclick="retryQuiz()">↻ Ulangi paket ini</button>
+    </div>
+    <div class="filter-row">
+      <button class="filter-btn active" data-f="all" onclick="filterReview('all')">Semua (30)</button>
+      <button class="filter-btn" data-f="wrong" onclick="filterReview('wrong')">Hanya Salah</button>
+      <button class="filter-btn" data-f="correct" onclick="filterReview('correct')">Hanya Benar</button>
+    </div>
+    <div id="review-list"></div>
+  </div>
+
+  <!-- ANSWER KEY VIEW -->
+  <div id="view-key" class="hidden">
+    <div class="card">
+      <div class="quiz-head">
+        <h2>Kunci Jawaban — Semua Paket</h2>
+        <button class="ghost-btn" style="min-width:auto;padding:6px 12px;" onclick="backHome()">✕ Tutup</button>
+      </div>
+      <div id="key-content" style="font-size:.85rem;line-height:1.7;"></div>
+    </div>
+  </div>
+
+  <footer>Dibuat sebagai alat latihan &amp; koreksi otomatis olimpiade bahasa Inggris kelas 1–2.</footer>
+</div>
+
+<script>
+/* ================= BANK SOAL (10 kategori x 15 soal, dengan pembahasan) ================= */
+const BANK = {
+mkw:[
+{q:"🍎 What is this called in English?", o:["Apple","Orange","Banana","Grape"], a:0, e:"Gambar 🍎 menunjukkan buah apel, dalam bahasa Inggris disebut 'apple'."},
+{q:"☂️ This is used when it rains. What is it?", o:["Umbrella","Hat","Bag","Shoe"], a:0, e:"Benda yang digunakan saat hujan agar tidak basah adalah payung ('umbrella')."},
+{q:"🐘 This is a big animal with a long trunk. What is it?", o:["Elephant","Mouse","Dog","Cat"], a:0, e:"Hewan besar dengan belalai panjang adalah gajah ('elephant')."},
+{q:"📚 We use this to read and learn. What is it?", o:["Books","Shoes","Spoon","Chair"], a:0, e:"Benda yang digunakan untuk membaca dan belajar adalah buku ('books')."},
+{q:"🌞 This shines in the sky during the day and gives us light. What is it?", o:["Moon","Sun","Star","Cloud"], a:1, e:"Benda yang bersinar di siang hari dan memberi cahaya adalah matahari ('sun')."},
+{q:"🚲 You ride this with two wheels using your legs. What is it?", o:["Car","Bicycle","Boat","Train"], a:1, e:"Kendaraan beroda dua yang dikayuh dengan kaki adalah sepeda ('bicycle')."},
+{q:"🧊 This is frozen water and feels very cold. What is it?", o:["Fire","Ice","Sand","Rock"], a:1, e:"Air yang membeku dan terasa sangat dingin adalah es ('ice')."},
+{q:"👂 We use this part of our body to hear sounds. What is it?", o:["Eye","Ear","Nose","Mouth"], a:1, e:"Bagian tubuh untuk mendengar suara adalah telinga ('ear')."},
+{q:"🐝 This small insect makes honey and can sting. What is it?", o:["Ant","Bee","Fly","Spider"], a:1, e:"Serangga kecil penghasil madu yang bisa menyengat adalah lebah ('bee')."},
+{q:"🌧️ Water falls from the sky when this happens. What is it?", o:["Snow","Rain","Wind","Sun"], a:1, e:"Peristiwa air jatuh dari langit disebut hujan ('rain')."},
+{q:"🧴 We use this to wash our hands. It makes bubbles. What is it?", o:["Soap","Sugar","Salt","Oil"], a:0, e:"Benda yang digunakan mencuci tangan dan menghasilkan busa adalah sabun ('soap')."},
+{q:"🕰️ This tells us the time. What is it?", o:["Clock","Map","Book","Lamp"], a:0, e:"Benda yang menunjukkan waktu adalah jam ('clock')."},
+{q:"🥶 When the weather is very cold, we feel this. What word describes it?", o:["Hot","Cold","Warm","Dry"], a:1, e:"Perasaan saat cuaca sangat dingin digambarkan dengan kata 'cold'."},
+{q:"🏠 We live inside this building. What is it?", o:["School","House","Shop","Park"], a:1, e:"Bangunan tempat kita tinggal adalah rumah ('house')."},
+{q:"🦷 We use this to bite and chew our food. What is it?", o:["Tongue","Teeth","Lips","Chin"], a:1, e:"Bagian tubuh untuk menggigit dan mengunyah makanan adalah gigi ('teeth')."},
+],
+inf_gbr:[
+{q:"Picture: 🐱➡️🐭 The cat is running toward the mouse. What is the cat doing?", o:["Sleeping","Chasing the mouse","Eating","Swimming"], a:1, e:"Karena kucing berlari ke arah tikus, artinya kucing sedang mengejar tikus ('chasing')."},
+{q:"Picture: ☀️🏖️👦🏊 A boy is swimming at the beach on a sunny day. What is the weather like?", o:["Rainy","Sunny","Snowy","Windy"], a:1, e:"Simbol ☀️ menunjukkan cuaca cerah, sehingga jawabannya 'sunny'."},
+{q:"Picture: 🌳🍂🍁 The leaves are falling and turning orange. What season is it?", o:["Summer","Autumn","Winter","Spring"], a:1, e:"Daun berguguran dan berubah warna oranye menandakan musim gugur ('autumn')."},
+{q:"Picture: 👩‍🍳🍳🥞 A woman is cooking eggs and pancakes. Where is she most likely?", o:["Bedroom","Kitchen","Garden","Garage"], a:1, e:"Kegiatan memasak biasanya dilakukan di dapur ('kitchen')."},
+{q:"Picture: 🚌🧒🧒🧒 Many children are getting on a bus in the morning. Where are they probably going?", o:["Hospital","School","Zoo","Beach"], a:1, e:"Anak-anak naik bus di pagi hari biasanya pergi ke sekolah ('school')."},
+{q:"Picture: 🌙⭐🛏️😴 A child is sleeping under the moon and stars. What time of day is it?", o:["Morning","Afternoon","Night","Noon"], a:2, e:"Bulan dan bintang muncul pada malam hari ('night')."},
+{q:"Picture: 🐶🎾 A dog is running after a ball. What is the dog playing with?", o:["A stick","A ball","A bone","A shoe"], a:1, e:"Simbol 🎾 menunjukkan bola, jadi anjing bermain dengan 'a ball'."},
+{q:"Picture: ☔🧥👢 A person is wearing a coat, boots, and holding an umbrella. What is the weather like?", o:["Sunny","Rainy","Hot","Dry"], a:1, e:"Memakai jas hujan, sepatu bot, dan membawa payung menunjukkan cuaca hujan ('rainy')."},
+{q:"Picture: 🎂🎉🎈 There are balloons and a cake with candles. What event is happening?", o:["A funeral","A birthday party","A wedding","A meeting"], a:1, e:"Balon, kue, dan lilin adalah tanda-tanda pesta ulang tahun ('a birthday party')."},
+{q:"Picture: 👨‍⚕️🏥🩺 A man in a white coat holds a stethoscope inside a building with a red cross. What is his job?", o:["Teacher","Doctor","Farmer","Chef"], a:1, e:"Jas putih, stetoskop, dan simbol palang merah menunjukkan profesi dokter ('doctor')."},
+{q:"Picture: 🌊⛵🐟 A boat is sailing and fish are swimming nearby. Where is this scene happening?", o:["Desert","Mountain","Sea","Forest"], a:2, e:"Perahu berlayar dan ikan berenang menunjukkan lokasi di laut ('sea')."},
+{q:"Picture: 🧑‍🌾🚜🌽 A farmer is driving a tractor near corn plants. Where is he?", o:["Farm","City","School","Beach"], a:0, e:"Traktor dan tanaman jagung menunjukkan lokasi di ladang/peternakan ('farm')."},
+{q:"Picture: 🔥🚒👨‍🚒 A fire truck and a firefighter are near flames. What is happening?", o:["A party","A fire","A picnic","A race"], a:1, e:"Mobil pemadam dan api menunjukkan sedang terjadi kebakaran ('a fire')."},
+{q:"Picture: 📖👧😊 A girl is smiling while holding an open book. What is she doing?", o:["Sleeping","Reading","Cooking","Running"], a:1, e:"Memegang buku terbuka sambil tersenyum menunjukkan ia sedang membaca ('reading')."},
+{q:"Picture: ❄️⛄🧤 Snow is falling and a snowman is being built. What season is it?", o:["Summer","Autumn","Winter","Spring"], a:2, e:"Salju turun dan orang membuat manusia salju menandakan musim dingin ('winter')."},
+],
+inf_bacaan:[
+{q:"Tom has a red bag. Inside the bag, there are two books and one pencil. How many books are in Tom's bag?", o:["One","Two","Three","Four"], a:1, e:"Bacaan menyebutkan 'two books', jadi jawabannya adalah dua."},
+{q:"Lily wakes up at 6 o'clock. She brushes her teeth and eats breakfast before going to school. What does Lily do first after waking up?", o:["Eat breakfast","Brush her teeth","Go to school","Sleep again"], a:1, e:"Urutan dalam bacaan: bangun, gosok gigi, sarapan, sekolah. Jadi yang pertama setelah bangun adalah menggosok gigi."},
+{q:"There are five apples on the table. Ben eats two apples. How many apples are left?", o:["Two","Three","Four","Five"], a:1, e:"5 dikurangi 2 sama dengan 3 apel yang tersisa."},
+{q:"Sam has a small dog named Max. Max likes to play with a ball in the garden every afternoon. What does Max like to play with?", o:["A bone","A ball","A stick","A shoe"], a:1, e:"Bacaan menyebutkan Max suka bermain dengan bola ('a ball')."},
+{q:"It is raining outside. Mia takes her umbrella and wears her boots before leaving. Why does Mia take her umbrella?", o:["It is sunny","It is raining","It is snowing","It is windy"], a:1, e:"Kalimat pertama menyebutkan sedang hujan ('raining'), itulah alasan Mia membawa payung."},
+{q:"The zoo has lions, elephants, and monkeys. Ana likes the monkeys the most because they are funny. Which animal does Ana like the most?", o:["Lions","Elephants","Monkeys","Tigers"], a:2, e:"Bacaan jelas menyatakan Ana paling menyukai monyet ('monkeys')."},
+{q:"Dad bakes a chocolate cake for the family. Everyone eats a piece after dinner. What does Dad bake?", o:["Bread","A chocolate cake","Cookies","Pizza"], a:1, e:"Bacaan menyebutkan Ayah membuat kue coklat ('a chocolate cake')."},
+{q:"Every Sunday, Jack and his family go to the park. They ride bikes and have a picnic. What day do they go to the park?", o:["Monday","Saturday","Sunday","Friday"], a:2, e:"Bacaan menyebutkan 'Every Sunday', jadi jawabannya hari Minggu."},
+{q:"The little bird cannot fly yet. It stays in the nest and waits for its mother to bring food. Why does the bird stay in the nest?", o:["It is sleeping","It cannot fly yet","It is hiding","It is playing"], a:1, e:"Kalimat pertama menyebutkan burung itu belum bisa terbang ('cannot fly yet')."},
+{q:"Emma has three balloons: one red, one blue, and one yellow. The wind blows away the red balloon. How many balloons does Emma have now?", o:["One","Two","Three","Four"], a:1, e:"3 balon dikurangi 1 balon merah yang tertiup angin, sisa 2 balon."},
+{q:"The school bus arrives at 7 o'clock. Children who are late must wait for the next bus. What happens if children are late?", o:["They walk to school","They wait for the next bus","They go home","They stay at the bus stop forever"], a:1, e:"Bacaan menyebutkan mereka harus menunggu bus berikutnya ('wait for the next bus')."},
+{q:"Grandma grows tomatoes, carrots, and onions. This year, the tomatoes grew the biggest. What grew the biggest this year?", o:["Carrots","Onions","Tomatoes","Potatoes"], a:2, e:"Bacaan menyebutkan tomat tumbuh paling besar tahun ini ('the tomatoes grew the biggest')."},
+{q:"Leo lost his favorite toy car. He looked under his bed and found it there. Where did Leo find his toy car?", o:["In the kitchen","Under his bed","In the garden","At school"], a:1, e:"Bacaan menyebutkan ia menemukannya di bawah tempat tidurnya ('under his bed')."},
+{q:"The librarian tells the children to be quiet. Kate whispers to her friend instead of talking loudly. Why does Kate whisper?", o:["She is shy","The librarian said to be quiet","She has no voice","She is sleepy"], a:1, e:"Karena pustakawan meminta anak-anak diam, Kate berbisik agar tetap tenang."},
+{q:"There are ten students in the class. Four students are absent today. How many students are present today?", o:["Four","Five","Six","Seven"], a:2, e:"10 dikurangi 4 siswa yang absen sama dengan 6 siswa yang hadir."},
+],
+cocok:[
+{q:"Which word matches this picture? 🔑", o:["Key","Door","Lock","Wall"], a:0, e:"Gambar 🔑 menunjukkan kunci, dalam bahasa Inggris disebut 'key'."},
+{q:"Which object is used to cut paper?", o:["Spoon","Scissors","Fork","Cup"], a:1, e:"Benda yang digunakan untuk memotong kertas adalah gunting ('scissors')."},
+{q:"Which word matches this picture? ✈️", o:["Car","Airplane","Boat","Bicycle"], a:1, e:"Gambar ✈️ menunjukkan pesawat terbang ('airplane')."},
+{q:"Which object do we use to write?", o:["Pencil","Plate","Chair","Ball"], a:0, e:"Benda yang digunakan untuk menulis adalah pensil ('pencil')."},
+{q:"Which word matches this picture? 🐟", o:["Bird","Fish","Cat","Snake"], a:1, e:"Gambar 🐟 menunjukkan ikan ('fish')."},
+{q:"Which object do we use to see far away things clearly?", o:["Mirror","Binoculars","Spoon","Hat"], a:1, e:"Benda untuk melihat benda jauh dengan jelas adalah teropong ('binoculars')."},
+{q:"Which word matches this picture? 🎻", o:["Guitar","Violin","Drum","Piano"], a:1, e:"Gambar 🎻 menunjukkan biola ('violin')."},
+{q:"Which object keeps food cold?", o:["Oven","Refrigerator","Stove","Toaster"], a:1, e:"Benda yang menjaga makanan tetap dingin adalah lemari es ('refrigerator')."},
+{q:"Which word matches this picture? 🚒", o:["Police car","Fire truck","Ambulance","Bus"], a:1, e:"Gambar 🚒 menunjukkan mobil pemadam kebakaran ('fire truck')."},
+{q:"Which object do we use to tell what time it is?", o:["Calendar","Clock","Map","Ruler"], a:1, e:"Benda yang menunjukkan waktu adalah jam ('clock')."},
+{q:"Which word matches this picture? 🦋", o:["Bee","Butterfly","Moth","Dragonfly"], a:1, e:"Gambar 🦋 menunjukkan kupu-kupu ('butterfly')."},
+{q:"Which object protects our head when riding a bicycle?", o:["Hat","Helmet","Scarf","Gloves"], a:1, e:"Benda yang melindungi kepala saat naik sepeda adalah helm ('helmet')."},
+{q:"Which word matches this picture? 🌂", o:["Umbrella","Fan","Flag","Kite"], a:0, e:"Gambar 🌂 menunjukkan payung ('umbrella')."},
+{q:"Which object do we use to measure length?", o:["Ruler","Clock","Scale","Thermometer"], a:0, e:"Benda untuk mengukur panjang adalah penggaris ('ruler')."},
+{q:"Which word matches this picture? 🐧", o:["Duck","Penguin","Swan","Chicken"], a:1, e:"Gambar 🐧 menunjukkan pinguin ('penguin')."},
+],
+urutan:[
+{q:"(1) Tom wakes up. (2) Tom brushes his teeth. (3) Tom eats breakfast. (4) Tom goes to school. What does Tom do first?", o:["Eats breakfast","Wakes up","Goes to school","Brushes his teeth"], a:1, e:"Urutan cerita dimulai dari nomor (1), yaitu Tom bangun tidur ('wakes up')."},
+{q:"(1) The seed is planted. (2) The plant grows leaves. (3) A small sprout appears. (4) The flower blooms. What happens right after the seed is planted?", o:["The flower blooms","A small sprout appears","The plant grows leaves","Nothing happens"], a:1, e:"Setelah biji ditanam, yang muncul berikutnya adalah tunas kecil ('a small sprout appears')."},
+{q:"Sara: cooks the rice, washes the rice, buys the rice, eats the rice. What is the correct order?", o:["Buys, washes, cooks, eats","Washes, buys, cooks, eats","Eats, cooks, washes, buys","Cooks, buys, washes, eats"], a:0, e:"Urutan logis: membeli beras, mencuci, memasak, lalu memakannya."},
+{q:"A caterpillar eats leaves, becomes a cocoon, turns into a butterfly, and flies away. What is the last thing that happens?", o:["Eats leaves","Becomes a cocoon","Turns into a butterfly","Flies away"], a:3, e:"Kejadian terakhir dalam cerita adalah kupu-kupu terbang pergi ('flies away')."},
+{q:"Order: put on shoes, wake up, leave the house, get dressed. What comes right before leaving the house?", o:["Wake up","Get dressed","Put on shoes","Eat lunch"], a:2, e:"Urutan logis: bangun, berpakaian, memakai sepatu, baru keluar rumah. Jadi tepat sebelum keluar adalah memakai sepatu."},
+{q:"Rain falls, clouds form, water evaporates, water vapor rises. What happens first?", o:["Rain falls","Clouds form","Water evaporates","Water vapor rises"], a:2, e:"Siklus air dimulai dari air menguap ('water evaporates') terlebih dahulu."},
+{q:"Ben's day: goes to bed, plays outside, has dinner, comes home from school. What is the correct order?", o:["Comes home, plays outside, has dinner, goes to bed","Plays outside, comes home, goes to bed, has dinner","Has dinner, goes to bed, comes home, plays outside","Goes to bed, has dinner, plays outside, comes home"], a:0, e:"Urutan logis: pulang sekolah, main di luar, makan malam, lalu tidur."},
+{q:"The egg cracks, a baby chick appears, the chick grows into a hen, the hen lays eggs. What happens second?", o:["The egg cracks","A baby chick appears","The chick grows into a hen","The hen lays eggs"], a:1, e:"Kejadian kedua setelah telur retak adalah munculnya anak ayam ('a baby chick appears')."},
+{q:"Making a sandwich: put the filling, take two slices of bread, put the other slice on top, spread butter. What is the first step?", o:["Put the filling","Take two slices of bread","Put the other slice on top","Spread butter"], a:1, e:"Langkah pertama membuat sandwich adalah mengambil dua lembar roti."},
+{q:"A girl's morning: she gets dressed, wakes up, eats breakfast, brushes her hair. What does she do last before leaving?", o:["Gets dressed","Wakes up","Eats breakfast","Brushes her hair"], a:3, e:"Urutan logis: bangun, berpakaian, sarapan, lalu menyisir rambut sebelum berangkat."},
+{q:"The ice melts, the sun shines on the ice, water forms, the water evaporates. What happens right after the sun shines on the ice?", o:["Water evaporates","The ice melts","Water forms","Nothing happens"], a:1, e:"Setelah matahari bersinar pada es, es akan mencair ('the ice melts')."},
+{q:"Building a snowman: roll a big snowball, add a small snowball on top, decorate with a hat and buttons, roll a medium snowball. What is the correct order?", o:["Roll big, roll medium, add small, decorate","Roll medium, roll big, decorate, add small","Decorate, roll big, roll medium, add small","Add small, roll big, roll medium, decorate"], a:0, e:"Urutan logis membuat manusia salju: bola besar, bola sedang, bola kecil, lalu dihias."},
+{q:"A plant's life: seed, sprout, seedling, flower. What comes between sprout and flower?", o:["Seed","Seedling","Fruit","Root"], a:1, e:"Urutan pertumbuhan tanaman: biji, tunas, bibit ('seedling'), lalu bunga."},
+{q:"Washing hands: dry your hands, wet your hands, rinse the soap off, apply soap. What is the correct order?", o:["Wet, apply soap, rinse, dry","Apply soap, wet, dry, rinse","Dry, wet, apply soap, rinse","Rinse, dry, wet, apply soap"], a:0, e:"Urutan mencuci tangan: basahi tangan, beri sabun, bilas, lalu keringkan."},
+{q:"A butterfly's story: egg, caterpillar, cocoon, butterfly. What comes right before the butterfly stage?", o:["Egg","Caterpillar","Cocoon","Nothing"], a:2, e:"Tahap sebelum menjadi kupu-kupu adalah kepompong ('cocoon')."},
+],
+kategori:[
+{q:"Which word does NOT belong? Apple, Banana, Carrot, Grape", o:["Apple","Banana","Carrot","Grape"], a:2, e:"Apel, pisang, dan anggur adalah buah, sedangkan wortel ('carrot') adalah sayuran."},
+{q:"Which word does NOT belong? Dog, Cat, Chair, Rabbit", o:["Dog","Cat","Chair","Rabbit"], a:2, e:"Anjing, kucing, dan kelinci adalah hewan, sedangkan kursi ('chair') adalah perabot."},
+{q:"Which word does NOT belong? Red, Blue, Happy, Green", o:["Red","Blue","Happy","Green"], a:2, e:"Merah, biru, dan hijau adalah warna, sedangkan 'happy' adalah perasaan."},
+{q:"Which word does NOT belong? Monday, Tuesday, January, Friday", o:["Monday","Tuesday","January","Friday"], a:2, e:"Senin, Selasa, dan Jumat adalah hari, sedangkan Januari ('January') adalah bulan."},
+{q:"Which word does NOT belong? Eye, Ear, Table, Nose", o:["Eye","Ear","Table","Nose"], a:2, e:"Mata, telinga, dan hidung adalah bagian tubuh, sedangkan meja ('table') adalah perabot."},
+{q:"Which word does NOT belong? Circle, Square, Triangle, Purple", o:["Circle","Square","Triangle","Purple"], a:3, e:"Lingkaran, persegi, dan segitiga adalah bentuk, sedangkan ungu ('purple') adalah warna."},
+{q:"Which word does NOT belong? Teacher, Doctor, Book, Nurse", o:["Teacher","Doctor","Book","Nurse"], a:2, e:"Guru, dokter, dan perawat adalah profesi, sedangkan buku ('book') adalah benda."},
+{q:"Which word does NOT belong? Spring, Summer, Winter, Monday", o:["Spring","Summer","Winter","Monday"], a:3, e:"Musim semi, panas, dan dingin adalah musim, sedangkan Senin ('Monday') adalah hari."},
+{q:"Which word does NOT belong? Lion, Tiger, Elephant, Sofa", o:["Lion","Tiger","Elephant","Sofa"], a:3, e:"Singa, harimau, dan gajah adalah hewan, sedangkan sofa adalah perabot."},
+{q:"Which word does NOT belong? One, Two, Blue, Three", o:["One","Two","Blue","Three"], a:2, e:"Satu, dua, dan tiga adalah angka, sedangkan biru ('blue') adalah warna."},
+{q:"Which word does NOT belong? Soccer, Basketball, Piano, Tennis", o:["Soccer","Basketball","Piano","Tennis"], a:2, e:"Sepak bola, basket, dan tenis adalah olahraga, sedangkan piano adalah alat musik."},
+{q:"Which word does NOT belong? Milk, Water, Juice, Shoe", o:["Milk","Water","Juice","Shoe"], a:3, e:"Susu, air, dan jus adalah minuman, sedangkan sepatu ('shoe') adalah pakaian."},
+{q:"Which word does NOT belong? Rose, Tulip, Sunflower, Carrot", o:["Rose","Tulip","Sunflower","Carrot"], a:3, e:"Mawar, tulip, dan bunga matahari adalah bunga, sedangkan wortel ('carrot') adalah sayuran."},
+{q:"Which word does NOT belong? Car, Bus, Train, Bread", o:["Car","Bus","Train","Bread"], a:3, e:"Mobil, bus, dan kereta adalah kendaraan, sedangkan roti ('bread') adalah makanan."},
+{q:"Which word does NOT belong? Happy, Sad, Angry, Jumping", o:["Happy","Sad","Angry","Jumping"], a:3, e:"Senang, sedih, dan marah adalah perasaan, sedangkan melompat ('jumping') adalah aksi."},
+],
+konteks:[
+{q:"The soup is too ___, so I need to let it cool down before eating.", o:["Cold","Hot","Small","Loud"], a:1, e:"Karena sup perlu didinginkan sebelum dimakan, artinya sup itu terlalu panas ('hot')."},
+{q:"My brother is very ___. He can run faster than anyone in our class.", o:["Slow","Fast","Quiet","Heavy"], a:1, e:"Karena ia bisa berlari lebih cepat dari siapa pun, kata yang tepat adalah 'fast'."},
+{q:"The elephant is much ___ than the mouse.", o:["Smaller","Bigger","Faster","Quieter"], a:1, e:"Gajah jauh lebih besar dibanding tikus, jadi kata yang tepat adalah 'bigger'."},
+{q:"It was so ___ in the room that I could not hear my own voice.", o:["Quiet","Loud","Dark","Bright"], a:1, e:"Karena tidak bisa mendengar suara sendiri, artinya ruangan itu sangat ramai/berisik ('loud')."},
+{q:"The ice cream melted quickly because the weather was very ___.", o:["Cold","Hot","Cloudy","Rainy"], a:1, e:"Es krim mencair cepat karena cuaca panas ('hot')."},
+{q:"The turtle moves very ___, unlike the rabbit which runs quickly.", o:["Fast","Slow","Loud","Happy"], a:1, e:"Kura-kura bergerak lambat dibanding kelinci yang cepat, jadi kata yang tepat adalah 'slow'."},
+{q:"Please be ___ in the library because other people are reading.", o:["Loud","Quiet","Fast","Angry"], a:1, e:"Di perpustakaan kita harus tenang ('quiet') agar tidak mengganggu orang lain membaca."},
+{q:"The baby started to ___ because she was hungry and wanted her milk.", o:["Laugh","Cry","Sleep","Jump"], a:1, e:"Bayi yang lapar biasanya menangis ('cry') untuk meminta susu."},
+{q:"He was very ___ after winning the race, so he smiled and jumped happily.", o:["Sad","Angry","Happy","Tired"], a:2, e:"Karena tersenyum dan melompat gembira, kata yang tepat adalah 'happy'."},
+{q:"The bag is too ___ for me to carry alone; I need help.", o:["Light","Heavy","Small","Soft"], a:1, e:"Karena butuh bantuan membawanya, artinya tas itu berat ('heavy')."},
+{q:"The classroom was ___ after everyone cleaned it up.", o:["Dirty","Clean","Messy","Broken"], a:1, e:"Setelah dibersihkan, ruangan menjadi bersih ('clean')."},
+{q:"It is very ___ outside today; you should wear a jacket.", o:["Hot","Cold","Sunny","Bright"], a:1, e:"Karena disarankan memakai jaket, artinya cuaca sedang dingin ('cold')."},
+{q:"The tall building is much ___ than the small house next to it.", o:["Shorter","Taller","Smaller","Wider"], a:1, e:"Gedung tinggi jauh lebih tinggi dibanding rumah kecil, jadi kata yang tepat adalah 'taller'."},
+{q:"She was ___ when she found her lost toy under the bed.", o:["Angry","Sad","Excited","Bored"], a:2, e:"Menemukan mainan yang hilang biasanya membuat seseorang senang/bersemangat ('excited')."},
+{q:"The road was ___ after the heavy rain, so cars drove slowly.", o:["Dry","Wet","Dusty","Sandy"], a:1, e:"Setelah hujan deras, jalanan menjadi basah ('wet')."},
+],
+logika:[
+{q:"If A is taller than B, and B is taller than C, who is the shortest?", o:["A","B","C","Cannot be determined"], a:2, e:"Urutan tinggi: A>B>C, jadi C adalah yang paling pendek."},
+{q:"Tom has more apples than Ben. Ben has more apples than Sam. Who has the fewest apples?", o:["Tom","Ben","Sam","Cannot be determined"], a:2, e:"Urutan jumlah apel: Tom>Ben>Sam, jadi Sam memiliki apel paling sedikit."},
+{q:"All cats are animals. Tom is a cat. What can we say about Tom?", o:["Tom is a dog","Tom is an animal","Tom is a plant","Tom is a bird"], a:1, e:"Karena semua kucing adalah hewan dan Tom adalah kucing, maka Tom pasti hewan."},
+{q:"If today is Monday, what day was it two days ago?", o:["Sunday","Saturday","Tuesday","Friday"], a:1, e:"Dua hari sebelum Senin adalah Sabtu ('Saturday')."},
+{q:"There are 3 boxes: Red, Blue, and Green. The Red box is bigger than the Blue box. The Blue box is bigger than the Green box. Which box is the smallest?", o:["Red","Blue","Green","Cannot be determined"], a:2, e:"Urutan ukuran: Merah>Biru>Hijau, jadi kotak Hijau paling kecil."},
+{q:"If it is sunny, Amy wears a hat. Today Amy is wearing a hat. What can we say about the weather?", o:["It is raining","It is sunny","It is snowing","It is windy"], a:1, e:"Karena aturannya 'jika cerah, Amy memakai topi' dan ia memakai topi, kemungkinan besar cuaca sedang cerah."},
+{q:"Three friends: Alex is older than Mia. Mia is older than Leo. Who is the youngest?", o:["Alex","Mia","Leo","Cannot be determined"], a:2, e:"Urutan usia: Alex>Mia>Leo, jadi Leo yang termuda."},
+{q:"A farmer has chickens and cows. He counts 4 heads and 10 legs in total. How many chickens does he have?", o:["1","2","3","4"], a:2, e:"Jika semua ayam (2 kaki): 4×2=8 kaki. Kelebihan 10−8=2 kaki berasal dari sapi (tiap sapi menambah 2 kaki lebih): 2÷2=1 sapi, jadi ayam=4−1=3."},
+{q:"If yesterday was Wednesday, what day is tomorrow?", o:["Thursday","Friday","Saturday","Sunday"], a:1, e:"Jika kemarin Rabu, maka hari ini Kamis, dan besok adalah Jumat ('Friday')."},
+{q:"Box A is heavier than Box B. Box C is lighter than Box B. Which box is the lightest?", o:["A","B","C","Cannot be determined"], a:2, e:"Urutan berat: A>B>C, jadi kotak C paling ringan."},
+{q:"All birds can fly. A penguin is a bird. Penguins cannot fly. What does this tell us?", o:["The rule 'all birds can fly' is always true","The rule 'all birds can fly' is not always true","Penguins are not birds","Penguins can fly"], a:1, e:"Karena penguin adalah burung tapi tidak bisa terbang, aturan 'semua burung bisa terbang' ternyata tidak selalu benar."},
+{q:"Sam is standing behind Mia. Mia is standing behind Leo. Who is at the front of the line?", o:["Sam","Mia","Leo","Cannot be determined"], a:2, e:"Urutan barisan dari depan: Leo, Mia, Sam. Jadi Leo berada paling depan."},
+{q:"If 2 pens cost $4, how much do 5 pens cost (same price each)?", o:["$8","$9","$10","$12"], a:2, e:"Harga 1 pena = $4÷2=$2. Harga 5 pena = 5×$2=$10."},
+{q:"A number is even and greater than 10 but less than 14. What is the number?", o:["11","12","13","15"], a:1, e:"Bilangan genap antara 10 dan 14 adalah 12."},
+{q:"If Monday, Wednesday, and Friday are class days, what is the next class day after Wednesday?", o:["Thursday","Friday","Saturday","Monday"], a:1, e:"Hari kelas berikutnya setelah Rabu dalam daftar (Senin, Rabu, Jumat) adalah Jumat ('Friday')."},
+],
+instruksi:[
+{q:"Instruction: 'Draw a circle, then color it red.' What should you color red?", o:["A square","A circle","A triangle","A line"], a:1, e:"Instruksi menyebutkan mewarnai lingkaran ('a circle') dengan warna merah."},
+{q:"Instruction: 'Stand up, raise your right hand, and say your name.' What should you raise?", o:["Your left hand","Your right hand","Both hands","Your leg"], a:1, e:"Instruksi jelas menyebutkan mengangkat tangan kanan ('your right hand')."},
+{q:"Instruction: 'Write your name at the top of the paper, then write the date below it.' What comes first?", o:["The date","Your name","A drawing","A number"], a:1, e:"Langkah pertama dalam instruksi adalah menulis nama ('your name')."},
+{q:"Instruction: 'Put the red book on the top shelf and the blue book on the bottom shelf.' Where does the blue book go?", o:["Top shelf","Bottom shelf","Middle shelf","On the floor"], a:1, e:"Instruksi menyebutkan buku biru diletakkan di rak bawah ('bottom shelf')."},
+{q:"Instruction: 'Close the door quietly and sit in your seat.' What should you do to the door?", o:["Slam it","Close it quietly","Leave it open","Lock it"], a:1, e:"Instruksi meminta menutup pintu dengan pelan ('close it quietly')."},
+{q:"Instruction: 'Cut along the dotted line, then fold the paper in half.' What do you do after cutting?", o:["Fold the paper","Draw a picture","Color the paper","Throw it away"], a:0, e:"Langkah setelah memotong adalah melipat kertas menjadi dua ('fold the paper')."},
+{q:"Instruction: 'Wash your hands before eating lunch.' When should you wash your hands?", o:["After lunch","Before lunch","During lunch","Never"], a:1, e:"Instruksi menyebutkan mencuci tangan sebelum makan siang ('before lunch')."},
+{q:"Instruction: 'Line up quietly and wait for your teacher.' What should you NOT do while lining up?", o:["Stand still","Talk loudly","Wait patiently","Look forward"], a:1, e:"Karena diminta berbaris dengan tenang, maka yang TIDAK boleh dilakukan adalah berbicara keras ('talk loudly')."},
+{q:"Instruction: 'Circle the correct answer and underline the question.' What do you underline?", o:["The answer","The question","Both","Neither"], a:1, e:"Instruksi menyebutkan menggarisbawahi pertanyaan ('the question')."},
+{q:"Instruction: 'Put on your shoes before going outside to play.' When should you put on your shoes?", o:["After playing outside","Before going outside","While sleeping","During lunch"], a:1, e:"Instruksi jelas menyebutkan memakai sepatu sebelum bermain di luar ('before going outside')."},
+{q:"Instruction: 'Raise your hand if you know the answer.' What should you do if you know the answer?", o:["Shout out loud","Raise your hand","Stay silent","Stand up and walk away"], a:1, e:"Instruksi meminta mengangkat tangan ('raise your hand') jika tahu jawabannya."},
+{q:"Instruction: 'Draw a big sun in the sky and a small flower on the ground.' Where should the flower be?", o:["In the sky","On the ground","Behind the sun","Above the sun"], a:1, e:"Instruksi menyebutkan bunga digambar di atas tanah ('on the ground')."},
+{q:"Instruction: 'First, open your book to page 5. Then, read the story quietly.' What is the second step?", o:["Open the book","Read the story","Close the book","Write your name"], a:1, e:"Langkah kedua dalam instruksi adalah membaca cerita dengan tenang ('read the story')."},
+{q:"Instruction: 'Turn off the lights and be quiet during the movie.' What should you do with the lights?", o:["Turn them on","Turn them off","Leave them as they are","Break them"], a:1, e:"Instruksi menyebutkan mematikan lampu ('turn them off')."},
+{q:"Instruction: 'Walk, do not run, in the hallway.' What should you do in the hallway?", o:["Run","Walk","Jump","Skip"], a:1, e:"Instruksi meminta berjalan ('walk'), bukan berlari, di lorong."},
+],
+situasi:[
+{q:"You are thirsty. What should you do?", o:["Drink water","Go to sleep","Read a book","Close your eyes"], a:0, e:"Saat haus, hal yang tepat dilakukan adalah minum air ('drink water')."},
+{q:"It is raining and you want to go outside. What should you bring?", o:["A fan","An umbrella","A ball","A book"], a:1, e:"Saat hujan, benda yang perlu dibawa agar tidak basah adalah payung ('an umbrella')."},
+{q:"You see your friend fall down and get hurt. What should you do?", o:["Laugh at them","Help them","Walk away","Ignore them"], a:1, e:"Sikap yang baik saat melihat teman jatuh dan terluka adalah membantunya ('help them')."},
+{q:"You finish eating and your plate is dirty. What should you do?", o:["Leave it on the table","Wash it","Throw it away","Hide it"], a:1, e:"Setelah makan, piring kotor sebaiknya dicuci ('wash it')."},
+{q:"You want to cross the street safely. What should you do first?", o:["Run across quickly","Look both ways","Close your eyes","Talk on the phone"], a:1, e:"Sebelum menyeberang, kita harus melihat ke kedua arah ('look both ways') agar aman."},
+{q:"Your classroom is very hot. What should you do?", o:["Wear a jacket","Open the window","Turn off the lights","Close the door"], a:1, e:"Saat ruangan panas, tindakan yang tepat adalah membuka jendela ('open the window')."},
+{q:"You borrowed your friend's pencil. What should you do after using it?", o:["Keep it","Give it back","Break it","Hide it"], a:1, e:"Barang pinjaman harus dikembalikan ('give it back') setelah selesai digunakan."},
+{q:"You want to learn a new word. What should you do?", o:["Guess and forget it","Look it up in a dictionary","Ignore it","Throw the book away"], a:1, e:"Cara terbaik mempelajari kata baru adalah mencarinya di kamus ('look it up in a dictionary')."},
+{q:"The fire alarm rings at school. What should you do?", o:["Keep sitting","Line up and walk outside calmly","Run and shout","Hide under the table"], a:1, e:"Saat alarm kebakaran berbunyi, kita harus berbaris dan keluar dengan tenang ('line up and walk outside calmly')."},
+{q:"You made a mistake in your homework. What should you do?", o:["Leave it wrong","Erase and correct it","Throw the paper away","Cry"], a:1, e:"Kesalahan pada tugas sebaiknya dihapus dan diperbaiki ('erase and correct it')."},
+{q:"Your friend is sad because they lost their toy. What should you say?", o:["'That's not my problem'","'I'm sorry, let's look for it together'","'You are silly'","Nothing"], a:1, e:"Sikap yang baik adalah menawarkan bantuan dengan empati: 'I'm sorry, let's look for it together'."},
+{q:"You want to borrow a book from the library. What should you do?", o:["Take it without asking","Ask the librarian","Hide it in your bag","Tear out the pages"], a:1, e:"Cara yang benar meminjam buku perpustakaan adalah bertanya kepada pustakawan ('ask the librarian')."},
+{q:"You are eating dinner and your hands are dirty. What should you do first?", o:["Start eating","Wash your hands","Watch TV","Leave the table"], a:1, e:"Sebelum makan, tangan yang kotor harus dicuci terlebih dahulu ('wash your hands')."},
+{q:"You see trash on the playground. What is the best thing to do?", o:["Ignore it","Pick it up and throw it in the bin","Kick it away","Leave it there"], a:1, e:"Sikap yang baik adalah memungut sampah dan membuangnya ke tempat sampah ('pick it up and throw it in the bin')."},
+{q:"You want to ask a question in class. What should you do?", o:["Shout the question","Raise your hand","Talk to your friend","Walk to the teacher"], a:1, e:"Cara sopan bertanya di kelas adalah mengangkat tangan ('raise your hand')."},
+]
+};
+const CATLABEL = {mkw:"Makna Kata", inf_gbr:"Info dari Gambar", inf_bacaan:"Info dari Bacaan", cocok:"Mencocokkan Kata", urutan:"Urutan Cerita", kategori:"Kategori Kosakata", konteks:"Arti dari Konteks", logika:"Logika Bahasa Inggris", instruksi:"Instruksi Sederhana", situasi:"Soal Situasi"};
+const CATORDER = ["mkw","inf_gbr","inf_bacaan","cocok","urutan","kategori","konteks","logika","instruksi","situasi"];
+const LETTERS = ["A","B","C","D"];
+
+function mulberry32(seed){
+  return function(){
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function seededShuffle(arr, rng){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(rng()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function buildPaket(n){
+  // Setiap kategori menyumbang 3 soal per paket (indeks 0,1,2 dari slice-nya).
+  // Soal indeks-0 tiap kategori diacak dalam blok soal 1-10, indeks-1 dalam blok 11-20,
+  // indeks-2 dalam blok 21-30 -- sehingga 3 soal 1 kisi-kisi tersebar (mis. no.1, 15, 25),
+  // tidak pernah berurutan. Diacak dengan seed agar urutan tiap paket tetap konsisten.
+  const rng = mulberry32(n*9973 + 17);
+  const catSlices = {};
+  CATORDER.forEach(k=>{ catSlices[k] = BANK[k].slice(n*3, n*3+3); });
+
+  let list = [];
+  for(let round=0; round<3; round++){
+    const order = seededShuffle(CATORDER, rng);
+    order.forEach(k=>{
+      const item = catSlices[k][round];
+      list.push({q:item.q, o:item.o, a:item.a, e:item.e, cat:CATLABEL[k]});
+    });
+  }
+  return list;
+}
+const PAKETS = [0,1,2,3,4].map(buildPaket);
+
+/* ================= STATE ================= */
+let studentName = "";
+let current = { paket:-1, idx:0, answers:[] };
+let lastReview = [];
+const QUIZ_SECONDS = 40*60;
+let secondsLeft = QUIZ_SECONDS;
+let timerInterval = null;
+
+function formatTime(s){
+  const m = Math.floor(s/60);
+  const sec = s%60;
+  return String(m).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
+}
+
+function startTimer(){
+  stopTimer();
+  secondsLeft = QUIZ_SECONDS;
+  const disp = document.getElementById('timer-display');
+  const bar = document.getElementById('timer-bar');
+  disp.textContent = formatTime(secondsLeft);
+  bar.classList.remove('low');
+  timerInterval = setInterval(()=>{
+    secondsLeft--;
+    if(secondsLeft<=0){
+      secondsLeft = 0;
+      disp.textContent = formatTime(secondsLeft);
+      stopTimer();
+      alert('Waktu 40 menit telah habis! Jawabanmu akan langsung dikoreksi.');
+      submitQuiz(true);
+      return;
+    }
+    disp.textContent = formatTime(secondsLeft);
+    if(secondsLeft<=60) bar.classList.add('low');
+  }, 1000);
+}
+
+function stopTimer(){
+  if(timerInterval){ clearInterval(timerInterval); timerInterval=null; }
+}
+
+function renderHome(){
+  const grid = document.getElementById('paket-grid');
+  grid.innerHTML='';
+  for(let i=0;i<5;i++){
+    const b = document.createElement('div');
+    b.className='paket-btn';
+    b.onclick=()=>tryStartQuiz(i);
+    b.innerHTML = `<span class="num">${i+1}</span>Paket ${i+1}<small>30 soal</small>`;
+    grid.appendChild(b);
+  }
+  const saved = sessionStorage.getItem('om_name');
+  if(saved){ document.getElementById('student-name').value = saved; studentName = saved; }
+}
+
+function showView(id){
+  ['view-home','view-quiz','view-result','view-key'].forEach(v=>{
+    document.getElementById(v).classList.toggle('hidden', v!==id);
+  });
+}
+
+function backHome(){ stopTimer(); showView('view-home'); }
+
+function tryStartQuiz(n){
+  const val = document.getElementById('student-name').value.trim();
+  const hint = document.getElementById('name-hint');
+  if(!val){
+    hint.textContent = "⚠ Isi nama terlebih dahulu sebelum memulai paket.";
+    document.getElementById('student-name').focus();
+    return;
+  }
+  hint.textContent = "";
+  studentName = val;
+  try{ sessionStorage.setItem('om_name', val); }catch(e){}
+  startQuiz(n);
+}
+
+function startQuiz(n){
+  current = { paket:n, idx:0, answers:new Array(30).fill(null) };
+  document.getElementById('quiz-title').textContent = 'Paket ' + (n+1);
+  document.getElementById('quiz-name').textContent = 'Peserta: ' + studentName;
+  renderQCards();
+  renderJumpgrid();
+  goToQ(0);
+  showView('view-quiz');
+  startTimer();
+}
+
+function retryQuiz(){ startQuiz(current.paket); }
+
+function renderQCards(){
+  const wrap = document.getElementById('qcards');
+  wrap.innerHTML='';
+  const list = PAKETS[current.paket];
+  list.forEach((item, i)=>{
+    const div = document.createElement('div');
+    div.className='qcard';
+    div.id='qc-'+i;
+    let optsHtml = item.o.map((opt, oi)=>`
+      <div class="opt" data-oi="${oi}" onclick="selectOpt(${i},${oi})">
+        <span class="letter">${LETTERS[oi]}</span><span>${opt}</span>
+      </div>`).join('');
+    div.innerHTML = `
+      <span class="cat-tag">${item.cat}</span>
+      <div class="qtext"><span class="qnum">Soal ${i+1}.</span> ${item.q}</div>
+      ${optsHtml}
+    `;
+    wrap.appendChild(div);
+  });
+}
+
+function renderJumpgrid(){
+  const jg = document.getElementById('jumpgrid');
+  jg.innerHTML='';
+  for(let i=0;i<30;i++){
+    const d = document.createElement('div');
+    d.className='jump';
+    d.id='jump-'+i;
+    d.textContent = i+1;
+    d.onclick=()=>goToQ(i);
+    jg.appendChild(d);
+  }
+}
+
+function selectOpt(i, oi){
+  current.answers[i] = oi;
+  const qc = document.getElementById('qc-'+i);
+  qc.querySelectorAll('.opt').forEach(o=>o.classList.remove('selected'));
+  qc.querySelector('.opt[data-oi="'+oi+'"]').classList.add('selected');
+  document.getElementById('jump-'+i).classList.add('answered');
+  updateSubmitHint();
+}
+
+function goToQ(i){
+  current.idx = i;
+  document.querySelectorAll('.qcard').forEach(c=>c.classList.remove('active'));
+  document.getElementById('qc-'+i).classList.add('active');
+  document.querySelectorAll('.jump').forEach(j=>j.classList.remove('current'));
+  document.getElementById('jump-'+i).classList.add('current');
+  document.getElementById('progress-label').textContent = `Soal ${i+1} dari 30`;
+  document.getElementById('progress-fill').style.width = ((i+1)/30*100)+'%';
+  document.getElementById('btn-prev').disabled = (i===0);
+  document.getElementById('btn-next').disabled = (i===29);
+}
+
+function navQ(dir){
+  const ni = current.idx + dir;
+  if(ni>=0 && ni<30) goToQ(ni);
+}
+
+function updateSubmitHint(){
+  const remaining = current.answers.filter(a=>a===null).length;
+  const hint = document.getElementById('submit-hint');
+  hint.textContent = remaining>0
+    ? `Masih ${remaining} soal belum dijawab (0 poin). Kamu tetap bisa Submit kapan saja.`
+    : `Semua soal terjawab. Silakan tekan "Submit Jawaban".`;
+}
+
+function submitQuiz(auto){
+  const remaining = current.answers.filter(a=>a===null).length;
+  if(!auto && remaining>0){
+    const ok = confirm(`Masih ada ${remaining} soal yang belum dijawab (bernilai 0 poin).\nYakin ingin Submit sekarang?`);
+    if(!ok) return;
+  }
+  stopTimer();
+
+  const list = PAKETS[current.paket];
+  let correctCount = 0, wrongCount = 0, blankCount = 0;
+  lastReview = [];
+  list.forEach((item, i)=>{
+    const chosen = current.answers[i];
+    const correct = chosen !== null && chosen === item.a;
+    if(chosen === null) blankCount++;
+    else if(correct) correctCount++;
+    else wrongCount++;
+    lastReview.push({ i, item, chosen, correct });
+  });
+
+  const totalPoin = (correctCount*4) - (wrongCount*1);
+  const maxPoin = list.length*4; // 120
+  const nilai = Math.max(0, Math.round(totalPoin/maxPoin*100));
+  const waktuPakai = QUIZ_SECONDS - secondsLeft;
+  document.getElementById('result-name').textContent = 'Peserta: ' + studentName + ' — Paket ' + (current.paket+1);
+  document.getElementById('score-big').textContent = totalPoin + ' Poin';
+  document.getElementById('score-sub').innerHTML =
+    `Benar: ${correctCount} (+${correctCount*4}) · Salah: ${wrongCount} (−${wrongCount}) · Kosong: ${blankCount} (0)<br>Nilai: ${nilai} · Waktu dipakai: ${formatTime(waktuPakai)}`;
+  let medal = '📘';
+  if(nilai>=90) medal='🏆';
+  else if(nilai>=75) medal='🥇';
+  else if(nilai>=60) medal='🥈';
+  else if(nilai>=40) medal='🥉';
+  document.getElementById('medal').textContent = medal;
+
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector('.filter-btn[data-f="all"]').classList.add('active');
+  renderReview('all');
+  showView('view-result');
+}
+
+function renderReview(filter){
+  const reviewWrap = document.getElementById('review-list');
+  reviewWrap.innerHTML='';
+  lastReview
+    .filter(r => filter==='all' ? true : (filter==='wrong' ? !r.correct : r.correct))
+    .forEach(r=>{
+      const { i, item, chosen, correct } = r;
+      const div = document.createElement('div');
+      div.className = 'review-item ' + (correct ? 'correct' : 'wrong');
+      div.innerHTML = `
+        <span class="badge-small ${correct?'correct':'wrong'}">${correct?'BENAR':'SALAH'}</span>
+        <span class="cat-tag" style="margin-left:2px;">${item.cat}</span>
+        <div class="rq"><b>Soal ${i+1}.</b> ${item.q}</div>
+        <div class="rline ${correct?'':'you-wrong'}">Jawabanmu: ${chosen===null ? '(tidak dijawab)' : LETTERS[chosen]+'. '+item.o[chosen]}</div>
+        ${!correct ? `<div class="rline correct-ans">Jawaban benar: ${LETTERS[item.a]}. ${item.o[item.a]}</div>` : ''}
+        <div class="pembahasan"><b>Pembahasan:</b> ${item.e}</div>
+      `;
+      reviewWrap.appendChild(div);
+    });
+  if(reviewWrap.innerHTML===''){
+    reviewWrap.innerHTML = '<div class="review-item">Tidak ada soal pada kategori filter ini. 🎉</div>';
+  }
+}
+
+function filterReview(f){
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.toggle('active', b.dataset.f===f));
+  renderReview(f);
+}
+
+function showAnswerKey(){
+  const wrap = document.getElementById('key-content');
+  wrap.innerHTML='';
+  for(let p=0;p<5;p++){
+    const list = PAKETS[p];
+    const h = document.createElement('h3');
+    h.style.color='var(--mint)';
+    h.style.marginTop='14px';
+    h.textContent = 'Paket ' + (p+1);
+    wrap.appendChild(h);
+    const cols = document.createElement('div');
+    cols.style.display='grid';
+    cols.style.gridTemplateColumns='repeat(5,1fr)';
+    cols.style.gap='4px';
+    list.forEach((item,i)=>{
+      const c = document.createElement('div');
+      c.textContent = (i+1)+'. '+LETTERS[item.a];
+      cols.appendChild(c);
+    });
+    wrap.appendChild(cols);
+  }
+  showView('view-key');
+}
+
+renderHome();
+</script>
+</body>
+</html>
