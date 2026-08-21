@@ -1,0 +1,5271 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Olimpiade Bahasa Inggris — Kelas 1-2</title>
+<style>
+  :root{
+    --primary:#4338ca;
+    --primary-dark:#3730a3;
+    --primary-light:#eef2ff;
+    --accent:#f59e0b;
+    --green:#16a34a;
+    --green-light:#dcfce7;
+    --red:#dc2626;
+    --red-light:#fee2e2;
+    --gray-bg:#f8fafc;
+    --border:#e2e8f0;
+    --text:#1e293b;
+    --text-mute:#64748b;
+    --radius:14px;
+    --shadow:0 4px 16px rgba(30,41,59,.08);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    background:linear-gradient(160deg,#eef2ff 0%,#f8fafc 40%);
+    color:var(--text);
+    min-height:100vh;
+  }
+  .wrap{max-width:960px;margin:0 auto;padding:20px;}
+  .hidden{display:none !important;}
+
+  /* ---------- HEADER ---------- */
+  .app-header{
+    text-align:center;
+    padding:28px 20px 18px;
+  }
+  .app-header h1{
+    margin:0 0 6px;
+    font-size:1.7rem;
+    color:var(--primary-dark);
+  }
+  .app-header p{margin:0;color:var(--text-mute);font-size:.95rem;}
+
+  /* ---------- CARD ---------- */
+  .card{
+    background:#fff;
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    border:1px solid var(--border);
+    padding:24px;
+    margin-bottom:20px;
+  }
+
+  /* ---------- HOME SCREEN ---------- */
+  .info-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:12px;
+    margin:18px 0;
+  }
+  .info-box{
+    background:var(--primary-light);
+    border-radius:10px;
+    padding:14px;
+    text-align:center;
+  }
+  .info-box .num{font-size:1.4rem;font-weight:700;color:var(--primary-dark);}
+  .info-box .lbl{font-size:.8rem;color:var(--text-mute);margin-top:2px;}
+
+  .kisi-list{margin:10px 0 0;padding-left:20px;font-size:.9rem;color:var(--text);line-height:1.7;}
+
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-weight:600;font-size:.9rem;margin-bottom:6px;}
+  .field input[type=text]{
+    width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:1rem;
+  }
+  .field input[type=text]:focus{outline:none;border-color:var(--primary);}
+
+  .pkg-grid{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:10px;
+    margin:14px 0 6px;
+  }
+  @media(max-width:560px){.pkg-grid{grid-template-columns:repeat(2,1fr);}}
+  .pkg-btn{
+    padding:14px 6px;
+    border-radius:10px;
+    border:2px solid var(--border);
+    background:#fff;
+    font-weight:700;
+    font-size:1.05rem;
+    cursor:pointer;
+    transition:.15s;
+    color:var(--primary-dark);
+  }
+  .pkg-btn:hover{border-color:var(--primary);background:var(--primary-light);}
+  .pkg-btn.selected{border-color:var(--primary);background:var(--primary);color:#fff;}
+
+  .btn{
+    display:inline-block;
+    padding:12px 22px;
+    border-radius:10px;
+    border:none;
+    background:var(--primary);
+    color:#fff;
+    font-weight:700;
+    font-size:1rem;
+    cursor:pointer;
+    transition:.15s;
+  }
+  .btn:hover{background:var(--primary-dark);}
+  .btn:disabled{background:#cbd5e1;cursor:not-allowed;}
+  .btn.secondary{background:#fff;color:var(--primary);border:1.5px solid var(--primary);}
+  .btn.secondary:hover{background:var(--primary-light);}
+  .btn.ghost{background:transparent;color:var(--text-mute);border:1.5px solid var(--border);}
+  .btn.danger{background:var(--red);}
+  .btn.danger:hover{background:#b91c1c;}
+  .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;}
+
+  /* ---------- EXAM SCREEN ---------- */
+  .exam-topbar{
+    position:sticky;top:0;z-index:10;
+    background:#fff;
+    border-bottom:1px solid var(--border);
+    padding:12px 20px;
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;
+    box-shadow:0 2px 8px rgba(0,0,0,.04);
+  }
+  .exam-topbar .pkg-tag{font-weight:700;color:var(--primary-dark);}
+  .timer{
+    font-weight:800;font-size:1.15rem;
+    padding:6px 16px;border-radius:20px;background:var(--primary-light);color:var(--primary-dark);
+    min-width:100px;text-align:center;
+  }
+  .timer.warn{background:#fff7ed;color:#c2410c;}
+  .timer.danger{background:var(--red-light);color:var(--red);animation:pulse 1s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.55;}}
+
+  .exam-body{display:grid;grid-template-columns:1fr 220px;gap:20px;margin-top:18px;}
+  @media(max-width:760px){.exam-body{grid-template-columns:1fr;}}
+
+  .q-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;flex-wrap:wrap;gap:8px;}
+  .q-badge{font-size:.75rem;font-weight:700;color:var(--primary);background:var(--primary-light);padding:4px 10px;border-radius:20px;}
+  .q-num{font-size:.9rem;color:var(--text-mute);font-weight:600;}
+  .q-prompt{white-space:pre-wrap;font-size:1.08rem;line-height:1.65;margin:10px 0 18px;}
+  .q-prompt strong.emoji-row{font-size:1.6rem;}
+
+  .option{
+    display:flex;align-items:flex-start;gap:12px;
+    padding:13px 15px;margin-bottom:10px;
+    border:1.5px solid var(--border);border-radius:10px;
+    cursor:pointer;transition:.12s;
+  }
+  .option:hover{border-color:var(--primary);background:var(--primary-light);}
+  .option.selected{border-color:var(--primary);background:var(--primary-light);}
+  .option .letter{
+    flex-shrink:0;width:26px;height:26px;border-radius:50%;
+    border:1.5px solid var(--border);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:.85rem;color:var(--text-mute);
+  }
+  .option.selected .letter{background:var(--primary);color:#fff;border-color:var(--primary);}
+  .option .otext{font-size:.98rem;line-height:1.5;padding-top:2px;}
+
+  .flag-btn{
+    display:flex;align-items:center;gap:6px;
+    background:transparent;border:1.5px solid var(--border);
+    padding:6px 12px;border-radius:20px;cursor:pointer;font-size:.85rem;font-weight:600;color:var(--text-mute);
+  }
+  .flag-btn.on{background:#fffbeb;border-color:var(--accent);color:#b45309;}
+
+  /* nav sidebar */
+  .nav-panel{position:sticky;top:80px;align-self:start;}
+  .nav-title{font-weight:700;font-size:.85rem;color:var(--text-mute);margin-bottom:8px;}
+  .nav-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;}
+  @media(max-width:760px){.nav-grid{grid-template-columns:repeat(10,1fr);}}
+  .nav-cell{
+    aspect-ratio:1;border-radius:6px;border:1.5px solid var(--border);
+    background:#fff;font-size:.75rem;font-weight:700;color:var(--text-mute);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;
+  }
+  .nav-cell.answered{background:var(--green-light);border-color:var(--green);color:var(--green);}
+  .nav-cell.current{outline:2.5px solid var(--primary);outline-offset:1px;}
+  .nav-cell.flagged::after{
+    content:"";position:absolute;top:-3px;right:-3px;width:8px;height:8px;border-radius:50%;background:var(--accent);
+  }
+  .legend{margin-top:12px;font-size:.75rem;color:var(--text-mute);line-height:1.9;}
+  .legend span.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;}
+
+  /* ---------- RESULT SCREEN ---------- */
+  .score-hero{
+    text-align:center;padding:20px;
+    background:linear-gradient(135deg,var(--primary) 0%,#7c3aed 100%);
+    border-radius:var(--radius);color:#fff;margin-bottom:20px;
+  }
+  .score-hero .score-num{font-size:3rem;font-weight:800;margin:4px 0;}
+  .score-hero .score-max{font-size:1rem;opacity:.85;}
+  .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px;}
+  .stat-box{background:rgba(255,255,255,.15);border-radius:10px;padding:10px;}
+  .stat-box .n{font-size:1.4rem;font-weight:800;}
+  .stat-box .l{font-size:.75rem;opacity:.9;}
+
+  .cat-breakdown{margin-top:10px;}
+  .cat-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dashed var(--border);font-size:.88rem;}
+  .cat-row:last-child{border-bottom:none;}
+  .cat-bar-wrap{flex:1;margin:0 12px;background:#f1f5f9;border-radius:6px;height:8px;overflow:hidden;}
+  .cat-bar{height:100%;background:var(--primary);border-radius:6px;}
+
+  .unlock-box{
+    text-align:center;padding:22px;border:2px dashed var(--border);border-radius:var(--radius);
+  }
+  .unlock-box input{
+    padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:1rem;
+    text-align:center;letter-spacing:2px;width:160px;margin:10px auto;display:block;
+  }
+  .unlock-err{color:var(--red);font-size:.85rem;height:18px;margin-top:4px;}
+
+  .review-q{border:1.5px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;}
+  .review-q .q-prompt{margin:8px 0 12px;font-size:1rem;}
+  .review-opt{
+    display:flex;gap:10px;padding:10px 12px;margin-bottom:7px;border-radius:8px;border:1.5px solid var(--border);font-size:.92rem;
+  }
+  .review-opt.correct{background:var(--green-light);border-color:var(--green);}
+  .review-opt.wrong-picked{background:var(--red-light);border-color:var(--red);}
+  .review-tag{
+    display:inline-block;font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:6px;
+  }
+  .review-tag.correct{background:var(--green);color:#fff;}
+  .review-tag.wrong{background:var(--red);color:#fff;}
+  .review-explain{
+    margin-top:10px;background:var(--primary-light);border-radius:8px;padding:10px 12px;font-size:.88rem;color:var(--primary-dark);
+  }
+  .review-status{font-size:.78rem;font-weight:700;padding:3px 10px;border-radius:20px;}
+  .review-status.ok{background:var(--green-light);color:var(--green);}
+  .review-status.no{background:var(--red-light);color:var(--red);}
+  .review-status.blank{background:#f1f5f9;color:var(--text-mute);}
+
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px;
+  }
+  .modal-box{background:#fff;border-radius:var(--radius);padding:24px;max-width:420px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.25);}
+  .modal-box h3{margin-top:0;}
+
+  footer{text-align:center;color:var(--text-mute);font-size:.8rem;padding:24px 0 10px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="app-header">
+    <h1>🏆 Olimpiade Bahasa Inggris — Kelas 1‑2</h1>
+    <p>Tingkat Kesulitan: Sangat Sulit · 10 Paket Soal (A–J) · 30 Soal / Paket</p>
+  </div>
+
+  <!-- ============ HOME SCREEN ============ -->
+  <div id="screen-home" class="card">
+    <div class="info-grid">
+      <div class="info-box"><div class="num">30</div><div class="lbl">Jumlah Soal</div></div>
+      <div class="info-box"><div class="num">40</div><div class="lbl">Menit Pengerjaan</div></div>
+      <div class="info-box"><div class="num">+4 / -1</div><div class="lbl">Benar / Salah</div></div>
+      <div class="info-box"><div class="num">0</div><div class="lbl">Tidak Dijawab</div></div>
+    </div>
+
+    <p style="font-weight:600;margin-bottom:6px;">Kisi-kisi materi yang diujikan:</p>
+    <ul class="kisi-list" id="kisi-list"></ul>
+
+    <div class="field" style="margin-top:18px;">
+      <label for="nameInput">Nama Peserta (opsional)</label>
+      <input type="text" id="nameInput" placeholder="Tulis nama kamu di sini...">
+    </div>
+
+    <div class="field">
+      <label>Pilih Paket Soal</label>
+      <div class="pkg-grid" id="pkgGrid"></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" id="startBtn" disabled>Mulai Mengerjakan</button>
+    </div>
+  </div>
+
+  <!-- ============ EXAM SCREEN ============ -->
+  <div id="screen-exam" class="hidden">
+    <div class="exam-topbar">
+      <div><span class="pkg-tag" id="examPkgTag">Paket A</span></div>
+      <div class="timer" id="timerBox">40:00</div>
+      <button class="btn danger" id="submitBtn">Kumpulkan Jawaban</button>
+    </div>
+
+    <div class="wrap" style="padding-top:16px;">
+      <div class="exam-body">
+        <div class="card">
+          <div class="q-header">
+            <span class="q-badge" id="qCategory">Kategori</span>
+            <button class="flag-btn" id="flagBtn">🚩 Tandai untuk ditinjau</button>
+          </div>
+          <div class="q-num" id="qNum">Soal 1 dari 30</div>
+          <div class="q-prompt" id="qPrompt"></div>
+          <div id="optionsBox"></div>
+
+          <div class="btn-row">
+            <button class="btn ghost" id="prevBtn">← Sebelumnya</button>
+            <button class="btn secondary" id="nextBtn">Selanjutnya →</button>
+          </div>
+        </div>
+
+        <div class="nav-panel card">
+          <div class="nav-title">NAVIGASI SOAL</div>
+          <div class="nav-grid" id="navGrid"></div>
+          <div class="legend">
+            <div><span class="dot" style="background:var(--green-light);border:1.5px solid var(--green);"></span>Sudah dijawab</div>
+            <div><span class="dot" style="background:#fff;border:1.5px solid var(--border);"></span>Belum dijawab</div>
+            <div><span class="dot" style="background:var(--accent);"></span>Ditandai</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ RESULT SCREEN ============ -->
+  <div id="screen-result" class="hidden">
+    <div class="score-hero">
+      <div style="font-size:.95rem;opacity:.9;" id="resultName">Hasil Pengerjaan</div>
+      <div class="score-num" id="scoreNum">0</div>
+      <div class="score-max" id="scoreMax">dari skor maksimal 120</div>
+      <div class="stat-row">
+        <div class="stat-box"><div class="n" id="statCorrect">0</div><div class="l">Benar</div></div>
+        <div class="stat-box"><div class="n" id="statWrong">0</div><div class="l">Salah</div></div>
+        <div class="stat-box"><div class="n" id="statBlank">0</div><div class="l">Kosong</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p style="font-weight:700;margin-top:0;">📊 Rincian per Kategori</p>
+      <div class="cat-breakdown" id="catBreakdown"></div>
+    </div>
+
+    <div class="card" id="reviewCard">
+      <p style="font-weight:700;margin-top:0;">🔑 Kunci Jawaban</p>
+      <div id="reviewList"></div>
+    </div>
+
+    <div class="btn-row" style="justify-content:center;">
+      <button class="btn secondary" id="restartBtn">Kembali ke Halaman Utama</button>
+    </div>
+  </div>
+
+  <footer>Olimpiade Bahasa Inggris Kelas 1-2 · Latihan Soal Sangat Sulit</footer>
+</div>
+
+<div id="confirmModal" class="hidden">
+  <div class="modal-overlay">
+    <div class="modal-box">
+      <h3>Kumpulkan Jawaban?</h3>
+      <p id="confirmText" style="color:var(--text-mute);font-size:.92rem;"></p>
+      <div class="btn-row">
+        <button class="btn" id="confirmSubmitBtn">Ya, Kumpulkan</button>
+        <button class="btn ghost" id="cancelSubmitBtn">Batal</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script id="exam-data" type="application/json">
+{
+ "meta": {
+  "title": "Olimpiade Bahasa Inggris Kelas 1-2",
+  "durationMinutes": 40,
+  "scoring": {
+   "correct": 4,
+   "wrong": -1,
+   "blank": 0
+  },
+  "unlockCode": "dc",
+  "categories": {
+   "word_meaning": "Word Meaning from Picture/Context",
+   "picture_info": "Interpreting Information from a Picture",
+   "reading": "Finding Key Information from a Text",
+   "function_match": "Matching Words to Picture/Function",
+   "sequence": "Sequencing a Simple Story",
+   "categorize": "Classifying Vocabulary by Category",
+   "context_meaning": "Word Meaning from Simple Context",
+   "logic": "Solving English Logic Problems",
+   "instruction": "Interpreting Simple Instructions",
+   "situation": "Solving Simple Situational Problems"
+  }
+ },
+ "packages": [
+  {
+   "id": "A",
+   "name": "Package A",
+   "questions": [
+    {
+     "id": "A-01",
+     "number": 1,
+     "category": "situation",
+     "categoryLabel": "Solving Simple Situational Problems",
+     "prompt": "Situation: The teacher asks a question and Bayu knows the answer.\n\nWhat should he do?",
+     "options": [
+      "leave the room",
+      "stay quiet",
+      "shout the answer",
+      "raise his hand"
+     ],
+     "correctIndex": 3,
+     "explanation": "The most appropriate and polite response/action for this situation is: \"raise his hand\"."
+    },
+    {
+     "id": "A-02",
+     "number": 2,
+     "category": "logic",
+     "categoryLabel": "Solving English Logic Problems",
+     "prompt": "If 2 pencils cost $2, how much do 4 pencils cost?",
+     "options": [
+      "$2",
+      "$8",
+      "$4",
+      "$6"
+     ],
+     "correctIndex": 2,
+     "explanation": "Based on the pattern/logic in the question, the correct answer is '$4'."
+    },
+    {
+     "id": "A-03",
+     "number": 3,
+     "category": "function_match",
+     "categoryLabel": "Matching Words to Picture/Function",
+     "prompt": "What do we use to tell the time?",
+     "options": [
+      "thermometer",
+      "compass",
+      "calendar",
+      "clock"
+     ],
+     "correctIndex": 3,
+     "explanation": "The correct item used to tell the time is 'clock'."
+    },
+    {
+     "id": "A-04",
+     "number": 4,
+     "category": "reading",
+     "categoryLabel": "Finding Key Information from a Text",
+     "prompt": "Read the following text!\n\"The baby bird cannot fly yet, so it stays in the nest with its mother.\"\n\nWhy does the baby bird stay in the nest?",
+     "options": [
+      "because it cannot fly yet",
+      "because it is raining",
+      "because it is hungry",
+      "because it is sick"
+     ],
+     "correctIndex": 0,
+     "explanation": "According to the text, the information clearly stated is 'because it cannot fly yet'."
+    },
+    {
+     "id": "A-05",
+     "number": 5,
+     "category": "word_meaning",
+     "categoryLabel": "Word Meaning from Picture/Context",
+     "prompt": "Look at the picture below: 🪁\n\nWhat is the correct English word for this picture?",
+     "options": [
+      "balloon",
+      "flag",
+      "fan",
+      "kite"
+     ],
+     "correctIndex": 3,
+     "explanation": "The picture (🪁) shows something that is called 'kite' in English."
+    },
+    {
+     "id": "A-06",
+     "number": 6,
+     "category": "categorize",
+     "categoryLabel": "Classifying Vocabulary by Category",
+     "prompt": "Which word does NOT belong to the same group as the others?\n\nbed, sofa, pillow, orange",
+     "options": [
+      "orange",
+      "sofa",
+      "bed",
+      "pillow"
+     ],
+     "correctIndex": 0,
+     "explanation": "The word 'orange' belongs to a different category from the other words in the group."
+    },
+    {
+     "id": "A-07",
+     "number": 7,
+     "category": "instruction",
+     "categoryLabel": "Interpreting Simple Instructions",
+     "prompt": "Read the following instruction!\n\"Number the pages from 1 to 5, starting from the front.\"\n\nWhat is the first page number?",
+     "options": [
+      "0",
+      "1",
+      "2",
+      "5"
+     ],
+     "correctIndex": 1,
+     "explanation": "According to the instruction given, the correct answer is '1'."
+    },
+    {
+     "id": "A-08",
+     "number": 8,
+     "category": "situation",
+     "categoryLabel": "Solving Simple Situational Problems",
+     "prompt": "Situation: Bimo sees trash on the classroom floor.\n\nWhat should he do?",
+     "options": [
+      "leave it there",
+      "hide it under the desk",
+      "kick it away",
+      "pick it up and throw it in the bin"
+     ],
+     "correctIndex": 3,
+     "explanation": "The most appropriate and polite response/action for this situation is: \"pick it up and throw it in the bin\"."
+    },
+    {
+     "id": "A-09",
+     "number": 9,
+     "category": "instruction",
+     "categoryLabel": "Interpreting Simple Instructions",
+     "prompt": "Read the following instruction!\n\"Fold the paper twice, then cut along the fold lines.\"\n\nHow many times do you fold the paper?",
+     "options": [
+      "once",
+      "three times",
+      "twice",
+      "four times"
+     ],
+     "correctIndex": 2,
+     "explanation": "According to the instruction given, the correct answer is 'twice'."
+    },
+    {
+     "id": "A-10",
+     "number": 10,
+     "category": "picture_info",
+     "categoryLabel": "Interpreting Information from a Picture",
+     "prompt": "Look at the picture below: 🌻🌷🌸🐝\n\nWhat season is it?",
+     "options": [
+      "summer",
+      "autumn",
+      "winter",
+      "spring"
+     ],
+     "correctIndex": 3,
+     "explanation": "The symbols in the picture (🌻🌷🌸🐝) together describe the situation 'spring', which is the correct answer."
+    },
+    {
+     "id": "A-11",
+     "number": 11,
+     "category": "instruction",
+     "categoryLabel": "Interpreting Simple Instructions",
+     "prompt": "Read the following instruction!\n\"Mix the flour and sugar first, then add the eggs.\"\n\nWhat should NOT be added first?",
+     "options": [
+      "the eggs",
+      "the flour",
+      "the sugar",
+      "nothing"
+     ],
+     "correctIndex": 0,
+     "explanation": "According to the instruction given, the correct answer is 'the eggs'."
+    },
+    {
+     "id": "A-12",
+     "number": 12,
+     "category": "picture_info",
+     "categoryLabel": "Interpreting Information from a Picture",
+     "prompt": "Look at the picture below: 🎄🎁❄️\n\nWhat holiday is shown?",
+     "options": [
+      "Christmas",
+      "Easter",
+      "New Year's Day",
+      "Halloween"
+     ],
+     "correctIndex": 0,
+     "explanation": "The symbols in the picture (🎄🎁❄️) together describe the situation 'Christmas', which is the correct answer."
+    },
+    {
+     "id": "A-13",
+     "number": 13,
+     "category": "reading",
+     "categoryLabel": "Finding Key Information from a Text",
+     "prompt": "Read the following text!\n\"Lina has a small cat. The cat is white and likes to drink milk every morning.\"\n\nWhat color is Lina's cat?",
+     "options": [
+      "grey",
+      "black",
+      "white",
+      "brown"
+     ],
+     "correctIndex": 2,
+     "explanation": "According to the text, the information clearly stated is 'white'."
+    },
+    {
+     "id": "A-14",
+     "number": 14,
+     "category": "sequence",
+     "categoryLabel": "Sequencing a Simple Story",
+     "prompt": "Put the following steps of 'Packing a school bag' into the correct order!\n\nP. Zip the bag\nQ. Put in the correct books\nR. Check the school schedule\nS. Take out yesterday's books\n\nWhich order is correct?",
+     "options": [
+      "Q-R-P-S",
+      "R-P-S-Q",
+      "R-S-Q-P",
+      "S-P-R-Q"
+     ],
+     "correctIndex": 2,
+     "explanation": "The logical order for 'Packing a school bag' is: Check the school schedule -> Take out yesterday's books -> Put in the correct books -> Zip the bag. So the correct label order is R-S-Q-P."
+    },
+    {
+     "id": "A-15",
+     "number": 15,
+     "category": "function_match",
+     "categoryLabel": "Matching Words to Picture/Function",
+     "prompt": "What do we use to weigh fruit at the market?",
+     "options": [
+      "scale",
+      "clock",
+      "ruler",
+      "thermometer"
+     ],
+     "correctIndex": 0,
+     "explanation": "The correct item used to weigh fruit at the market is 'scale'."
+    },
+    {
+     "id": "A-16",
+     "number": 16,
+     "category": "context_meaning",
+     "categoryLabel": "Word Meaning from Simple Context",
+     "prompt": "Look at the following sentence!\n\"It was a GIGANTIC elephant, much bigger than a car.\"\n\nWhat does the word \"GIGANTIC\" mean in this sentence?",
+     "options": [
+      "very small",
+      "very old",
+      "very fast",
+      "very big"
+     ],
+     "correctIndex": 3,
+     "explanation": "In the context of this sentence, the word 'GIGANTIC' means 'very big'."
+    },
+    {
+     "id": "A-17",
+     "number": 17,
+     "category": "sequence",
+     "categoryLabel": "Sequencing a Simple Story",
+     "prompt": "Put the following steps of 'Drawing a picture' into the correct order!\n\nP. Show it to friends\nQ. Take a piece of paper\nR. Sketch with a pencil\nS. Color the picture\n\nWhich order is correct?",
+     "options": [
+      "S-P-R-Q",
+      "Q-R-S-P",
+      "R-S-Q-P",
+      "S-Q-P-R"
+     ],
+     "correctIndex": 1,
+     "explanation": "The logical order for 'Drawing a picture' is: Take a piece of paper -> Sketch with a pencil -> Color the picture -> Show it to friends. So the correct label order is Q-R-S-P."
+    },
+    {
+     "id": "A-18",
+     "number": 18,
+     "category": "situation",
+     "categoryLabel": "Solving Simple Situational Problems",
+     "prompt": "Situation: A teacher asks the students to be quiet during the test.\n\nWhat should they do?",
+     "options": [
+      "talk to friends",
+      "stay quiet and focus on the test",
+      "leave the room",
+      "ask many questions loudly"
+     ],
+     "correctIndex": 1,
+     "explanation": "The most appropriate and polite response/action for this situation is: \"stay quiet and focus on the test\"."
+    },
+    {
+     "id": "A-19",
+     "number": 19,
+     "category": "context_meaning",
+     "categoryLabel": "Word Meaning from Simple Context",
+     "prompt": "Look at the following sentence!\n\"The soup was so DELICIOUS that everyone asked for more.\"\n\nWhat does the word \"DELICIOUS\" mean in this sentence?",
+     "options": [
+      "very spicy",
+      "very tasty",
+      "very bad",
+      "very cold"
+     ],
+     "correctIndex": 1,
+     "explanation": "In the context of this sentence, the word 'DELICIOUS' means 'very tasty'."
+    },
+    {
+     "id": "A-20",
+     "number": 20,
+     "category": "picture_info",
+     "categoryLabel": "Interpreting Information from a Picture",
+     "prompt": "Look at the picture below: 🐟🐠🌊🤿\n\nWhat is happening?",
+     "options": [
+      "someone is cooking",
+      "someone is diving",
+      "someone is painting",
+      "someone is fishing"
+     ],
+     "correctIndex": 1,
+     "explanation": "The symbols in the picture (🐟🐠🌊🤿) together describe the situation 'someone is diving', which is the correct answer."
+    },
+    {
+     "id": "A-21",
+     "number": 21,
+     "category": "categorize",
+     "categoryLabel": "Classifying Vocabulary by Category",
+     "prompt": "Which word does NOT belong to the same group as the others?\n\nmilk, juice, water, shoe",
+     "options": [
+      "juice",
+      "water",
+      "shoe",
+      "milk"
+     ],
+     "correctIndex": 2,
+     "explanation": "The word 'shoe' belongs to a different category from the other words in the group."
+    },
+    {
+     "id": "A-22",
+     "number": 22,
+     "category": "word_meaning",
+     "categoryLabel": "Word Meaning from Picture/Context",
+     "prompt": "Look at the picture below: ☂️\n\nWhat is the correct English word for this picture?",
+     "options": [
+      "hat",
+      "umbrella",
+      "boot",
+      "raincoat"
+     ],
+     "correctIndex": 1,
+     "explanation": "The picture (☂️) shows something that is called 'umbrella' in English."
+    },
+    {
+     "id": "A-23",
+     "number": 23,
+     "category": "reading",
+     "categoryLabel": "Finding Key Information from a Text",
+     "prompt": "Read the following text!\n\"Putri draws a picture of a rainbow after the rain stops.\"\n\nWhen does Putri draw the rainbow?",
+     "options": [
+      "after the rain stops",
+      "before it rains",
+      "during the rain",
+      "at night"
+     ],
+     "correctIndex": 0,
+     "explanation": "According to the text, the information clearly stated is 'after the rain stops'."
+    },
+    {
+     "id": "A-24",
+     "number": 24,
+     "category": "sequence",
+     "categoryLabel": "Sequencing a Simple Story",
+     "prompt": "Put the following steps of 'Doing laundry' into the correct order!\n\nP. Add soap\nQ. Hang the clean clothes to dry\nR. Turn on the machine\nS. Put dirty clothes in the machine\n\nWhich order is correct?",
+     "options": [
+      "R-P-Q-S",
+      "P-S-Q-R",
+      "P-R-Q-S",
+      "S-P-R-Q"
+     ],
+     "correctIndex": 3,
+     "explanation": "The logical order for 'Doing laundry' is: Put dirty clothes in the machine -> Add soap -> Turn on the machine -> Hang the clean clothes to dry. So the correct label order is S-P-R-Q."
+    },
+    {
+     "id": "A-25",
+     "number": 25,
+     "category": "logic",
+     "categoryLabel": "Solving English Logic Problems",
+     "prompt": "What comes next: circle, square, circle, square, __ ?",
+     "options": [
+      "star",
+      "triangle",
+      "circle",
+      "square"
+     ],
+     "correctIndex": 2,
+     "explanation": "Based on the pattern/logic in the question, the correct answer is 'circle'."
+    },
+    {
+     "id": "A-26",
+     "number": 26,
+     "category": "word_meaning",
+     "categoryLabel": "Word Meaning from Picture/Context",
+     "prompt": "Look at the picture below: 🧦\n\nWhat is the correct English word for this picture?",
+     "options": [
+      "shoes",
+      "socks",
+      "scarf",
+      "gloves"
+     ],
+     "correctIndex": 1,
+     "explanation": "The picture (🧦) shows something that is called 'socks' in English."
+    },
+    {
+     "id": "A-27",
+     "number": 27,
+     "category": "categorize",
+     "categoryLabel": "Classifying Vocabulary by Category",
+     "prompt": "Which word does NOT belong to the same group as the others?\n\neye, nose, ear, shoe",
+     "options": [
+      "shoe",
+      "ear",
+      "eye",
+      "nose"
+     ],
+     "correctIndex": 0,
+     "explanation": "The word 'shoe' belongs to a different category from the other words in the group."
+    },
+    {
+     "id": "A-28",
+     "number": 28,
+     "category": "context_meaning",
+     "categoryLabel": "Word Meaning from Simple Context",
+     "prompt": "Look at the following sentence!\n\"The thief tried to HIDE behind the tree so no one could see him.\"\n\nWhat does the word \"HIDE\" mean in this sentence?",
+     "options": [
+      "stay out of sight",
+      "shout loudly",
+      "jump high",
+      "run fast"
+     ],
+     "correctIndex": 0,
+     "explanation": "In the context of this sentence, the word 'HIDE' means 'stay out of sight'."
+    },
+    {
+     "id": "A-29",
+     "number": 29,
+     "category": "function_match",
+     "categoryLabel": "Matching Words to Picture/Function",
+     "prompt": "What do we use to see far away objects?",
+     "options": [
+      "telescope",
+      "mirror",
+      "magnifying glass",
+      "camera"
+     ],
+     "correctIndex": 0,
+     "explanation": "The correct item used to see far away objects is 'telescope'."
+    },
+    {
+     "id": "A-30",
+     "number": 30,
+     "category": "logic",
+     "categoryLabel": "Solving English Logic Problems",
+     "prompt": "Which shape has no corners at all?",
+     "options": [
+      "a square",
+      "a circle",
+      "a triangle",
+      "a rectangle"
+     ],
+     "correctIndex": 1,
+     "explanation": "Based on the pattern/logic in the question, the correct answer is 'a circle'."
+    }
+   ]
+  },
+  {
+   "id": "B",
+   "name": "Package B",
+   "questions": [
+    {
+     "id": "B-01",
+     "number": 1,
+     "category": "context_meaning",
+     "categoryLabel": "Word Meaning from Simple Context",
+     "prompt": "Look at the following sentence!\n\"After the long trip, the travelers were RELIEVED to finally reach home.\"\n\nWhat does the word \"RELIEVED\" mean in this sentence?",
+     "options": [
+      "feeling angry",
+      "feeling confused",
+      "feeling sad",
+      "feeling glad the trouble is over"
+     ],
+     "correctIndex": 3,
+     "explanation": "In the context of this sentence, the word 'RELIEVED' means 'feeling glad the trouble is over'."
+    },
+    {
+     "id": "B-02",
+     "number": 2,
+     "category": "picture_info",
+     "categoryLabel": "Interpreting Information from a Picture",
+     "prompt": "Look at the picture below: 🐶🦴🏃‍♂️\n\nWhat is the dog doing?",
+     "options": [
+      "chasing a bone",
+      "swimming",
+      "sleeping",
+      "barking at a cat"
+     ],
+     "correctIndex": 0,
+     "explanation": "The symbols in the picture (🐶🦴🏃‍♂️) together describe the situation 'chasing a bone', which is the correct answer."
+    },
+    {
+     "id": "B-03",
+     "number": 3,
+     "category": "instruction",
+     "categoryLabel": "Interpreting Simple Instructions",
+     "prompt": "Read the following instruction!\n\"Take three steps forward, then turn right and take two steps.\"\n\nHow many total steps do you take?",
+     "options": [
+      "three",
+      "two",
+      "six",
+      "five"
+     ],
+     "correctIndex": 3,
+     "explanation": "According to the instruction given, the correct answer is 'five'."
+    },
+    {
+     "id": "B-04",
+     "number": 4,
+     "category": "sequence",
+     "categoryLabel": "Sequencing a Simple Story",
+     "prompt": "Put the following steps of 'Making a birthday card' into the correct order!\n\nP. Give it to a friend\nQ. Write a message inside\nR. Draw a picture on the front\nS. Fold a piece of paper\n\nWhich order is correct?",
+     "options": [
+      "Q-R-P-S",
+      "R-S-P-Q",
+      "Q-S-P-R",
+      "S-R-Q-P"
+     ],
+     "correctIndex": 3,
+     "explanation": "The logical order for 'Making a birthday card' is: Fold a piece of paper -> Draw a picture on the front -> Write a message inside -> Give it to a friend. So the correct label order is S-R-Q-P."
+    },
+    {
+     "id": "B-05",
+     "number": 5,
+     "category": "logic",
+     "categoryLabel": "Solving English Logic Problems",
+     "prompt": "A square has 4 sides, a triangle has 3 sides. How many sides does a pentagon have?",
+     "options": [
+      "5",
+      "4",
+      "6",
+      "3"
+     ],
+     "correctIndex": 0,
+     "explanation": "Based on the pattern/logic in the question, the correct answer is '5'."
+    },
+    {
+     "id": "B-06",
+     "number": 6,
+     "category": "picture_info",
+     "categoryLabel": "Interpreting Information from a Picture",
+     "prompt": "Look at the picture below: 🎻🎹🥁\n\nWhat is shown?",
+     "options": [
+      "kitchen tools",
+      "garden tools",
+      "musical instruments",
+      "sports equipment"
+     ],
+     "correctIndex": 2,
+     "explanation": "The symbols in the picture (🎻🎹🥁) together describe the situation 'musical instruments', which is the correct answer."
+    },
+    {
+     "id": "B-07",
+     "number": 7,
+     "category": "sequence",
+     "categoryLabel": "Sequencing a Simple Story",
+     "prompt": "Put the following steps of 'Making popcorn' into the correct order!\n\nP. Wait until the kernels pop\nQ. Put corn kernels in a pot\nR. Heat the pot\nS. Pour into a bowl and eat\n\nWhich order is correct?",
+     "options": [
+      "Q-P-S-R",
+      "Q-R-P-S",
+      "P-R-Q-S",
+      "S-Q-P-R"
+     ],
+     "correctIndex": 1,
+     "explanation": "The logical order for 'Making popcorn' is: Put corn kernels in a pot -> Heat the pot -> Wait until the kernels pop -> Pour into a bowl and eat. So the correct label order is Q-R-P-S."
+    },
+    {
+     "id": "B-08",
+     "number": 8,
+     "category": "instruction",
+     "categoryLabel": "Interpreting Simple Instructions",
+     "prompt": "Read the following instruction!\n\"Line up the students by height, from shortest to tallest.\"\n\nWho stands first in line?",
+     "options": [
+      "the fastest student",
+      "the oldest student",
+      "the tallest student",
+      "the shortest student"
+     ],
+     "correctIndex": 3,
+     "explanation": "According to the instruction given, the correct answer is 'the shortest student'."
+    },
+    {
+     "id": "B-09",
+     "number": 9,
+     "category": "logic",
+     "categoryLabel": "Solving English Logic Problems",
+     "prompt": "What comes next: Monday, Wednesday, Friday, __ ?",
+     "options": [
+      "Thursday",
+      "Saturday",
+      "Tuesday",
+      "Sunday"
+     ],
+     "correctIndex": 3,
+     "explanation": "Based on the pattern/logic in the question, the correct answer is 'Sunday'."
+    },
+    {
+     "id": "B-10",
+     "number": 10,
+     "category": "word_meaning",
+     "categoryLabel": "Word Meaning from Picture/Context",
+     "prompt": "Look at the picture below: 🦋\n\nWhat is the correct English word for this picture?",
+     "options": [
+      "bee",
+      "dragonfly",
+      "ant",
+      "butterfly"
+     ],
+     "correctIndex": 3,
+     "explanation": "The picture (🦋) shows something that is called 'butterfly' in English."
+    },
+    {
+     "id": "B-11",
+     "number": 11,
+     "category": "function_match",
+     "categoryLabel": "Matching Words to Picture/Function",
+     "prompt": "What do we use to dig a hole in the ground?",
+     "options": [
+      "rake",
+      "hammer",
+      "shovel",
+      "broom"
+     ],
+     "correctIndex": 2,
+     "explanation": "The correct item used to dig a hole in the ground is 'shovel'."
+    },
+    {
+     "id": "B-12",
+     "number": 12,
+     "category": "categorize",
+     "categoryLabel": "Classifying Vocabulary by Category",
+     "prompt": "Which word does NOT belong to the same group as the others?\n\nking, queen, prince, garden",
+     "options": [
+      "garden",
+      "king",
+      "queen",
+      "prince"
+     ],
+     "correctIndex": 0,
+     "explanation": "The word 'garden' belongs to a different category from the other words in the group."
+    },
+    {
+     "id": "B-13",
+     "number": 13,
+     "category": "word_meaning",
+     "categoryLabel": "Word Meaning from Picture/Context",
+     "prompt": "Look at the picture below: 🦷\n\nWhat is the correct English word for this picture?",
+     "options": [
+      "tooth",
+      "bone",
+      "nail",
+      "hair"
+     ],
+     "correctIndex": 0,
+     "explanation": "The picture (🦷) shows something that is called 'tooth' in English."
+    },
+    {
+     "id": "B-14",
+     "number": 14,
+     "category": "reading",
+     "categoryLabel": "Finding Key Information from a Text",
+     "prompt": "Read the following text!\n\"The weather is very hot today, so Rian decides to drink cold orange juice.\"\n\nWhy does Rian drink cold orange juice?",
+     "options": [
+      "because it is cold",
+      "because it is hot",
+      "because he is sick",
+      "because he is hungry"
+     ],
+     "correctIndex": 1,
+     "explanation": "According to the text, the information clearly stated is 'because it is hot'."
+    },
+    {
+     "id": "B-15",
+     "number": 15,
+     "category": "function_match",
+     "categoryLabel": "Matching Words to Picture/Function",
+     "prompt": "What do we use to protect your head when riding a bike?",
+     "options": [
+      "glove",
+      "helmet",
+      "hat",
+      "scarf"
+     ],
+     "correctIndex": 1,
+     "explanation": "The correct item used to protect your head when riding a bike is 'helmet'."
+    },
+    {
+     "id": "B-16",
+     "number": 16,
+     "category": "function_match",
+     "categoryLabel": "Matching Words to Picture/Function",
+     "prompt": "What do we use to write on paper?",
+     "options": [
+      "brush",
+      "pen",
+      "comb",
+      "fork"
+     ],
+     "correctIndex": 1,
+     "explanation": "The correct item used to write on paper is 'pen'."
+    },
+    {
+     "id": "B-17",
+     "number": 17,
+     "category": "situation",
+     "categoryLabel": "Solving Simple Situational Problems",
+     "prompt": "Situation: Doni breaks his friend's toy by accident.\n\nWhat should he do?",
+     "options": [
+      "blame someone else",
+      "laugh about it",
+      "run away",
+      "apologize and offer to fix or replace it"
+     ],
+     "correctIndex": 3,
+     "explanation": "The most appropriate and polite response/action for this situation is: \"apologize and offer to fix or replace it\"."
+    },
+    {
+     "id": "B-18",
+     "number": 18,
+     "category": "instruction",
+     "categoryLabel": "Interpreting Simple Instructions",
+     "prompt": "Read the following instruction!\n\"Wash your hands, then dry them with a towel.\"\n\nWhat do you do after washing your hands?",
+     "options": [
+      "wear gloves",
+      "eat food",
+      "dry your hands",
+      "wash again"
+     ],
+     "correctIndex": 2,
+     "explanation": "According to the instruction given, the correct answer is 'dry your hands'."
+    },
+    {
+     "id": "B-19",
+     "number": 19,
+     "category": "situation",
+     "categoryLabel": "Solving Simple Situational Problems",
+     "prompt": "Situation: A new student joins the class.\n\nWhat should the other students say?",
+     "options": [
+      "Go away.",
+      "Welcome to our class!",
+      "Leave now.",
+      "We don't want you here."
+     ],
+     "correctIndex": 1,
+     "explanation": "The most appropriate and polite response/action for this situation is: \"Welcome to our class!\"."
+    },
+    {
+     "id": "B-20",
+     "number": 20,
+     "category": "reading",
+     "categoryLabel": "Finding Key Information from a Text",
+     "prompt": "Read the following text!\n\"Nina has two rabbits. They live in a small cage in the backyard.\"\n\nWhere do Nina's rabbits live?",
+     "options": [
+      "in a tree",
+      "in the garage",
+      "in a small cage in the backyard",
+      "in the house"
+     ],
+     "correctIndex": 2,
+     "explanation": "According to the text, the information clearly stated is 'in a small cage in the backyard'."
+    },
+    {
+     "id": "B-21",
+     "number": 21,
+     "category": "situation",
+     "categoryLabel": "Solving Simple Situational Problems",
+     "prompt": "Situation: Deni is thirsty during class.\n\nWhat should he say to the teacher?",
+     "options": [
+      "May I get a drink of water, please?",
+      "I want water now!",
+      "Give me water.",
+      "(say nothing and just leave)"
+     ],
+     "correctIndex": 0,
+     "explanation": "The most appropriate and polite response/action for this situation is: \"May I get a drink of water, please?\"."
+    },
+    {
+     "id": "B-22",
+     "number": 22,
+     "category": "logic",
+     "categoryLabel": "Solving English Logic Problems",
+     "prompt": "Riddle: What has hands but cannot clap?",
+     "options": [
+      "a clock",
+      "a robot",
+      "a doll",
+      "a glove"
+     ],
+     "correctIndex": 0,
+     "explanation": "Based on the pattern/logic in the question, the correct answer is 'a clock'."
+    },
+    {
+     "id": "B-23",
+     "number": 23,
+     "category": "sequence",
+     "categoryLabel": "Sequencing a Simple Story",
+     "prompt": "Put the following steps of 'Setting the table' into the correct order!\n\nP. Add spoons and forks\nQ. Place the plates\nR. Put glasses of water\nS. Put a tablecloth on the table\n\nWhich order is correct?",
+     "options": [
+      "R-Q-S-P",
+      "Q-R-S-P",
+      "R-Q-P-S",
+      "S-Q-P-R"
+     ],
+     "correctIndex": 3,
+     "explanation": "The logical order for 'Setting the table' is: Put a tablecloth on the table -> Place the plates -> Add spoons and forks -> Put glasses of water. So the correct label order is S-Q-P-R."
+    },
+    {
+     "id": "B-24",
+     "number": 24,
+     "category": "context_meaning",
+     "categoryLabel": "Word Meaning from Simple Context",
+     "prompt": "Look at the following sentence!\n\"The children were EAGER to open their presents on Christmas morning.\"\n\nWhat does the word \"EAGER\" mean in this sentence?",
+     "options": [
+      "very scared",
+      "very tired",
+      "very shy",
+      "very excited and willing"
+     ],
+     "correctIndex": 3,
+     "explanation": "In the context of this sentence, the word 'EAGER' means 'very excited and willing'."
+    },
+    {
+     "id": "B-25",
+     "number": 25,
+     "category": "categorize",
+     "categoryLabel": "Classifying Vocabulary by Category",
+     "prompt": "Which word does NOT belong to the same group as the others?\n\nMonday, blue, Friday, Sunday",
+     "options": [
+      "blue",
+      "Monday",
+      "Friday",
+      "Sunday"
+     ],
+     "correctIndex": 0,
+     "explanation": "The word 'blue' belongs to a different category from the other words in the group."
+    },
+    {
+     "id": "B-26",
+     "number": 26,
+     "category": "word_meaning",
+     "categoryLabel": "Word Meaning from Picture/Context",
+     "prompt": "Look at the picture below: 🎻\n\nWhat is the correct English word for this picture?",
+     "options": [
+      "guitar",
+      "piano",
+      "violin",
+      "drum"
+     ],
+     "correctIndex": 2,
+     "explanation": "The picture (🎻) shows something that is called 'violin' in English."
+    },
+    {
+     "id": "B-27",
+     "number": 27,
+     "category": "categorize",
+     "categoryLabel": "Classifying Vocabulary by Category",
+     "prompt": "Which word does NOT belong to the same group as the others?\n\nbook, pencil, eraser, banana",
+     "options": [
+      "banana",
+      "book",
+      "eraser",
+      "pencil"
+     ],
+     "correctIndex": 0,
+     "explanation": "The word 'banana' belongs to a different category from the other words in the group."
+    },
+    {
+     "id": "B-28",
+     "number": 28,
+     "category": "context_meaning",
+     "categoryLabel": "Word Meaning from Simple Context",
+     "prompt": "Look at the following sentence!\n\"The river was so SHALLOW that the children could walk across it.\"\n\nWhat does the word \"SHALLOW\" mean in this sentence?",
+     "options": [
+      "very cold",
+      "not deep",
+      "very wide",
+      "very deep"
+     ],
+     "correctIndex": 1,
+     "explanation": "In the context of this sentence, the word 'SHALLOW' means 'not deep'."
+    },
+    {
+     "id": "B-29",
+     "number": 29,
+     "category": "reading",
+     "categoryLabel": "Finding Key Information from a Text",
+     "prompt": "Read the following text!\n\"During winter, Bella wears a thick coat and warm gloves outside.\"\n\nWhat does Bella wear in winter?",
+     "options": [
+      "a swimsuit and sandals",
+      "a t-shirt and shorts",
+      "a raincoat and boots",
+      "a thick coat and warm gloves"
+     ],
+     "correctIndex": 3,
+     "explanation": "According to the text, the information clearly stated is 'a thick coat and warm gloves'."
+    },
+    {
+     "id": "B-30",
+     "number": 30,
+     "category": "picture_info",
+     "categoryLabel": "Interpreting Information from a Picture",
+     "prompt": "Look at the picture below: 🚂🎫🧳\n\nWhere are they?",
+     "options": [
+      "at the airport",
+      "at home",
+      "at the train station",
+      "at school"
+     ],
+     "correctIndex": 2,
+     "explanation": "The symbols in the picture (🚂🎫🧳) together describe the situation 'at the train station', which is the correct answer."
+    }
+   ]
+  },
+  {
+   "id": "C",
+   "name": "Package C",
+   "questions": [
+    {
+     "id": "C-01",
+     "number": 1,
+     "category": "situation",
+     "categoryLabel": "Solving Simple Situational Problems",
+     "prompt": "Situation: The teacher tells the class to line up quietly.\n\nWhat should the students do?",
+     "options": [
+      "line up quietly",
+      "ignore the teacher",
+      "talk loudly while lining up",
+      "run to the front"
+     ],
+     "correctIndex": 0,
+     "explanation": "The most appropriate and polite response/action for this situation is: \"line up quietly\"."
+    },
+    {
+     "id": "C-02",
+     "number": 2,
+     "category": "reading",
+     "categoryLabel": "Finding Key Information from a Text",
+     "prompt": "Read the following text!\n\"Every afternoon, Yoga helps his father wash the family car.\"\n\nWhat does Yoga help his father do?",
+     "options": [
+      "fix the bike",
+      "wash the car",
+      "clean the house",
+      "cook dinner"
+     ],
+     "correctIndex": 1,
+     "explanation": "According to the text, the information clearly stated is 'wash the car'."
+    },
+    {
+     "id": "C-03",
+     "number": 3,
+     "category": "context_meaning",
+     "categoryLabel": "Word Meaning from Simple Context",
+     "prompt": "Look at the following sentence!\n\"After running for an hour, Rian felt very EXHAUSTED.\"\n\nWhat does the word \"EXHAUSTED\" mean in this sentence?",
+     "options": [
+      "very cold",
+      "very hungry",
+      "very tired",
+      "very happy"
+     ],
+     "correctIndex": 2,
+     "explanation": "In the context of this sentence, the word 'EXHAUSTED' means 'very tired'."
+    },
+    {
+     "id": "C-04",
+     "number": 4,
+     "category": "picture_info",
+     "categoryLabel": "Interpreting Information from a Picture",
+     "prompt": "Look at the picture below: 🎣🚣‍♂️🌊\n\nWhat is the man doing?",
+     "options": [
+      "swimming",
+      "sailing",
+      "fishing",
+      "diving"
+     ],
+     "correctIndex": 2,
+     "explanation": "The symbols in the picture (🎣🚣‍♂️🌊) together describe the situation 'fishing', which is the correct answer."
+    },
+    {
+     "id": "C-05",
+     "number": 5,
+     "category": "word_meaning",
+     "categoryLabel": "Word Meaning from Picture/Context",
+     "prompt": "Look at the picture below: 🐘\n\nWhat is the correct English word for this picture?",
+     "options": [
+      "giraffe",
+      "monkey",
+      "tiger",
+      "elephant"
+     ],
+     "correctIndex": 3,
+     "explanation": "The picture (🐘) shows something that is called 'elephant' in English."
+    },
+    {
+     "id": "C-06",
+     "number": 6,
+     "category": "logic",
+     "categoryLabel": "Solving English Logic Problems",
+     "prompt": "Which number comes next: 100, 90, 80, __ ?",
+     "options": [
+      "75",
+      "60",
+      "70",
+      "85"
+     ],
+     "correctIndex": 2,
+     "explanation": "Based on the pattern/logic in the question, the correct answer is '70'."
+    },
+    {
+     "id": "C-07",
+     "number": 7,
+     "category": "situation",
+     "categoryLabel": "Solving Simple Situational Problems",
+     "prompt": "Situation: Vina finds a wallet on the floor at school.\n\nWhat should she do?",
+     "options": [
+      "throw it away",
+      "give it to the teacher",
+      "keep it",
+      "hide it"
+     ],
+     "correctIndex": 1,
+     "explanation": "The most appropriate and polite response/action for this situation is: \"give it to the teacher\"."
+    },
+    {
+     "id": "C-08",
+     "number": 8,
+     "category": "word_meaning",
+     "categoryLabel": "Word Meaning from Picture/Context",
+     "prompt": "Look at the picture below: 🐢\n\nWhat is the correct English word for this picture?",
+     "options": [
+      "snail",
+      "frog",
+      "lizard",
+      "turtle"
+     ],
+     "correctIndex": 3,
+     "explanation": "The picture (🐢) shows something that is called 'turtle' in English."
+    },
+    {
+     "id": "C-09",
+     "number": 9,
+     "category": "categorize",
+     "categoryLabel": "Classifying Vocabulary by Category",
+     "prompt": "Which word does NOT belong to the same group as the others?\n\nhappy, sad, angry, table",
+     "options": [
+      "table",
+      "happy",
+      "sad",
+      "angry"
+     ],
+     "correctIndex": 0,
+     "explanation": "The word 'table' belongs to a different category from the other words in the group."
+    },
+    {
+     "id": "C-10",
+     "number": 10,
+     "category": "word_meaning",
+     "categoryLabel": "Word Meaning from Picture/Context",
+     "prompt": "Look at the picture below: 🧊\n\nWhat is the correct English word for this picture?",
+     "options": [
+      "snow",
+      "stone",
+      "water",
+      "ice"
+     ],
+     "correctIndex": 3,
+     "explanation": "The picture (🧊) shows something that is called 'ice' in English."
+    },
+    {
+     "id": "C-11",
+     "number": 11,
+     "category": "logic",
+     "categoryLabel": "Solving English Logic Problems",
+     "prompt": "If today is Tuesday, what day was it yesterday?",
+     "options": [
+      "Monday",
+      "Sunday",
+      "Wednesday",
+      "Thursday"
+     ],
+     "correctIndex": 0,
+     "explanation": "Based on the pattern/logic in the question, the correct answer is 'Monday'."
+    },
+    {
+     "id": "C-12",
+     "number": 12,
+     "category": "instruction",
+     "categoryLabel": "Interpreting Simple Instructions",
+     "prompt": "Read the following instruction!\n\"First water the plant, then place it near the window.\"\n\nWhere does the plant go?",
+     "options": [
+      "under the bed",
+      "in the fridge",
+      "in the closet",
+      "near the window"
+     ],
+     "correctIndex": 3,
+     "explanation": "According to the instruction given, the correct answer is 'near the window'."
+    },
+    {
+     "id": "C-13",
+     "number": 13,
+     "category": "sequence",
+     "categoryLabel": "Sequencing a Simple Story",
+     "prompt": "Put the following steps of 'Visiting the doctor' into the correct order!\n\nP. The nurse checks your temperature\nQ. You get some medicine\nR. The doctor examines you\nS. Wait in the waiting room\n\nWhich order is correct?",
+     "options": [
+      "P-R-S-Q",
+      "S-Q-P-R",
+      "S-P-Q-R",
+      "S-P-R-Q"
+     ],
+     "correctIndex": 3,
+     "explanation": "The logical order for 'Visiting the doctor' is: Wait in the waiting room -> The nurse checks your temperature -> The doctor examines you -> You get some medicine. So the correct label order is S-P-R-Q."
+    },
+    {
+     "id": "C-14",
+     "number": 14,
+     "category": "context_meaning",
+     "categoryLabel": "Word Meaning from Simple Context",
+     "prompt": "Look at the following sentence!\n\"The dessert was SCRUMPTIOUS, so everyone finished their plates quickly.\"\n\nWhat does the word \"SCRUMPTIOUS\" mean in this sentence?",
+     "options": [
+      "very delicious",
+      "very plain",
+      "very small",
+      "very cold"
+     ],
+     "correctIndex": 0,
+     "explanation": "In the context of this sentence, the word 'SCRUMPTIOUS' means 'very delicious'."
+    },
+    {
+     "id": "C-15",
+     "number": 15,
+     "category": "function_match",
+     "categoryLabel": "Matching Words to Picture/Function",
+     "prompt": "What do we use to hang clothes to dry?",
+     "options": [
+      "box",
+      "clothesline",
+      "bag",
+      "basket"
+     ],
+     "correctIndex": 1,
+     "explanation": "The correct item used to hang clothes to dry is 'clothesline'."
+    },
+    {
+     "id": "C-16",
+     "number": 16,
+     "category": "situation",
+     "categoryLabel": "Solving Simple Situational Problems",
+     "prompt": "Situation: Rio wants to know what time the movie starts.\n\nWhat should he ask?",
+     "options": [
+      "Movie start what time it?",
+      "Is movie start?",
+      "What time does the movie start?",
+      "Time movie start?"
+     ],
+     "correctIndex": 2,
+     "explanation": "The most appropriate and polite response/action for this situation is: \"What time does the movie start?\"."
+    },
+    {
+     "id": "C-17",
+     "number": 17,
+     "category": "categorize",
+     "categoryLabel": "Classifying Vocabulary by Category",
+     "prompt": "Which word does NOT belong to the same group as the others?\n\nred, blue, green, happy",
+     "options": [
+      "blue",
+      "green",
+      "happy",
+      "red"
+     ],
+     "correctIndex": 2,
+     "explanation": "The word 'happy' belongs to a different category from the other words in the group."
+    },
+    {
+     "id": "C-18",
+     "number": 18,
+     "category": "instruction",
+     "categoryLabel": "Interpreting Simple Instructions",
+     "prompt": "Read the following instruction!\n\"Walk quietly into the library and choose a book from the shelf.\"\n\nHow should you walk?",
+     "options": [
+      "quickly and loudly",
+      "loudly",
+      "slowly only",
+      "quietly"
+     ],
+     "correctIndex": 3,
+     "explanation": "According to the instruction given, the correct answer is 'quietly'."
+    },
+    {
+     "id": "C-19",
+     "number": 19,
+     "category": "categorize",
+     "categoryLabel": "Classifying Vocabulary by Category",
+     "prompt": "Which word does NOT belong to the same group as the others?\n\ncat, dog, bird, table",
+     "options": [
+      "table",
+      "dog",
+      "bird",
+      "cat"
+     ],
+     "correctIndex": 0,
+     "explanation": "The word 'table' belongs to a different category from the other words in the group."
+    },
+    {
+     "id": "C-20",
+     "number": 20,
+     "category": "function_match",
+     "categoryLabel": "Matching Words to Picture/Function",
+     "prompt": "What do we use to cook rice?",
+     "options": [
+      "pot",
+      "cup",
+      "spoon",
+      "plate"
+     ],
+     "correctIndex": 0,
+     "explanation": "The correct item used to cook rice is 'pot'."
+    },
+    {
+     "id": "C-21",
+     "number": 21,
+     "category": "instruction",
+     "categoryLabel": "Interpreting Simple Instructions",
+     "prompt": "Read the following instruction!\n\"Raise your hand if you know the answer, then wait to be called.\"\n\nWhat should you do after raising your hand?",
+     "options": [
+      "sit down",
+      "leave the room",
+      "shout the answer",
+      "wait to be called"
+     ],
+     "correctIndex": 3,
+     "explanation": "According to the instruction given, the correct answer is 'wait to be called'."
+    },
+    {
+     "id": "C-22",
+     "number": 22,
+     "category": "sequence",
+     "categoryLabel": "Sequencing a Simple Story",
+     "prompt": "Put the following steps of 'Riding a bicycle' into the correct order!\n\nP. Wear a helmet\nQ. Sit on the bicycle\nR. Ride to the park\nS. Push the pedals\n\nWhich order is correct?",
+     "options": [
+      "P-Q-S-R",
+      "P-S-Q-R",
+      "Q-S-R-P",
+      "Q-P-S-R"
+     ],
+     "correctIndex": 0,
+     "explanation": "The logical order for 'Riding a bicycle' is: Wear a helmet -> Sit on the bicycle -> Push the pedals -> Ride to the park. So the correct label order is P-Q-S-R."
+    },
+    {
+     "id": "C-23",
+     "number": 23,
+     "category": "function_match",
+     "categoryLabel": "Matching Words to Picture/Function",
+     "prompt": "What do we use to brush your teeth?",
+     "options": [
+      "towel",
+      "spoon",
+      "comb",
+      "toothbrush"
+     ],
+     "correctIndex": 3,
+     "explanation": "The correct item used to brush your teeth is 'toothbrush'."
+    },
+    {
+     "id": "C-24",
+     "number": 24,
+     "category": "logic",
+     "categoryLabel": "Solving English Logic Problems",
+     "prompt": "Which letter comes right before 'M' in the alphabet?",
+     "options": [
+      "L",
+      "O",
+      "K",
+      "N"
+     ],
+     "correctIndex": 0,
+     "explanation": "Based on the pattern/logic in the question, the correct answer is 'L'."
+    },
+    {
+     "id": "C-25",
+     "number": 25,
+     "category": "picture_info",
+     "categoryLabel": "Interpreting Information from a Picture",
+     "prompt": "Look at the picture below: 📖🛏️🌙\n\nWhat is happening before sleep?",
+     "options": [
+      "eating dinner",
+      "taking a bath",
+      "playing outside",
+      "reading a book"
+     ],
+     "correctIndex": 3,
+     "explanation": "The symbols in the picture (📖🛏️🌙) together describe the situation 'reading a book', which is the correct answer."
+    },
+    {
+     "id": "C-26",
+     "number": 26,
+     "category": "reading",
+     "categoryLabel": "Finding Key Information from a Text",
+     "prompt": "Read the following text!\n\"Fajar keeps a red kite in his room. He flies it in the park on windy days.\"\n\nWhen does Fajar fly his kite?",
+     "options": [
+      "on rainy days",
+      "on windy days",
+      "on cold days",
+      "on hot days"
+     ],
+     "correctIndex": 1,
+     "explanation": "According to the text, the information clearly stated is 'on windy days'."
+    },
+    {
+     "id": "C-27",
+     "number": 27,
+     "category": "reading",
+     "categoryLabel": "Finding Key Information from a Text",
+     "prompt": "Read the following text!\n\"The little duck follows its mother across the pond every afternoon.\"\n\nWhat does the little duck do?",
+     "options": [
+      "follows its mother across the pond",
+      "hides in the grass",
+      "flies away",
+      "swims alone"
+     ],
+     "correctIndex": 0,
+     "explanation": "According to the text, the information clearly stated is 'follows its mother across the pond'."
+    },
+    {
+     "id": "C-28",
+     "number": 28,
+     "category": "picture_info",
+     "categoryLabel": "Interpreting Information from a Picture",
+     "prompt": "Look at the picture below: 🧁🎂🕯️\n\nWhat is being celebrated?",
+     "options": [
+      "a wedding",
+      "a graduation",
+      "a birthday",
+      "a holiday"
+     ],
+     "correctIndex": 2,
+     "explanation": "The symbols in the picture (🧁🎂🕯️) together describe the situation 'a birthday', which is the correct answer."
+    },
+    {
+     "id": "C-29",
+     "number": 29,
+     "category": "sequence",
+     "categoryLabel": "Sequencing a Simple Story",
+     "prompt": "Put the following steps of 'Brushing teeth' into the correct order!\n\nP. Brush for two minutes\nQ. Put toothpaste on it\nR. Wet the toothbrush\nS. Rinse the mouth\n\nWhich order is correct?",
+     "options": [
+      "S-P-Q-R",
+      "P-Q-R-S",
+      "R-Q-P-S",
+      "S-P-R-Q"
+     ],
+     "correctIndex": 2,
+     "explanation": "The logical order for 'Brushing teeth' is: Wet the toothbrush -> Put toothpaste on it -> Brush for two minutes -> Rinse the mouth. So the correct label order is R-Q-P-S."
+    },
+    {
+     "id": "C-30",
+     "number": 30,
+     "category": "context_meaning",
+     "categoryLabel": "Word Meaning from Simple Context",
+     "prompt": "Look at the following sentence!\n\"The classroom was SPOTLESS after the students cleaned it.\"\n\nWhat does the word \"SPOTLESS\" mean in this sentence?",
+     "options": [
+      "very clean",
+      "very dirty",
+      "very small",
+      "very cold"
+     ],
+     "correctIndex": 0,
+     "explanation": "In the context of this sentence, the word 'SPOTLESS' means 'very clean'."
+    }
+   ]
+  },
+  {
+   "id": "D",
+   "name": "Package D",
+   "questions": [
+    {
+     "id": "D-01",
+     "number": 1,
+     "category": "context_meaning",
+     "categoryLabel": "Word Meaning from Simple Context",
+     "prompt": "Look at the following sentence!\n\"The magician's trick left the audience feeling AMAZED.\"\n\nWhat does the word \"AMAZED\" mean in this sentence?",
+     "options": [
+      "very sleepy",
+      "very surprised",
+      "very bored",
+      "very sad"
+     ],
+     "correctIndex": 1,
+     "explanation": "In the context of this sentence, the word 'AMAZED' means 'very surprised'."
+    },
+    {
+     "id": "D-02",
+     "number": 2,
+     "category": "situation",
+     "categoryLabel": "Solving Simple Situational Problems",
+     "prompt": "Situation: Eko wants to borrow a book from the library.\n\nWhat should he do first?",
+     "options": [
+      "hide the book in his bag",
+      "tear the book",
+      "ask the librarian and show his library card",
+      "take the book without asking"
+     ],
+     "correctIndex": 2,
+     "explanation": "The most appropriate and polite response/action for this situation is: \"ask the librarian and show his library card\"."
+    },
+    {
+     "id": "D-03",
+     "number": 3,
+     "category": "categorize",
+     "categoryLabel": "Classifying Vocabulary by Category",
+     "prompt": "Which word does NOT belong to the same group as the others?\n\nMonday, Tuesday, January, Friday",
+     "options": [
+      "Monday",
+      "Tuesday",
+      "January",
+      "Friday"
+     ],
+     "correctIndex": 2,
+     "explanation": "The word 'January' belongs to a different category from the other words in the group."
+    },
+    {
+     "id": "D-04",
+     "number": 4,
+     "category": "function_match",
+     "categoryLabel": "Matching Words to Picture/Function",
+     "prompt": "What do we use to carry water?",
+     "options": [
+      "bag",
+      "bucket",
+      "box",
+      "basket"
+     ],
+     "correctIndex": 1,
+     "explanation": "The correct item used to carry water is 'bucket'."
+    },
+    {
+     "id": "D-05",
+     "number": 5,
+     "category": "reading",
+     "categoryLabel": "Finding Key Information from a Text",
+     "prompt": "Read the following text!\n\"Every Friday, Dimas and his friends play football after school.\"\n\nWhen do Dimas and his friends play football?",
+     "options": [
+      "every Friday after school",
+      "every morning",
+      "every weekend",
+      "every Monday"
+     ],
+     "correctIndex": 0,
+     "explanation": "According to the text, the information clearly stated is 'every Friday after school'."
+    },
+    {
+     "id": "D-06",
+     "number": 6,
+     "category": "picture_info",
+     "categoryLabel": "Interpreting Information from a Picture",
+     "prompt": "Look at the picture below: 🩹🏥👩‍⚕️\n\nWhere is this?",
+     "options": [
+      "at the zoo",
+      "at school",
+      "at the market",
+      "at the hospital"
+     ],
+     "correctIndex": 3,
+     "explanation": "The symbols in the picture (🩹🏥👩‍⚕️) together describe the situation 'at the hospital', which is the correct answer."
+    },
+    {
+     "id": "D-07",
+     "number": 7,
+     "category": "word_meaning",
+     "categoryLabel": "Word Meaning from Picture/Context",
+     "prompt": "Look at the picture below: 🍉\n\nWhat is the correct English word for this picture?",
+     "options": [
+      "watermelon",
+      "pineapple",
+      "papaya",
+      "mango"
+     ],
+     "correctIndex": 0,
+     "explanation": "The picture (🍉) shows something that is called 'watermelon' in English."
+    },
+    {
+     "id": "D-08",
+     "number": 8,
+     "category": "situation",
+     "categoryLabel": "Solving Simple Situational Problems",
+     "prompt": "Situation: Sari's friend is being teased by other kids.\n\nWhat should Sari do?",
+     "options": [
+      "watch and laugh",
+      "walk away and do nothing",
+      "tell a teacher or help her friend",
+      "join in teasing"
+     ],
+     "correctIndex": 2,
+     "explanation": "The most appropriate and polite response/action for this situation is: \"tell a teacher or help her friend\"."
+    },
+    {
+     "id": "D-09",
+     "number": 9,
+     "category": "instruction",
+     "categoryLabel": "Interpreting Simple Instructions",
+     "prompt": "Read the following instruction!\n\"Stand up, raise your right hand, then touch your left ear.\"\n\nWhat should you touch last?",
+     "options": [
+      "your nose",
+      "your right hand",
+      "the floor",
+      "your left ear"
+     ],
+     "correctIndex": 3,
+     "explanation": "According to the instruction given, the correct answer is 'your left ear'."
+    },
+    {
+     "id": "D-10",
+     "number": 10,
+     "category": "instruction",
+     "categoryLabel": "Interpreting Simple Instructions",
+     "prompt": "Read the following instruction!\n\"Place the small box inside the big box, then close the lid.\"\n\nWhich box goes inside?",
+     "options": [
+      "the small box",
+      "neither box",
+      "both boxes",
+      "the big box"
+     ],
+     "correctIndex": 0,
+     "explanation": "According to the instruction given, the correct answer is 'the small box'."
+    },
+    {
+     "id": "D-11",
+     "number": 11,
+     "category": "function_match",
+     "categoryLabel": "Matching Words to Picture/Function",
+     "prompt": "What do we use to water the plants?",
+     "options": [
+      "watering can",
+      "umbrella",
+      "teapot",
+      "kettle"
+     ],
+     "correctIndex": 0,
+     "explanation": "The correct item used to water the plants is 'watering can'."
+    },
+    {
+     "id": "D-12",
+     "number": 12,
+     "category": "logic",
+     "categoryLabel": "Solving English Logic Problems",
+     "prompt": "Riddle: I have four legs and I bark. What am I?",
+     "options": [
+      "a dog",
+      "a cat",
+      "a bird",
+      "a fish"
+     ],
+     "correctIndex": 0,
+     "explanation": "Based on the pattern/logic in the question, the correct answer is 'a dog'."
+    },
+    {
+     "id": "D-13",
+     "number": 13,
+     "category": "word_meaning",
+     "categoryLabel": "Word Meaning from Picture/Context",
+     "prompt": "Look at the picture below: 🐐\n\nWhat is the correct English word for this picture?",
+     "options": [
+      "sheep",
+      "goat",
+      "cow",
+      "deer"
+     ],
+     "correctIndex": 1,
+     "explanation": "The picture (🐐) shows something that is called 'goat' in English."
+    },
+    {
+     "id": "D-14",
+     "number": 14,
+     "category": "sequence",
+     "categoryLabel": "Sequencing a Simple Story",
+     "prompt": "Put the following steps of 'Making a phone call' into the correct order!\n\nP. Dial the number\nQ. Talk to them\nR. Wait for the person to answer\nS. Pick up the phone\n\nWhich order is correct?",
+     "options": [
+      "R-P-Q-S",
+      "Q-P-R-S",
+      "P-Q-S-R",
+      "S-P-R-Q"
+     ],
+     "correctIndex": 3,
+     "explanation": "The logical order for 'Making a phone call' is: Pick up the phone -> Dial the number -> Wait for the person to answer -> Talk to them. So the correct label order is S-P-R-Q."
+    },
+    {
+     "id": "D-15",
+     "number": 15,
+     "category": "function_match",
+     "categoryLabel": "Matching Words to Picture/Function",
+     "prompt": "What do we use to sweep leaves in the garden?",
+     "options": [
+      "hoe",
+      "broom",
+      "rake",
+      "shovel"
+     ],
+     "correctIndex": 2,
+     "explanation": "The correct item used to sweep leaves in the garden is 'rake'."
+    },
+    {
+     "id": "D-16",
+     "number": 16,
+     "category": "word_meaning",
+     "categoryLabel": "Word Meaning from Picture/Context",
+     "prompt": "Look at the picture below: 🥕\n\nWhat is the correct English word for this picture?",
+     "options": [
+      "carrot",
+      "potato",
+      "radish",
+      "onion"
+     ],
+     "correctIndex": 0,
+     "explanation": "The picture (🥕) shows something that is called 'carrot' in English."
+    },
+    {
+     "id": "D-17",
+     "number": 17,
+     "category": "logic",
+     "categoryLabel": "Solving English Logic Problems",
+     "prompt": "All cats have tails. Whiskers is a cat. Does Whiskers have a tail?",
+     "options": [
+      "Cannot be told",
+      "Yes",
+      "Maybe",
+      "No"
+     ],
+     "correctIndex": 1,
+     "explanation": "Based on the pattern/logic in the question, the correct answer is 'Yes'."
+    },
+    {
+     "id": "D-18",
+     "number": 18,
+     "category": "categorize",
+     "categoryLabel": "Classifying Vocabulary by Category",
+     "prompt": "Which word does NOT belong to the same group as the others?\n\ncircle, square, triangle, purple",
+     "options": [
+      "square",
+      "circle",
+      "purple",
+      "triangle"
+     ],
+     "correctIndex": 2,
+     "explanation": "The word 'purple' belongs to a different category from the other words in the group."
+    },
+    {
+     "id": "D-19",
+     "number": 19,
+     "category": "reading",
+     "categoryLabel": "Finding Key Information from a Text",
+     "prompt": "Read the following text!\n\"Arka's dog likes to chase the ball in the yard, but it never catches it.\"\n\nWhat does Arka's dog like to do?",
+     "options": [
+      "chase the ball",
+      "bury the ball",
+      "eat the ball",
+      "sleep near the ball"
+     ],
+     "correctIndex": 0,
+     "explanation": "According to the text, the information clearly stated is 'chase the ball'."
+    },
+    {
+     "id": "D-20",
+     "number": 20,
+     "category": "reading",
+     "categoryLabel": "Finding Key Information from a Text",
+     "prompt": "Read the following text!\n\"Budi goes to school by bicycle every day. He always wears a blue helmet for safety.\"\n\nHow does Budi go to school?",
+     "options": [
+      "on foot",
+      "by bicycle",
+      "by bus",
+      "by car"
+     ],
+     "correctIndex": 1,
+     "explanation": "According to the text, the information clearly stated is 'by bicycle'."
+    },
+    {
+     "id": "D-21",
+     "number": 21,
+     "category": "context_meaning",
+     "categoryLabel": "Word Meaning from Simple Context",
+     "prompt": "Look at the following sentence!\n\"The old house looked ABANDONED, with broken windows and no lights.\"\n\nWhat does the word \"ABANDONED\" mean in this sentence?",
+     "options": [
+      "left empty and unused",
+      "very clean",
+      "very new",
+      "very colorful"
+     ],
+     "correctIndex": 0,
+     "explanation": "In the context of this sentence, the word 'ABANDONED' means 'left empty and unused'."
+    },
+    {
+     "id": "D-22",
+     "number": 22,
+     "category": "picture_info",
+     "categoryLabel": "Interpreting Information from a Picture",
+     "prompt": "Look at the picture below: 🎨🖌️🖼️\n\nWhat is the child doing?",
+     "options": [
+      "reading a book",
+      "painting a picture",
+      "writing a letter",
+      "playing music"
+     ],
+     "correctIndex": 1,
+     "explanation": "The symbols in the picture (🎨🖌️🖼️) together describe the situation 'painting a picture', which is the correct answer."
+    },
+    {
+     "id": "D-23",
+     "number": 23,
+     "category": "sequence",
+     "categoryLabel": "Sequencing a Simple Story",
+     "prompt": "Put the following steps of 'Feeding a pet' into the correct order!\n\nP. Fill it with food\nQ. Watch the pet eat\nR. Get the pet's bowl\nS. Place the bowl on the floor\n\nWhich order is correct?",
+     "options": [
+      "R-S-P-Q",
+      "S-Q-R-P",
+      "R-P-S-Q",
+      "S-P-R-Q"
+     ],
+     "correctIndex": 2,
+     "explanation": "The logical order for 'Feeding a pet' is: Get the pet's bowl -> Fill it with food -> Place the bowl on the floor -> Watch the pet eat. So the correct label order is R-P-S-Q."
+    },
+    {
+     "id": "D-24",
+     "number": 24,
+     "category": "categorize",
+     "categoryLabel": "Classifying Vocabulary by Category",
+     "prompt": "Which word does NOT belong to the same group as the others?\n\nchair, table, bed, apple",
+     "options": [
+      "bed",
+      "chair",
+      "apple",
+      "table"
+     ],
+     "correctIndex": 2,
+     "explanation": "The word 'apple' belongs to a different category from the other words in the group."
+    },
+    {
+     "id": "D-25",
+     "number": 25,
+     "category": "situation",
+     "categoryLabel": "Solving Simple Situational Problems",
+     "prompt": "Situation: It is raining and Sinta forgot her umbrella.\n\nWhat should she do?",
+     "options": [
+      "take her friend's umbrella without asking",
+      "wait until the rain stops or borrow an umbrella",
+      "stay angry all day",
+      "go out and get wet on purpose"
+     ],
+     "correctIndex": 1,
+     "explanation": "The most appropriate and polite response/action for this situation is: \"wait until the rain stops or borrow an umbrella\"."
+    },
+    {
+     "id": "D-26",
+     "number": 26,
+     "category": "context_meaning",
+     "categoryLabel": "Word Meaning from Simple Context",
+     "prompt": "Look at the following sentence!\n\"The champion felt PROUD after winning the race.\"\n\nWhat does the word \"PROUD\" mean in this sentence?",
+     "options": [
+      "feeling ashamed",
+      "feeling tired",
+      "feeling scared",
+      "pleased with an achievement"
+     ],
+     "correctIndex": 3,
+     "explanation": "In the context of this sentence, the word 'PROUD' means 'pleased with an achievement'."
+    },
+    {
+     "id": "D-27",
+     "number": 27,
+     "category": "logic",
+     "categoryLabel": "Solving English Logic Problems",
+     "prompt": "What comes next in rainbow order: red, orange, yellow, __ ?",
+     "options": [
+      "blue",
+      "purple",
+      "green",
+      "pink"
+     ],
+     "correctIndex": 2,
+     "explanation": "Based on the pattern/logic in the question, the correct answer is 'green'."
+    },
+    {
+     "id": "D-28",
+     "number": 28,
+     "category": "instruction",
+     "categoryLabel": "Interpreting Simple Instructions",
+     "prompt": "Read the following instruction!\n\"Turn the key to the right to lock the door.\"\n\nWhich direction do you turn the key?",
+     "options": [
+      "to the right",
+      "downward",
+      "upward",
+      "to the left"
+     ],
+     "correctIndex": 0,
+     "explanation": "According to the instruction given, the correct answer is 'to the right'."
+    },
+    {
+     "id": "D-29",
+     "number": 29,
+     "category": "sequence",
+     "categoryLabel": "Sequencing a Simple Story",
+     "prompt": "Put the following steps of 'Washing a car' into the correct order!\n\nP. Scrub the car with soap\nQ. Fill a bucket with water\nR. Rinse with clean water\nS. Dry with a cloth\n\nWhich order is correct?",
+     "options": [
+      "R-P-S-Q",
+      "Q-P-R-S",
+      "S-Q-R-P",
+      "S-R-P-Q"
+     ],
+     "correctIndex": 1,
+     "explanation": "The logical order for 'Washing a car' is: Fill a bucket with water -> Scrub the car with soap -> Rinse with clean water -> Dry with a cloth. So the correct label order is Q-P-R-S."
+    },
+    {
+     "id": "D-30",
+     "number": 30,
+     "category": "picture_info",
+     "categoryLabel": "Interpreting Information from a Picture",
+     "prompt": "Look at the picture below: 🛒🍞🥛\n\nWhere is this?",
+     "options": [
+      "at the hospital",
+      "at the zoo",
+      "at the library",
+      "at the supermarket"
+     ],
+     "correctIndex": 3,
+     "explanation": "The symbols in the picture (🛒🍞🥛) together describe the situation 'at the supermarket', which is the correct answer."
+    }
+   ]
+  },
+  {
+   "id": "E",
+   "name": "Package E",
+   "questions": [
+    {
+     "id": "E-01",
+     "number": 1,
+     "category": "situation",
+     "categoryLabel": "Solving Simple Situational Problems",
+     "prompt": "Situation: Andi meets his teacher in the morning.\n\nWhat should Andi say?",
+     "options": [
+      "Good morning, Ms. Rina.",
+      "Goodbye.",
+      "Good night.",
+      "See you."
+     ],
+     "correctIndex": 0,
+     "explanation": "The most appropriate and polite response/action for this situation is: \"Good morning, Ms. Rina.\"."
+    },
+    {
+     "id": "E-02",
+     "number": 2,
+     "category": "reading",
+     "categoryLabel": "Finding Key Information from a Text",
+     "prompt": "Read the following text!\n\"The class visits the zoo and sees elephants, monkeys, and giraffes.\"\n\nWhere does the class go?",
+     "options": [
+      "to the museum",
+      "to the farm",
+      "to the zoo",
+      "to the beach"
+     ],
+     "correctIndex": 2,
+     "explanation": "According to the text, the information clearly stated is 'to the zoo'."
+    },
+    {
+     "id": "E-03",
+     "number": 3,
+     "category": "logic",
+     "categoryLabel": "Solving English Logic Problems",
+     "prompt": "Box A is bigger than Box B. Box B is bigger than Box C. Which box is the smallest?",
+     "options": [
+      "Box B",
+      "Box C",
+      "Box A",
+      "cannot be told"
+     ],
+     "correctIndex": 1,
+     "explanation": "Based on the pattern/logic in the question, the correct answer is 'Box C'."
+    },
+    {
+     "id": "E-04",
+     "number": 4,
+     "category": "sequence",
+     "categoryLabel": "Sequencing a Simple Story",
+     "prompt": "Put the following steps of 'Making tea' into the correct order!\n\nP. Pour hot water into the cup\nQ. Boil water\nR. Put a tea bag in a cup\nS. Stir and drink\n\nWhich order is correct?",
+     "options": [
+      "P-Q-R-S",
+      "Q-R-P-S",
+      "S-Q-P-R",
+      "S-R-P-Q"
+     ],
+     "correctIndex": 1,
+     "explanation": "The logical order for 'Making tea' is: Boil water -> Put a tea bag in a cup -> Pour hot water into the cup -> Stir and drink. So the correct label order is Q-R-P-S."
+    },
+    {
+     "id": "E-05",
+     "number": 5,
+     "category": "logic",
+     "categoryLabel": "Solving English Logic Problems",
+     "prompt": "Which number is the odd one out: 3, 6, 9, 10?",
+     "options": [
+      "3",
+      "10",
+      "9",
+      "6"
+     ],
+     "correctIndex": 1,
+     "explanation": "Based on the pattern/logic in the question, the correct answer is '10'."
+    },
+    {
+     "id": "E-06",
+     "number": 6,
+     "category": "word_meaning",
+     "categoryLabel": "Word Meaning from Picture/Context",
+     "prompt": "Look at the picture below: 🦴\n\nWhat is the correct English word for this picture?",
+     "options": [
+      "claw",
+      "horn",
+      "bone",
+      "tooth"
+     ],
+     "correctIndex": 2,
+     "explanation": "The picture (🦴) shows something that is called 'bone' in English."
+    },
+    {
+     "id": "E-07",
+     "number": 7,
+     "category": "word_meaning",
+     "categoryLabel": "Word Meaning from Picture/Context",
+     "prompt": "Look at the picture below: 🪟\n\nWhat is the correct English word for this picture?",
+     "options": [
+      "door",
+      "window",
+      "wall",
+      "roof"
+     ],
+     "correctIndex": 1,
+     "explanation": "The picture (🪟) shows something that is called 'window' in English."
+    },
+    {
+     "id": "E-08",
+     "number": 8,
+     "category": "categorize",
+     "categoryLabel": "Classifying Vocabulary by Category",
+     "prompt": "Which word does NOT belong to the same group as the others?\n\npilot, doctor, teacher, river",
+     "options": [
+      "doctor",
+      "pilot",
+      "river",
+      "teacher"
+     ],
+     "correctIndex": 2,
+     "explanation": "The word 'river' belongs to a different category from the other words in the group."
+    },
+    {
+     "id": "E-09",
+     "number": 9,
+     "category": "picture_info",
+     "categoryLabel": "Interpreting Information from a Picture",
+     "prompt": "Look at the picture below: ⚽👦👦🥅\n\nWhat game are they playing?",
+     "options": [
+      "football",
+      "basketball",
+      "tennis",
+      "swimming"
+     ],
+     "correctIndex": 0,
+     "explanation": "The symbols in the picture (⚽👦👦🥅) together describe the situation 'football', which is the correct answer."
+    },
+    {
+     "id": "E-10",
+     "number": 10,
+     "category": "categorize",
+     "categoryLabel": "Classifying Vocabulary by Category",
+     "prompt": "Which word does NOT belong to the same group as the others?\n\nlion, tiger, elephant, rose",
+     "options": [
+      "tiger",
+      "rose",
+      "elephant",
+      "lion"
+     ],
+     "correctIndex": 1,
+     "explanation": "The word 'rose' belongs to a different category from the other words in the group."
+    },
+    {
+     "id": "E-11",
+     "number": 11,
+     "category": "sequence",
+     "categoryLabel": "Sequencing a Simple Story",
+     "prompt": "Put the following steps of 'Washing hands' into the correct order!\n\nP. Rinse and dry hands\nQ. Rub hands together\nR. Put soap on hands\nS. Turn on the tap\n\nWhich order is correct?",
+     "options": [
+      "P-S-R-Q",
+      "Q-S-P-R",
+      "S-Q-P-R",
+      "S-R-Q-P"
+     ],
+     "correctIndex": 3,
+     "explanation": "The logical order for 'Washing hands' is: Turn on the tap -> Put soap on hands -> Rub hands together -> Rinse and dry hands. So the correct label order is S-R-Q-P."
+    },
+    {
+     "id": "E-12",
+     "number": 12,
+     "category": "reading",
+     "categoryLabel": "Finding Key Information from a Text",
+     "prompt": "Read the following text!\n\"Every morning, Kiki waters the small plant on her windowsill.\"\n\nWhere is Kiki's plant?",
+     "options": [
+      "on the table",
+      "in the garden",
+      "in the kitchen",
+      "on the windowsill"
+     ],
+     "correctIndex": 3,
+     "explanation": "According to the text, the information clearly stated is 'on the windowsill'."
+    },
+    {
+     "id": "E-13",
+     "number": 13,
+     "category": "function_match",
+     "categoryLabel": "Matching Words to Picture/Function",
+     "prompt": "What do we use to eat soup?",
+     "options": [
+      "spoon",
+      "knife",
+      "chopstick",
+      "fork"
+     ],
+     "correctIndex": 0,
+     "explanation": "The correct item used to eat soup is 'spoon'."
+    },
+    {
+     "id": "E-14",
+     "number": 14,
+     "category": "function_match",
+     "categoryLabel": "Matching Words to Picture/Function",
+     "prompt": "What do we use to measure length?",
+     "options": [
+      "ruler",
+      "clock",
+      "thermometer",
+      "scale"
+     ],
+     "correctIndex": 0,
+     "explanation": "The correct item used to measure length is 'ruler'."
+    },
+    {
+     "id": "E-15",
+     "number": 15,
+     "category": "word_meaning",
+     "categoryLabel": "Word Meaning from Picture/Context",
+     "prompt": "Look at the picture below: 🚂\n\nWhat is the correct English word for this picture?",
+     "options": [
+      "truck",
+      "train",
+      "bus",
+      "ship"
+     ],
+     "correctIndex": 1,
+     "explanation": "The picture (🚂) shows something that is called 'train' in English."
+    },
+    {
+     "id": "E-16",
+     "number": 16,
+     "category": "categorize",
+     "categoryLabel": "Classifying Vocabulary by Category",
+     "prompt": "Which word does NOT belong to the same group as the others?\n\ndog, cat, rabbit, shark",
+     "options": [
+      "shark",
+      "rabbit",
+      "dog",
+      "cat"
+     ],
+     "correctIndex": 0,
+     "explanation": "The word 'shark' belongs to a different category from the other words in the group."
+    },
+    {
+     "id": "E-17",
+     "number": 17,
+     "category": "instruction",
+     "categoryLabel": "Interpreting Simple Instructions",
+     "prompt": "Read the following instruction!\n\"Close the window, turn off the light, and lock the door before leaving.\"\n\nWhat is the last step?",
+     "options": [
+      "close the window",
+      "open the door",
+      "turn off the light",
+      "lock the door"
+     ],
+     "correctIndex": 3,
+     "explanation": "According to the instruction given, the correct answer is 'lock the door'."
+    },
+    {
+     "id": "E-18",
+     "number": 18,
+     "category": "context_meaning",
+     "categoryLabel": "Word Meaning from Simple Context",
+     "prompt": "Look at the following sentence!\n\"The little girl was SHY and hid behind her mother when strangers came.\"\n\nWhat does the word \"SHY\" mean in this sentence?",
+     "options": [
+      "feeling proud",
+      "feeling excited",
+      "feeling angry",
+      "feeling uncomfortable meeting new people"
+     ],
+     "correctIndex": 3,
+     "explanation": "In the context of this sentence, the word 'SHY' means 'feeling uncomfortable meeting new people'."
+    },
+    {
+     "id": "E-19",
+     "number": 19,
+     "category": "situation",
+     "categoryLabel": "Solving Simple Situational Problems",
+     "prompt": "Situation: Tia's pencil breaks during the exam.\n\nWhat should she do?",
+     "options": [
+      "cry loudly",
+      "quietly ask the teacher for another pencil",
+      "stop working and give up",
+      "borrow one without asking"
+     ],
+     "correctIndex": 1,
+     "explanation": "The most appropriate and polite response/action for this situation is: \"quietly ask the teacher for another pencil\"."
+    },
+    {
+     "id": "E-20",
+     "number": 20,
+     "category": "sequence",
+     "categoryLabel": "Sequencing a Simple Story",
+     "prompt": "Put the following steps of 'Making a fruit salad' into the correct order!\n\nP. Cut them into small pieces\nQ. Wash the fruits\nR. Mix them in a bowl\nS. Add a little honey\n\nWhich order is correct?",
+     "options": [
+      "R-Q-P-S",
+      "Q-P-R-S",
+      "R-P-S-Q",
+      "Q-R-P-S"
+     ],
+     "correctIndex": 1,
+     "explanation": "The logical order for 'Making a fruit salad' is: Wash the fruits -> Cut them into small pieces -> Mix them in a bowl -> Add a little honey. So the correct label order is Q-P-R-S."
+    },
+    {
+     "id": "E-21",
+     "number": 21,
+     "category": "reading",
+     "categoryLabel": "Finding Key Information from a Text",
+     "prompt": "Read the following text!\n\"The little boy is afraid of the dark, so he sleeps with a small lamp on.\"\n\nWhy does the boy sleep with a lamp on?",
+     "options": [
+      "because it is cold",
+      "because he is afraid of the dark",
+      "because he cannot sleep",
+      "because he likes light"
+     ],
+     "correctIndex": 1,
+     "explanation": "According to the text, the information clearly stated is 'because he is afraid of the dark'."
+    },
+    {
+     "id": "E-22",
+     "number": 22,
+     "category": "context_meaning",
+     "categoryLabel": "Word Meaning from Simple Context",
+     "prompt": "Look at the following sentence!\n\"The puppy was so PLAYFUL that it never stopped running around.\"\n\nWhat does the word \"PLAYFUL\" mean in this sentence?",
+     "options": [
+      "liking to have fun",
+      "liking to sleep",
+      "liking to hide",
+      "liking to eat"
+     ],
+     "correctIndex": 0,
+     "explanation": "In the context of this sentence, the word 'PLAYFUL' means 'liking to have fun'."
+    },
+    {
+     "id": "E-23",
+     "number": 23,
+     "category": "instruction",
+     "categoryLabel": "Interpreting Simple Instructions",
+     "prompt": "Read the following instruction!\n\"Walk to the door, turn left, and stop at the second window.\"\n\nWhere do you stop?",
+     "options": [
+      "at the second window",
+      "at the first window",
+      "at the third window",
+      "at the door"
+     ],
+     "correctIndex": 0,
+     "explanation": "According to the instruction given, the correct answer is 'at the second window'."
+    },
+    {
+     "id": "E-24",
+     "number": 24,
+     "category": "instruction",
+     "categoryLabel": "Interpreting Simple Instructions",
+     "prompt": "Read the following instruction!\n\"Say 'please' when you ask for something and 'thank you' when you receive it.\"\n\nWhat should you say when you receive something?",
+     "options": [
+      "excuse me",
+      "please",
+      "sorry",
+      "thank you"
+     ],
+     "correctIndex": 3,
+     "explanation": "According to the instruction given, the correct answer is 'thank you'."
+    },
+    {
+     "id": "E-25",
+     "number": 25,
+     "category": "situation",
+     "categoryLabel": "Solving Simple Situational Problems",
+     "prompt": "Situation: A stranger offers Nina candy on her way home.\n\nWhat should she do?",
+     "options": [
+      "politely refuse and walk away",
+      "take the candy",
+      "follow the stranger",
+      "talk to the stranger for a long time"
+     ],
+     "correctIndex": 0,
+     "explanation": "The most appropriate and polite response/action for this situation is: \"politely refuse and walk away\"."
+    },
+    {
+     "id": "E-26",
+     "number": 26,
+     "category": "picture_info",
+     "categoryLabel": "Interpreting Information from a Picture",
+     "prompt": "Look at the picture below: 🍽️🍗🥗👨‍🍳\n\nWhat is the man doing?",
+     "options": [
+      "reading a menu",
+      "cooking food",
+      "cleaning the floor",
+      "washing dishes"
+     ],
+     "correctIndex": 1,
+     "explanation": "The symbols in the picture (🍽️🍗🥗👨‍🍳) together describe the situation 'cooking food', which is the correct answer."
+    },
+    {
+     "id": "E-27",
+     "number": 27,
+     "category": "context_meaning",
+     "categoryLabel": "Word Meaning from Simple Context",
+     "prompt": "Look at the following sentence!\n\"The old bridge was ANCIENT, built hundreds of years ago.\"\n\nWhat does the word \"ANCIENT\" mean in this sentence?",
+     "options": [
+      "very small",
+      "very old",
+      "very strong",
+      "very new"
+     ],
+     "correctIndex": 1,
+     "explanation": "In the context of this sentence, the word 'ANCIENT' means 'very old'."
+    },
+    {
+     "id": "E-28",
+     "number": 28,
+     "category": "logic",
+     "categoryLabel": "Solving English Logic Problems",
+     "prompt": "If Monday is the 1st of the month, what date is Thursday?",
+     "options": [
+      "the 2nd",
+      "the 3rd",
+      "the 4th",
+      "the 5th"
+     ],
+     "correctIndex": 2,
+     "explanation": "Based on the pattern/logic in the question, the correct answer is 'the 4th'."
+    },
+    {
+     "id": "E-29",
+     "number": 29,
+     "category": "function_match",
+     "categoryLabel": "Matching Words to Picture/Function",
+     "prompt": "What do we use to dry your body after a bath?",
+     "options": [
+      "pillow",
+      "sheet",
+      "blanket",
+      "towel"
+     ],
+     "correctIndex": 3,
+     "explanation": "The correct item used to dry your body after a bath is 'towel'."
+    },
+    {
+     "id": "E-30",
+     "number": 30,
+     "category": "picture_info",
+     "categoryLabel": "Interpreting Information from a Picture",
+     "prompt": "Look at the picture below: 🚒🔥🏠\n\nWhat is happening?",
+     "options": [
+      "firefighters putting out a fire",
+      "a rainstorm",
+      "a school trip",
+      "a birthday party"
+     ],
+     "correctIndex": 0,
+     "explanation": "The symbols in the picture (🚒🔥🏠) together describe the situation 'firefighters putting out a fire', which is the correct answer."
+    }
+   ]
+  },
+  {
+   "id": "F",
+   "name": "Package F",
+   "questions": [
+    {
+     "id": "F-01",
+     "number": 1,
+     "category": "categorize",
+     "categoryLabel": "Classifying Vocabulary by Category",
+     "prompt": "Which word does NOT belong to the same group as the others?\n\none, two, three, blue",
+     "options": [
+      "one",
+      "three",
+      "blue",
+      "two"
+     ],
+     "correctIndex": 2,
+     "explanation": "The word 'blue' belongs to a different category from the other words in the group."
+    },
+    {
+     "id": "F-02",
+     "number": 2,
+     "category": "reading",
+     "categoryLabel": "Finding Key Information from a Text",
+     "prompt": "Read the following text!\n\"Dewi has three pencils in her bag: one red, one blue, and one green.\"\n\nHow many pencils does Dewi have?",
+     "options": [
+      "two",
+      "five",
+      "four",
+      "three"
+     ],
+     "correctIndex": 3,
+     "explanation": "According to the text, the information clearly stated is 'three'."
+    },
+    {
+     "id": "F-03",
+     "number": 3,
+     "category": "situation",
+     "categoryLabel": "Solving Simple Situational Problems",
+     "prompt": "Situation: The fire alarm rings at school.\n\nWhat should the students do?",
+     "options": [
+      "run and push each other",
+      "walk calmly outside following the teacher",
+      "ignore it",
+      "stay in the classroom"
+     ],
+     "correctIndex": 1,
+     "explanation": "The most appropriate and polite response/action for this situation is: \"walk calmly outside following the teacher\"."
+    },
+    {
+     "id": "F-04",
+     "number": 4,
+     "category": "context_meaning",
+     "categoryLabel": "Word Meaning from Simple Context",
+     "prompt": "Look at the following sentence!\n\"The teacher gave a BRIEF explanation before the test began.\"\n\nWhat does the word \"BRIEF\" mean in this sentence?",
+     "options": [
+      "long",
+      "short",
+      "boring",
+      "loud"
+     ],
+     "correctIndex": 1,
+     "explanation": "In the context of this sentence, the word 'BRIEF' means 'short'."
+    },
+    {
+     "id": "F-05",
+     "number": 5,
+     "category": "instruction",
+     "categoryLabel": "Interpreting Simple Instructions",
+     "prompt": "Read the following instruction!\n\"Put the blue block on the table. Put the red block on top of the blue block.\"\n\nWhich block is on top?",
+     "options": [
+      "both blocks",
+      "the blue block",
+      "the red block",
+      "neither block"
+     ],
+     "correctIndex": 2,
+     "explanation": "According to the instruction given, the correct answer is 'the red block'."
+    },
+    {
+     "id": "F-06",
+     "number": 6,
+     "category": "instruction",
+     "categoryLabel": "Interpreting Simple Instructions",
+     "prompt": "Read the following instruction!\n\"Put the plates on the table first, then place the spoons beside them.\"\n\nWhat comes first?",
+     "options": [
+      "the plates",
+      "the cups",
+      "the napkins",
+      "the spoons"
+     ],
+     "correctIndex": 0,
+     "explanation": "According to the instruction given, the correct answer is 'the plates'."
+    },
+    {
+     "id": "F-07",
+     "number": 7,
+     "category": "picture_info",
+     "categoryLabel": "Interpreting Information from a Picture",
+     "prompt": "Look at the picture below: 🎂🎈🎉👨‍👩‍👧\n\nWhat is the family celebrating?",
+     "options": [
+      "a rainy day",
+      "a birthday party",
+      "a school day",
+      "a football match"
+     ],
+     "correctIndex": 1,
+     "explanation": "The symbols in the picture (🎂🎈🎉👨‍👩‍👧) together describe the situation 'a birthday party', which is the correct answer."
+    },
+    {
+     "id": "F-08",
+     "number": 8,
+     "category": "logic",
+     "categoryLabel": "Solving English Logic Problems",
+     "prompt": "What comes next in the pattern: 2, 4, 6, 8, __ ?",
+     "options": [
+      "10",
+      "12",
+      "9",
+      "11"
+     ],
+     "correctIndex": 0,
+     "explanation": "Based on the pattern/logic in the question, the correct answer is '10'."
+    },
+    {
+     "id": "F-09",
+     "number": 9,
+     "category": "function_match",
+     "categoryLabel": "Matching Words to Picture/Function",
+     "prompt": "What do we use to see in the dark?",
+     "options": [
+      "umbrella",
+      "flashlight",
+      "fan",
+      "mirror"
+     ],
+     "correctIndex": 1,
+     "explanation": "The correct item used to see in the dark is 'flashlight'."
+    },
+    {
+     "id": "F-10",
+     "number": 10,
+     "category": "function_match",
+     "categoryLabel": "Matching Words to Picture/Function",
+     "prompt": "What do we use to call someone far away?",
+     "options": [
+      "letter",
+      "whistle",
+      "drum",
+      "telephone"
+     ],
+     "correctIndex": 3,
+     "explanation": "The correct item used to call someone far away is 'telephone'."
+    },
+    {
+     "id": "F-11",
+     "number": 11,
+     "category": "situation",
+     "categoryLabel": "Solving Simple Situational Problems",
+     "prompt": "Situation: Sisi wants to ask her friend to play together.\n\nWhat should she say?",
+     "options": [
+      "Would you like to play with me?",
+      "Play with me or else.",
+      "(say nothing)",
+      "You must play with me."
+     ],
+     "correctIndex": 0,
+     "explanation": "The most appropriate and polite response/action for this situation is: \"Would you like to play with me?\"."
+    },
+    {
+     "id": "F-12",
+     "number": 12,
+     "category": "logic",
+     "categoryLabel": "Solving English Logic Problems",
+     "prompt": "Tom is taller than Ben. Ben is taller than Sam. Who is the shortest?",
+     "options": [
+      "Sam",
+      "Ben",
+      "Tom",
+      "cannot be determined"
+     ],
+     "correctIndex": 0,
+     "explanation": "Based on the pattern/logic in the question, the correct answer is 'Sam'."
+    },
+    {
+     "id": "F-13",
+     "number": 13,
+     "category": "word_meaning",
+     "categoryLabel": "Word Meaning from Picture/Context",
+     "prompt": "Look at the picture below: 🥒\n\nWhat is the correct English word for this picture?",
+     "options": [
+      "cucumber",
+      "eggplant",
+      "pepper",
+      "zucchini"
+     ],
+     "correctIndex": 0,
+     "explanation": "The picture (🥒) shows something that is called 'cucumber' in English."
+    },
+    {
+     "id": "F-14",
+     "number": 14,
+     "category": "function_match",
+     "categoryLabel": "Matching Words to Picture/Function",
+     "prompt": "What do we use to cut vegetables?",
+     "options": [
+      "cup",
+      "spoon",
+      "knife",
+      "fork"
+     ],
+     "correctIndex": 2,
+     "explanation": "The correct item used to cut vegetables is 'knife'."
+    },
+    {
+     "id": "F-15",
+     "number": 15,
+     "category": "sequence",
+     "categoryLabel": "Sequencing a Simple Story",
+     "prompt": "Put the following steps of 'Making a sandwich' into the correct order!\n\nP. Eat the sandwich\nQ. Take two slices of bread\nR. Put cheese and ham between them\nS. Cut the sandwich in half\n\nWhich order is correct?",
+     "options": [
+      "S-Q-R-P",
+      "Q-R-S-P",
+      "S-P-R-Q",
+      "Q-R-P-S"
+     ],
+     "correctIndex": 1,
+     "explanation": "The logical order for 'Making a sandwich' is: Take two slices of bread -> Put cheese and ham between them -> Cut the sandwich in half -> Eat the sandwich. So the correct label order is Q-R-S-P."
+    },
+    {
+     "id": "F-16",
+     "number": 16,
+     "category": "instruction",
+     "categoryLabel": "Interpreting Simple Instructions",
+     "prompt": "Read the following instruction!\n\"If the light is red, stop. If the light is green, go.\"\n\nWhat should you do when the light is green?",
+     "options": [
+      "go",
+      "turn around",
+      "wait",
+      "stop"
+     ],
+     "correctIndex": 0,
+     "explanation": "According to the instruction given, the correct answer is 'go'."
+    },
+    {
+     "id": "F-17",
+     "number": 17,
+     "category": "reading",
+     "categoryLabel": "Finding Key Information from a Text",
+     "prompt": "Read the following text!\n\"Lala's new shoes are too small, so she asks her mother to buy new ones.\"\n\nWhy does Lala need new shoes?",
+     "options": [
+      "her shoes are too small",
+      "her shoes are broken",
+      "she lost her shoes",
+      "her shoes are dirty"
+     ],
+     "correctIndex": 0,
+     "explanation": "According to the text, the information clearly stated is 'her shoes are too small'."
+    },
+    {
+     "id": "F-18",
+     "number": 18,
+     "category": "reading",
+     "categoryLabel": "Finding Key Information from a Text",
+     "prompt": "Read the following text!\n\"The teacher gives the students a new story to read every Monday morning.\"\n\nWhen does the teacher give a new story?",
+     "options": [
+      "every Friday",
+      "every Monday morning",
+      "every afternoon",
+      "every weekend"
+     ],
+     "correctIndex": 1,
+     "explanation": "According to the text, the information clearly stated is 'every Monday morning'."
+    },
+    {
+     "id": "F-19",
+     "number": 19,
+     "category": "logic",
+     "categoryLabel": "Solving English Logic Problems",
+     "prompt": "What comes next: 2, 4, 8, 16, __ ?",
+     "options": [
+      "32",
+      "30",
+      "20",
+      "24"
+     ],
+     "correctIndex": 0,
+     "explanation": "Based on the pattern/logic in the question, the correct answer is '32'."
+    },
+    {
+     "id": "F-20",
+     "number": 20,
+     "category": "sequence",
+     "categoryLabel": "Sequencing a Simple Story",
+     "prompt": "Put the following steps of 'Getting ready for school' into the correct order!\n\nP. Wear the uniform\nQ. Go to school\nR. Wake up\nS. Take a bath\n\nWhich order is correct?",
+     "options": [
+      "R-P-S-Q",
+      "Q-R-P-S",
+      "R-S-P-Q",
+      "Q-S-R-P"
+     ],
+     "correctIndex": 2,
+     "explanation": "The logical order for 'Getting ready for school' is: Wake up -> Take a bath -> Wear the uniform -> Go to school. So the correct label order is R-S-P-Q."
+    },
+    {
+     "id": "F-21",
+     "number": 21,
+     "category": "word_meaning",
+     "categoryLabel": "Word Meaning from Picture/Context",
+     "prompt": "Look at the picture below: 🌙\n\nWhat is the correct English word for this picture?",
+     "options": [
+      "star",
+      "sun",
+      "moon",
+      "cloud"
+     ],
+     "correctIndex": 2,
+     "explanation": "The picture (🌙) shows something that is called 'moon' in English."
+    },
+    {
+     "id": "F-22",
+     "number": 22,
+     "category": "sequence",
+     "categoryLabel": "Sequencing a Simple Story",
+     "prompt": "Put the following steps of 'Growing a plant from a seed' into the correct order!\n\nP. Soak the seed in water\nQ. Plant it in soil\nR. Watch it sprout into a small plant\nS. Water it every day\n\nWhich order is correct?",
+     "options": [
+      "P-Q-S-R",
+      "P-Q-R-S",
+      "S-P-Q-R",
+      "R-S-P-Q"
+     ],
+     "correctIndex": 0,
+     "explanation": "The logical order for 'Growing a plant from a seed' is: Soak the seed in water -> Plant it in soil -> Water it every day -> Watch it sprout into a small plant. So the correct label order is P-Q-S-R."
+    },
+    {
+     "id": "F-23",
+     "number": 23,
+     "category": "situation",
+     "categoryLabel": "Solving Simple Situational Problems",
+     "prompt": "Situation: Someone gives Rina a gift.\n\nWhat should she say?",
+     "options": [
+      "Give me more.",
+      "Why?",
+      "I don't want it.",
+      "Thank you very much."
+     ],
+     "correctIndex": 3,
+     "explanation": "The most appropriate and polite response/action for this situation is: \"Thank you very much.\"."
+    },
+    {
+     "id": "F-24",
+     "number": 24,
+     "category": "picture_info",
+     "categoryLabel": "Interpreting Information from a Picture",
+     "prompt": "Look at the picture below: 🌧️☂️🚶‍♀️\n\nWhat is the weather like?",
+     "options": [
+      "It is rainy",
+      "It is windy",
+      "It is sunny",
+      "It is snowy"
+     ],
+     "correctIndex": 0,
+     "explanation": "The symbols in the picture (🌧️☂️🚶‍♀️) together describe the situation 'It is rainy', which is the correct answer."
+    },
+    {
+     "id": "F-25",
+     "number": 25,
+     "category": "categorize",
+     "categoryLabel": "Classifying Vocabulary by Category",
+     "prompt": "Which word does NOT belong to the same group as the others?\n\nschool, hospital, market, banana",
+     "options": [
+      "banana",
+      "market",
+      "hospital",
+      "school"
+     ],
+     "correctIndex": 0,
+     "explanation": "The word 'banana' belongs to a different category from the other words in the group."
+    },
+    {
+     "id": "F-26",
+     "number": 26,
+     "category": "context_meaning",
+     "categoryLabel": "Word Meaning from Simple Context",
+     "prompt": "Look at the following sentence!\n\"The kind old woman was always GENEROUS, sharing food with her neighbors.\"\n\nWhat does the word \"GENEROUS\" mean in this sentence?",
+     "options": [
+      "willing to give freely",
+      "unwilling to share",
+      "very quiet",
+      "very strict"
+     ],
+     "correctIndex": 0,
+     "explanation": "In the context of this sentence, the word 'GENEROUS' means 'willing to give freely'."
+    },
+    {
+     "id": "F-27",
+     "number": 27,
+     "category": "picture_info",
+     "categoryLabel": "Interpreting Information from a Picture",
+     "prompt": "Look at the picture below: 🧑‍🌾🌾🚜\n\nWhat is the farmer doing?",
+     "options": [
+      "driving a bus",
+      "teaching",
+      "farming",
+      "cooking"
+     ],
+     "correctIndex": 2,
+     "explanation": "The symbols in the picture (🧑‍🌾🌾🚜) together describe the situation 'farming', which is the correct answer."
+    },
+    {
+     "id": "F-28",
+     "number": 28,
+     "category": "categorize",
+     "categoryLabel": "Classifying Vocabulary by Category",
+     "prompt": "Which word does NOT belong to the same group as the others?\n\nsun, moon, star, spoon",
+     "options": [
+      "sun",
+      "star",
+      "moon",
+      "spoon"
+     ],
+     "correctIndex": 3,
+     "explanation": "The word 'spoon' belongs to a different category from the other words in the group."
+    },
+    {
+     "id": "F-29",
+     "number": 29,
+     "category": "word_meaning",
+     "categoryLabel": "Word Meaning from Picture/Context",
+     "prompt": "Look at the picture below: 🧤\n\nWhat is the correct English word for this picture?",
+     "options": [
+      "gloves",
+      "mittens",
+      "sleeves",
+      "socks"
+     ],
+     "correctIndex": 0,
+     "explanation": "The picture (🧤) shows something that is called 'gloves' in English."
+    },
+    {
+     "id": "F-30",
+     "number": 30,
+     "category": "context_meaning",
+     "categoryLabel": "Word Meaning from Simple Context",
+     "prompt": "Look at the following sentence!\n\"The path through the forest was TREACHEROUS, full of rocks and holes.\"\n\nWhat does the word \"TREACHEROUS\" mean in this sentence?",
+     "options": [
+      "short",
+      "dangerous",
+      "smooth",
+      "safe"
+     ],
+     "correctIndex": 1,
+     "explanation": "In the context of this sentence, the word 'TREACHEROUS' means 'dangerous'."
+    }
+   ]
+  },
+  {
+   "id": "G",
+   "name": "Package G",
+   "questions": [
+    {
+     "id": "G-01",
+     "number": 1,
+     "category": "logic",
+     "categoryLabel": "Solving English Logic Problems",
+     "prompt": "A clock shows 3:00. What time will it show in 2 hours?",
+     "options": [
+      "6:00",
+      "5:00",
+      "4:00",
+      "1:00"
+     ],
+     "correctIndex": 1,
+     "explanation": "Based on the pattern/logic in the question, the correct answer is '5:00'."
+    },
+    {
+     "id": "G-02",
+     "number": 2,
+     "category": "reading",
+     "categoryLabel": "Finding Key Information from a Text",
+     "prompt": "Read the following text!\n\"Mother buys fresh vegetables at the market every Saturday morning.\"\n\nWhen does Mother buy vegetables?",
+     "options": [
+      "every Saturday morning",
+      "every night",
+      "every day",
+      "every Sunday"
+     ],
+     "correctIndex": 0,
+     "explanation": "According to the text, the information clearly stated is 'every Saturday morning'."
+    },
+    {
+     "id": "G-03",
+     "number": 3,
+     "category": "situation",
+     "categoryLabel": "Solving Simple Situational Problems",
+     "prompt": "Situation: Lina's little brother is scared of thunder.\n\nWhat should Lina do?",
+     "options": [
+      "leave him alone",
+      "comfort him and stay with him",
+      "tell him to be brave without any comfort",
+      "laugh at him"
+     ],
+     "correctIndex": 1,
+     "explanation": "The most appropriate and polite response/action for this situation is: \"comfort him and stay with him\"."
+    },
+    {
+     "id": "G-04",
+     "number": 4,
+     "category": "situation",
+     "categoryLabel": "Solving Simple Situational Problems",
+     "prompt": "Situation: Toni wants to enter his teacher's room.\n\nWhat should he say first?",
+     "options": [
+      "I'm coming in.",
+      "Open the door!",
+      "Hello everyone.",
+      "Excuse me, may I come in?"
+     ],
+     "correctIndex": 3,
+     "explanation": "The most appropriate and polite response/action for this situation is: \"Excuse me, may I come in?\"."
+    },
+    {
+     "id": "G-05",
+     "number": 5,
+     "category": "sequence",
+     "categoryLabel": "Sequencing a Simple Story",
+     "prompt": "Put the following steps of 'Building a sandcastle' into the correct order!\n\nP. Decorate with shells\nQ. Turn the bucket upside down\nR. Dig wet sand\nS. Fill a bucket with sand\n\nWhich order is correct?",
+     "options": [
+      "S-R-Q-P",
+      "S-Q-P-R",
+      "R-S-Q-P",
+      "S-Q-R-P"
+     ],
+     "correctIndex": 2,
+     "explanation": "The logical order for 'Building a sandcastle' is: Dig wet sand -> Fill a bucket with sand -> Turn the bucket upside down -> Decorate with shells. So the correct label order is R-S-Q-P."
+    },
+    {
+     "id": "G-06",
+     "number": 6,
+     "category": "picture_info",
+     "categoryLabel": "Interpreting Information from a Picture",
+     "prompt": "Look at the picture below: 🧹🧺🧴\n\nWhat is she doing?",
+     "options": [
+      "cleaning the house",
+      "watching TV",
+      "cooking dinner",
+      "reading a book"
+     ],
+     "correctIndex": 0,
+     "explanation": "The symbols in the picture (🧹🧺🧴) together describe the situation 'cleaning the house', which is the correct answer."
+    },
+    {
+     "id": "G-07",
+     "number": 7,
+     "category": "categorize",
+     "categoryLabel": "Classifying Vocabulary by Category",
+     "prompt": "Which word does NOT belong to the same group as the others?\n\nshirt, pants, hat, spoon",
+     "options": [
+      "spoon",
+      "shirt",
+      "pants",
+      "hat"
+     ],
+     "correctIndex": 0,
+     "explanation": "The word 'spoon' belongs to a different category from the other words in the group."
+    },
+    {
+     "id": "G-08",
+     "number": 8,
+     "category": "context_meaning",
+     "categoryLabel": "Word Meaning from Simple Context",
+     "prompt": "Look at the following sentence!\n\"The garden was full of FRAGRANT flowers that smelled wonderful.\"\n\nWhat does the word \"FRAGRANT\" mean in this sentence?",
+     "options": [
+      "having a bright color",
+      "having a bad smell",
+      "having no smell",
+      "having a nice smell"
+     ],
+     "correctIndex": 3,
+     "explanation": "In the context of this sentence, the word 'FRAGRANT' means 'having a nice smell'."
+    },
+    {
+     "id": "G-09",
+     "number": 9,
+     "category": "sequence",
+     "categoryLabel": "Sequencing a Simple Story",
+     "prompt": "Put the following steps of 'Reading a book' into the correct order!\n\nP. Put the book back\nQ. Open to the first page\nR. Read the story\nS. Choose a book from the shelf\n\nWhich order is correct?",
+     "options": [
+      "R-P-S-Q",
+      "Q-S-P-R",
+      "P-S-R-Q",
+      "S-Q-R-P"
+     ],
+     "correctIndex": 3,
+     "explanation": "The logical order for 'Reading a book' is: Choose a book from the shelf -> Open to the first page -> Read the story -> Put the book back. So the correct label order is S-Q-R-P."
+    },
+    {
+     "id": "G-10",
+     "number": 10,
+     "category": "categorize",
+     "categoryLabel": "Classifying Vocabulary by Category",
+     "prompt": "Which word does NOT belong to the same group as the others?\n\nJanuary, February, Monday, March",
+     "options": [
+      "Monday",
+      "March",
+      "January",
+      "February"
+     ],
+     "correctIndex": 0,
+     "explanation": "The word 'Monday' belongs to a different category from the other words in the group."
+    },
+    {
+     "id": "G-11",
+     "number": 11,
+     "category": "logic",
+     "categoryLabel": "Solving English Logic Problems",
+     "prompt": "There are 3 apples and you take 2 away. How many apples do YOU have?",
+     "options": [
+      "0",
+      "3",
+      "2",
+      "1"
+     ],
+     "correctIndex": 2,
+     "explanation": "Based on the pattern/logic in the question, the correct answer is '2'."
+    },
+    {
+     "id": "G-12",
+     "number": 12,
+     "category": "picture_info",
+     "categoryLabel": "Interpreting Information from a Picture",
+     "prompt": "Look at the picture below: 🚌🏫👦👧📚\n\nWhat are the children going to?",
+     "options": [
+      "the market",
+      "the zoo",
+      "the park",
+      "school"
+     ],
+     "correctIndex": 3,
+     "explanation": "The symbols in the picture (🚌🏫👦👧📚) together describe the situation 'school', which is the correct answer."
+    },
+    {
+     "id": "G-13",
+     "number": 13,
+     "category": "logic",
+     "categoryLabel": "Solving English Logic Problems",
+     "prompt": "What comes next: A, C, E, G, __ ?",
+     "options": [
+      "J",
+      "I",
+      "H",
+      "F"
+     ],
+     "correctIndex": 1,
+     "explanation": "Based on the pattern/logic in the question, the correct answer is 'I'."
+    },
+    {
+     "id": "G-14",
+     "number": 14,
+     "category": "instruction",
+     "categoryLabel": "Interpreting Simple Instructions",
+     "prompt": "Read the following instruction!\n\"Feed the fish in the morning and clean the tank in the evening.\"\n\nWhen should you clean the tank?",
+     "options": [
+      "at midnight",
+      "at noon",
+      "in the morning",
+      "in the evening"
+     ],
+     "correctIndex": 3,
+     "explanation": "According to the instruction given, the correct answer is 'in the evening'."
+    },
+    {
+     "id": "G-15",
+     "number": 15,
+     "category": "instruction",
+     "categoryLabel": "Interpreting Simple Instructions",
+     "prompt": "Read the following instruction!\n\"Draw a circle first, then draw a square next to it.\"\n\nWhat shape do you draw first?",
+     "options": [
+      "a square",
+      "a star",
+      "a circle",
+      "a triangle"
+     ],
+     "correctIndex": 2,
+     "explanation": "According to the instruction given, the correct answer is 'a circle'."
+    },
+    {
+     "id": "G-16",
+     "number": 16,
+     "category": "reading",
+     "categoryLabel": "Finding Key Information from a Text",
+     "prompt": "Read the following text!\n\"The children build a sandcastle on the beach before the sun sets.\"\n\nWhere do the children build a sandcastle?",
+     "options": [
+      "on the beach",
+      "in the park",
+      "in the garden",
+      "at school"
+     ],
+     "correctIndex": 0,
+     "explanation": "According to the text, the information clearly stated is 'on the beach'."
+    },
+    {
+     "id": "G-17",
+     "number": 17,
+     "category": "context_meaning",
+     "categoryLabel": "Word Meaning from Simple Context",
+     "prompt": "Look at the following sentence!\n\"The old man walked very SLOWLY because his legs were weak.\"\n\nWhat does the word \"SLOWLY\" mean in this sentence?",
+     "options": [
+      "very quietly",
+      "not fast",
+      "very loudly",
+      "very fast"
+     ],
+     "correctIndex": 1,
+     "explanation": "In the context of this sentence, the word 'SLOWLY' means 'not fast'."
+    },
+    {
+     "id": "G-18",
+     "number": 18,
+     "category": "picture_info",
+     "categoryLabel": "Interpreting Information from a Picture",
+     "prompt": "Look at the picture below: 🌃🏙️⭐\n\nWhat time of day is it?",
+     "options": [
+      "night",
+      "noon",
+      "afternoon",
+      "morning"
+     ],
+     "correctIndex": 0,
+     "explanation": "The symbols in the picture (🌃🏙️⭐) together describe the situation 'night', which is the correct answer."
+    },
+    {
+     "id": "G-19",
+     "number": 19,
+     "category": "function_match",
+     "categoryLabel": "Matching Words to Picture/Function",
+     "prompt": "What do we use to sharpen a pencil?",
+     "options": [
+      "eraser",
+      "pencil sharpener",
+      "scissors",
+      "ruler"
+     ],
+     "correctIndex": 1,
+     "explanation": "The correct item used to sharpen a pencil is 'pencil sharpener'."
+    },
+    {
+     "id": "G-20",
+     "number": 20,
+     "category": "categorize",
+     "categoryLabel": "Classifying Vocabulary by Category",
+     "prompt": "Which word does NOT belong to the same group as the others?\n\nplane, car, bus, bird",
+     "options": [
+      "bus",
+      "bird",
+      "car",
+      "plane"
+     ],
+     "correctIndex": 1,
+     "explanation": "The word 'bird' belongs to a different category from the other words in the group."
+    },
+    {
+     "id": "G-21",
+     "number": 21,
+     "category": "function_match",
+     "categoryLabel": "Matching Words to Picture/Function",
+     "prompt": "What do we use to light a dark room?",
+     "options": [
+      "umbrella",
+      "lamp",
+      "mirror",
+      "fan"
+     ],
+     "correctIndex": 1,
+     "explanation": "The correct item used to light a dark room is 'lamp'."
+    },
+    {
+     "id": "G-22",
+     "number": 22,
+     "category": "word_meaning",
+     "categoryLabel": "Word Meaning from Picture/Context",
+     "prompt": "Look at the picture below: 🐝\n\nWhat is the correct English word for this picture?",
+     "options": [
+      "fly",
+      "bee",
+      "moth",
+      "wasp"
+     ],
+     "correctIndex": 1,
+     "explanation": "The picture (🐝) shows something that is called 'bee' in English."
+    },
+    {
+     "id": "G-23",
+     "number": 23,
+     "category": "function_match",
+     "categoryLabel": "Matching Words to Picture/Function",
+     "prompt": "What do we use to keep warm in winter?",
+     "options": [
+      "towel",
+      "fan",
+      "blanket",
+      "umbrella"
+     ],
+     "correctIndex": 2,
+     "explanation": "The correct item used to keep warm in winter is 'blanket'."
+    },
+    {
+     "id": "G-24",
+     "number": 24,
+     "category": "situation",
+     "categoryLabel": "Solving Simple Situational Problems",
+     "prompt": "Situation: Rani's friend is sick and stays home.\n\nWhat should Rani do?",
+     "options": [
+      "laugh at her",
+      "forget about her",
+      "ignore her",
+      "send a get-well message or visit her"
+     ],
+     "correctIndex": 3,
+     "explanation": "The most appropriate and polite response/action for this situation is: \"send a get-well message or visit her\"."
+    },
+    {
+     "id": "G-25",
+     "number": 25,
+     "category": "context_meaning",
+     "categoryLabel": "Word Meaning from Simple Context",
+     "prompt": "Look at the following sentence!\n\"The children were CURIOUS about the strange box on the table.\"\n\nWhat does the word \"CURIOUS\" mean in this sentence?",
+     "options": [
+      "wanting to know more",
+      "feeling sleepy",
+      "feeling scared",
+      "feeling bored"
+     ],
+     "correctIndex": 0,
+     "explanation": "In the context of this sentence, the word 'CURIOUS' means 'wanting to know more'."
+    },
+    {
+     "id": "G-26",
+     "number": 26,
+     "category": "reading",
+     "categoryLabel": "Finding Key Information from a Text",
+     "prompt": "Read the following text!\n\"During the rainy season, Wati always brings her umbrella to school.\"\n\nWhat does Wati bring during the rainy season?",
+     "options": [
+      "an umbrella",
+      "sunglasses",
+      "a fan",
+      "a hat"
+     ],
+     "correctIndex": 0,
+     "explanation": "According to the text, the information clearly stated is 'an umbrella'."
+    },
+    {
+     "id": "G-27",
+     "number": 27,
+     "category": "word_meaning",
+     "categoryLabel": "Word Meaning from Picture/Context",
+     "prompt": "Look at the picture below: 🐑\n\nWhat is the correct English word for this picture?",
+     "options": [
+      "horse",
+      "cow",
+      "sheep",
+      "goat"
+     ],
+     "correctIndex": 2,
+     "explanation": "The picture (🐑) shows something that is called 'sheep' in English."
+    },
+    {
+     "id": "G-28",
+     "number": 28,
+     "category": "sequence",
+     "categoryLabel": "Sequencing a Simple Story",
+     "prompt": "Put the following steps of 'Catching a fish' into the correct order!\n\nP. Prepare the fishing rod\nQ. Pull the fish out of the water\nR. Wait for the fish to bite\nS. Sit by the river\n\nWhich order is correct?",
+     "options": [
+      "P-S-R-Q",
+      "S-R-P-Q",
+      "R-Q-S-P",
+      "P-R-S-Q"
+     ],
+     "correctIndex": 0,
+     "explanation": "The logical order for 'Catching a fish' is: Prepare the fishing rod -> Sit by the river -> Wait for the fish to bite -> Pull the fish out of the water. So the correct label order is P-S-R-Q."
+    },
+    {
+     "id": "G-29",
+     "number": 29,
+     "category": "word_meaning",
+     "categoryLabel": "Word Meaning from Picture/Context",
+     "prompt": "Look at the picture below: 🦶\n\nWhat is the correct English word for this picture?",
+     "options": [
+      "foot",
+      "arm",
+      "hand",
+      "leg"
+     ],
+     "correctIndex": 0,
+     "explanation": "The picture (🦶) shows something that is called 'foot' in English."
+    },
+    {
+     "id": "G-30",
+     "number": 30,
+     "category": "instruction",
+     "categoryLabel": "Interpreting Simple Instructions",
+     "prompt": "Read the following instruction!\n\"Put on your shoes before you put on your jacket.\"\n\nWhich comes first?",
+     "options": [
+      "putting on the jacket",
+      "going outside",
+      "putting on shoes",
+      "tying laces"
+     ],
+     "correctIndex": 2,
+     "explanation": "According to the instruction given, the correct answer is 'putting on shoes'."
+    }
+   ]
+  },
+  {
+   "id": "H",
+   "name": "Package H",
+   "questions": [
+    {
+     "id": "H-01",
+     "number": 1,
+     "category": "reading",
+     "categoryLabel": "Finding Key Information from a Text",
+     "prompt": "Read the following text!\n\"Sari loves reading story books before bedtime. Her favorite book is about a brave lion.\"\n\nWhat is Sari's favorite book about?",
+     "options": [
+      "a brave lion",
+      "a small mouse",
+      "a funny frog",
+      "a magic bird"
+     ],
+     "correctIndex": 0,
+     "explanation": "According to the text, the information clearly stated is 'a brave lion'."
+    },
+    {
+     "id": "H-02",
+     "number": 2,
+     "category": "picture_info",
+     "categoryLabel": "Interpreting Information from a Picture",
+     "prompt": "Look at the picture below: 🚴‍♂️🏞️\n\nWhat is he doing?",
+     "options": [
+      "flying a kite",
+      "driving a car",
+      "riding a bicycle",
+      "walking a dog"
+     ],
+     "correctIndex": 2,
+     "explanation": "The symbols in the picture (🚴‍♂️🏞️) together describe the situation 'riding a bicycle', which is the correct answer."
+    },
+    {
+     "id": "H-03",
+     "number": 3,
+     "category": "situation",
+     "categoryLabel": "Solving Simple Situational Problems",
+     "prompt": "Situation: Rina wants to invite her friend to her birthday party.\n\nWhat should she say?",
+     "options": [
+      "Come or I will be angry.",
+      "Would you like to come to my birthday party?",
+      "(say nothing)",
+      "You must come to my party."
+     ],
+     "correctIndex": 1,
+     "explanation": "The most appropriate and polite response/action for this situation is: \"Would you like to come to my birthday party?\"."
+    },
+    {
+     "id": "H-04",
+     "number": 4,
+     "category": "instruction",
+     "categoryLabel": "Interpreting Simple Instructions",
+     "prompt": "Read the following instruction!\n\"Fill the cup with water, then add two spoons of sugar.\"\n\nWhat do you do first?",
+     "options": [
+      "fill the cup with water",
+      "drink the water",
+      "add sugar",
+      "stir the cup"
+     ],
+     "correctIndex": 0,
+     "explanation": "According to the instruction given, the correct answer is 'fill the cup with water'."
+    },
+    {
+     "id": "H-05",
+     "number": 5,
+     "category": "reading",
+     "categoryLabel": "Finding Key Information from a Text",
+     "prompt": "Read the following text!\n\"Andi and his sister plant flowers in the garden every weekend. They water the flowers every morning.\"\n\nWhen do Andi and his sister water the flowers?",
+     "options": [
+      "never",
+      "every morning",
+      "every night",
+      "every weekend only"
+     ],
+     "correctIndex": 1,
+     "explanation": "According to the text, the information clearly stated is 'every morning'."
+    },
+    {
+     "id": "H-06",
+     "number": 6,
+     "category": "reading",
+     "categoryLabel": "Finding Key Information from a Text",
+     "prompt": "Read the following text!\n\"The librarian puts the new books on the shelf near the window.\"\n\nWhere does the librarian put the new books?",
+     "options": [
+      "on the shelf near the window",
+      "on the floor",
+      "on the table",
+      "in a box"
+     ],
+     "correctIndex": 0,
+     "explanation": "According to the text, the information clearly stated is 'on the shelf near the window'."
+    },
+    {
+     "id": "H-07",
+     "number": 7,
+     "category": "categorize",
+     "categoryLabel": "Classifying Vocabulary by Category",
+     "prompt": "Which word does NOT belong to the same group as the others?\n\nbig, small, tall, jump",
+     "options": [
+      "big",
+      "small",
+      "tall",
+      "jump"
+     ],
+     "correctIndex": 3,
+     "explanation": "The word 'jump' belongs to a different category from the other words in the group."
+    },
+    {
+     "id": "H-08",
+     "number": 8,
+     "category": "sequence",
+     "categoryLabel": "Sequencing a Simple Story",
+     "prompt": "Put the following steps of 'Making a paper boat' into the correct order!\n\nP. Float it on water\nQ. Take a square paper\nR. Shape it into a boat\nS. Fold it several times\n\nWhich order is correct?",
+     "options": [
+      "R-P-Q-S",
+      "Q-S-R-P",
+      "P-R-S-Q",
+      "S-Q-R-P"
+     ],
+     "correctIndex": 1,
+     "explanation": "The logical order for 'Making a paper boat' is: Take a square paper -> Fold it several times -> Shape it into a boat -> Float it on water. So the correct label order is Q-S-R-P."
+    },
+    {
+     "id": "H-09",
+     "number": 9,
+     "category": "categorize",
+     "categoryLabel": "Classifying Vocabulary by Category",
+     "prompt": "Which word does NOT belong to the same group as the others?\n\napple, banana, carrot, mango",
+     "options": [
+      "apple",
+      "carrot",
+      "mango",
+      "banana"
+     ],
+     "correctIndex": 1,
+     "explanation": "The word 'carrot' belongs to a different category from the other words in the group."
+    },
+    {
+     "id": "H-10",
+     "number": 10,
+     "category": "function_match",
+     "categoryLabel": "Matching Words to Picture/Function",
+     "prompt": "What do we use to cut paper?",
+     "options": [
+      "spoon",
+      "scissors",
+      "ruler",
+      "pencil"
+     ],
+     "correctIndex": 1,
+     "explanation": "The correct item used to cut paper is 'scissors'."
+    },
+    {
+     "id": "H-11",
+     "number": 11,
+     "category": "situation",
+     "categoryLabel": "Solving Simple Situational Problems",
+     "prompt": "Situation: Wati sees her friend crying.\n\nWhat should she do?",
+     "options": [
+      "ignore her friend",
+      "laugh at her friend",
+      "ask if her friend is okay and try to help",
+      "walk away"
+     ],
+     "correctIndex": 2,
+     "explanation": "The most appropriate and polite response/action for this situation is: \"ask if her friend is okay and try to help\"."
+    },
+    {
+     "id": "H-12",
+     "number": 12,
+     "category": "categorize",
+     "categoryLabel": "Classifying Vocabulary by Category",
+     "prompt": "Which word does NOT belong to the same group as the others?\n\nmother, father, sister, teacher",
+     "options": [
+      "father",
+      "mother",
+      "teacher",
+      "sister"
+     ],
+     "correctIndex": 2,
+     "explanation": "The word 'teacher' belongs to a different category from the other words in the group."
+    },
+    {
+     "id": "H-13",
+     "number": 13,
+     "category": "word_meaning",
+     "categoryLabel": "Word Meaning from Picture/Context",
+     "prompt": "Look at the picture below: 🚲\n\nWhat is the correct English word for this picture?",
+     "options": [
+      "scooter",
+      "motorcycle",
+      "car",
+      "bicycle"
+     ],
+     "correctIndex": 3,
+     "explanation": "The picture (🚲) shows something that is called 'bicycle' in English."
+    },
+    {
+     "id": "H-14",
+     "number": 14,
+     "category": "function_match",
+     "categoryLabel": "Matching Words to Picture/Function",
+     "prompt": "What do we use to fix a broken toy?",
+     "options": [
+      "soap",
+      "water",
+      "glue",
+      "sand"
+     ],
+     "correctIndex": 2,
+     "explanation": "The correct item used to fix a broken toy is 'glue'."
+    },
+    {
+     "id": "H-15",
+     "number": 15,
+     "category": "logic",
+     "categoryLabel": "Solving English Logic Problems",
+     "prompt": "It takes 1 minute to boil 1 egg. How long to boil 3 eggs at the same time?",
+     "options": [
+      "3 minutes",
+      "2 minutes",
+      "1 minute",
+      "5 minutes"
+     ],
+     "correctIndex": 2,
+     "explanation": "Based on the pattern/logic in the question, the correct answer is '1 minute'."
+    },
+    {
+     "id": "H-16",
+     "number": 16,
+     "category": "picture_info",
+     "categoryLabel": "Interpreting Information from a Picture",
+     "prompt": "Look at the picture below: 🍎🍌🍊🧺\n\nWhat is in the basket?",
+     "options": [
+      "books",
+      "fruits",
+      "toys",
+      "vegetables"
+     ],
+     "correctIndex": 1,
+     "explanation": "The symbols in the picture (🍎🍌🍊🧺) together describe the situation 'fruits', which is the correct answer."
+    },
+    {
+     "id": "H-17",
+     "number": 17,
+     "category": "context_meaning",
+     "categoryLabel": "Word Meaning from Simple Context",
+     "prompt": "Look at the following sentence!\n\"Rina felt NERVOUS before her first day at a new school.\"\n\nWhat does the word \"NERVOUS\" mean in this sentence?",
+     "options": [
+      "very angry",
+      "very sleepy",
+      "very happy",
+      "worried and anxious"
+     ],
+     "correctIndex": 3,
+     "explanation": "In the context of this sentence, the word 'NERVOUS' means 'worried and anxious'."
+    },
+    {
+     "id": "H-18",
+     "number": 18,
+     "category": "sequence",
+     "categoryLabel": "Sequencing a Simple Story",
+     "prompt": "Put the following steps of 'Cooking fried rice' into the correct order!\n\nP. Add rice and vegetables\nQ. Stir and cook\nR. Serve on a plate\nS. Heat the pan\n\nWhich order is correct?",
+     "options": [
+      "R-Q-S-P",
+      "P-S-R-Q",
+      "S-P-R-Q",
+      "S-P-Q-R"
+     ],
+     "correctIndex": 3,
+     "explanation": "The logical order for 'Cooking fried rice' is: Heat the pan -> Add rice and vegetables -> Stir and cook -> Serve on a plate. So the correct label order is S-P-Q-R."
+    },
+    {
+     "id": "H-19",
+     "number": 19,
+     "category": "word_meaning",
+     "categoryLabel": "Word Meaning from Picture/Context",
+     "prompt": "Look at the picture below: 🍞\n\nWhat is the correct English word for this picture?",
+     "options": [
+      "toast",
+      "cake",
+      "biscuit",
+      "bread"
+     ],
+     "correctIndex": 3,
+     "explanation": "The picture (🍞) shows something that is called 'bread' in English."
+    },
+    {
+     "id": "H-20",
+     "number": 20,
+     "category": "context_meaning",
+     "categoryLabel": "Word Meaning from Simple Context",
+     "prompt": "Look at the following sentence!\n\"The little boy was TERRIFIED when he saw the big dog.\"\n\nWhat does the word \"TERRIFIED\" mean in this sentence?",
+     "options": [
+      "very happy",
+      "very hungry",
+      "very tired",
+      "very scared"
+     ],
+     "correctIndex": 3,
+     "explanation": "In the context of this sentence, the word 'TERRIFIED' means 'very scared'."
+    },
+    {
+     "id": "H-21",
+     "number": 21,
+     "category": "context_meaning",
+     "categoryLabel": "Word Meaning from Simple Context",
+     "prompt": "Look at the following sentence!\n\"The baby began to GIGGLE when her father made funny faces.\"\n\nWhat does the word \"GIGGLE\" mean in this sentence?",
+     "options": [
+      "sleep",
+      "laugh softly",
+      "cry",
+      "shout"
+     ],
+     "correctIndex": 1,
+     "explanation": "In the context of this sentence, the word 'GIGGLE' means 'laugh softly'."
+    },
+    {
+     "id": "H-22",
+     "number": 22,
+     "category": "word_meaning",
+     "categoryLabel": "Word Meaning from Picture/Context",
+     "prompt": "Look at the picture below: 🧣\n\nWhat is the correct English word for this picture?",
+     "options": [
+      "sock",
+      "hat",
+      "glove",
+      "scarf"
+     ],
+     "correctIndex": 3,
+     "explanation": "The picture (🧣) shows something that is called 'scarf' in English."
+    },
+    {
+     "id": "H-23",
+     "number": 23,
+     "category": "logic",
+     "categoryLabel": "Solving English Logic Problems",
+     "prompt": "If A=1, B=2, C=3, what is D?",
+     "options": [
+      "4",
+      "3",
+      "6",
+      "5"
+     ],
+     "correctIndex": 0,
+     "explanation": "Based on the pattern/logic in the question, the correct answer is '4'."
+    },
+    {
+     "id": "H-24",
+     "number": 24,
+     "category": "function_match",
+     "categoryLabel": "Matching Words to Picture/Function",
+     "prompt": "What do we use to protect from rain?",
+     "options": [
+      "scarf",
+      "sunglasses",
+      "hat",
+      "umbrella"
+     ],
+     "correctIndex": 3,
+     "explanation": "The correct item used to protect from rain is 'umbrella'."
+    },
+    {
+     "id": "H-25",
+     "number": 25,
+     "category": "logic",
+     "categoryLabel": "Solving English Logic Problems",
+     "prompt": "What comes next: 5, 10, 15, 20, __ ?",
+     "options": [
+      "30",
+      "24",
+      "22",
+      "25"
+     ],
+     "correctIndex": 3,
+     "explanation": "Based on the pattern/logic in the question, the correct answer is '25'."
+    },
+    {
+     "id": "H-26",
+     "number": 26,
+     "category": "instruction",
+     "categoryLabel": "Interpreting Simple Instructions",
+     "prompt": "Read the following instruction!\n\"Write your name on the paper, then draw a picture below it.\"\n\nWhat comes first?",
+     "options": [
+      "drawing a picture",
+      "writing your name",
+      "folding the paper",
+      "coloring the picture"
+     ],
+     "correctIndex": 1,
+     "explanation": "According to the instruction given, the correct answer is 'writing your name'."
+    },
+    {
+     "id": "H-27",
+     "number": 27,
+     "category": "instruction",
+     "categoryLabel": "Interpreting Simple Instructions",
+     "prompt": "Read the following instruction!\n\"Put the books on the shelf, then close the cupboard door.\"\n\nWhat do you do after putting the books on the shelf?",
+     "options": [
+      "read the books",
+      "take the books out",
+      "close the cupboard door",
+      "open the door"
+     ],
+     "correctIndex": 2,
+     "explanation": "According to the instruction given, the correct answer is 'close the cupboard door'."
+    },
+    {
+     "id": "H-28",
+     "number": 28,
+     "category": "sequence",
+     "categoryLabel": "Sequencing a Simple Story",
+     "prompt": "Put the following steps of 'Baking a cake' into the correct order!\n\nP. Put it in the oven\nQ. Let it cool and eat it\nR. Pour the batter into a pan\nS. Mix the ingredients\n\nWhich order is correct?",
+     "options": [
+      "S-P-Q-R",
+      "Q-P-R-S",
+      "P-S-Q-R",
+      "S-R-P-Q"
+     ],
+     "correctIndex": 3,
+     "explanation": "The logical order for 'Baking a cake' is: Mix the ingredients -> Pour the batter into a pan -> Put it in the oven -> Let it cool and eat it. So the correct label order is S-R-P-Q."
+    },
+    {
+     "id": "H-29",
+     "number": 29,
+     "category": "situation",
+     "categoryLabel": "Solving Simple Situational Problems",
+     "prompt": "Situation: Lisa accidentally steps on her friend's foot.\n\nWhat should she say?",
+     "options": [
+      "Never mind.",
+      "I'm sorry.",
+      "Thank you.",
+      "You're welcome."
+     ],
+     "correctIndex": 1,
+     "explanation": "The most appropriate and polite response/action for this situation is: \"I'm sorry.\"."
+    },
+    {
+     "id": "H-30",
+     "number": 30,
+     "category": "picture_info",
+     "categoryLabel": "Interpreting Information from a Picture",
+     "prompt": "Look at the picture below: 🧼🚿🧴\n\nWhat is this person doing?",
+     "options": [
+      "taking a shower",
+      "cooking",
+      "cleaning windows",
+      "washing clothes"
+     ],
+     "correctIndex": 0,
+     "explanation": "The symbols in the picture (🧼🚿🧴) together describe the situation 'taking a shower', which is the correct answer."
+    }
+   ]
+  },
+  {
+   "id": "I",
+   "name": "Package I",
+   "questions": [
+    {
+     "id": "I-01",
+     "number": 1,
+     "category": "categorize",
+     "categoryLabel": "Classifying Vocabulary by Category",
+     "prompt": "Which word does NOT belong to the same group as the others?\n\npotato, onion, garlic, apple",
+     "options": [
+      "garlic",
+      "onion",
+      "apple",
+      "potato"
+     ],
+     "correctIndex": 2,
+     "explanation": "The word 'apple' belongs to a different category from the other words in the group."
+    },
+    {
+     "id": "I-02",
+     "number": 2,
+     "category": "sequence",
+     "categoryLabel": "Sequencing a Simple Story",
+     "prompt": "Put the following steps of 'Growing a butterfly' into the correct order!\n\nP. It forms a cocoon\nQ. A caterpillar hatches from an egg\nR. It eats leaves and grows\nS. A butterfly comes out\n\nWhich order is correct?",
+     "options": [
+      "S-Q-P-R",
+      "Q-R-P-S",
+      "R-Q-S-P",
+      "P-S-Q-R"
+     ],
+     "correctIndex": 1,
+     "explanation": "The logical order for 'Growing a butterfly' is: A caterpillar hatches from an egg -> It eats leaves and grows -> It forms a cocoon -> A butterfly comes out. So the correct label order is Q-R-P-S."
+    },
+    {
+     "id": "I-03",
+     "number": 3,
+     "category": "categorize",
+     "categoryLabel": "Classifying Vocabulary by Category",
+     "prompt": "Which word does NOT belong to the same group as the others?\n\nspring, summer, winter, Monday",
+     "options": [
+      "summer",
+      "winter",
+      "spring",
+      "Monday"
+     ],
+     "correctIndex": 3,
+     "explanation": "The word 'Monday' belongs to a different category from the other words in the group."
+    },
+    {
+     "id": "I-04",
+     "number": 4,
+     "category": "function_match",
+     "categoryLabel": "Matching Words to Picture/Function",
+     "prompt": "What do we use to measure temperature?",
+     "options": [
+      "thermometer",
+      "clock",
+      "scale",
+      "ruler"
+     ],
+     "correctIndex": 0,
+     "explanation": "The correct item used to measure temperature is 'thermometer'."
+    },
+    {
+     "id": "I-05",
+     "number": 5,
+     "category": "context_meaning",
+     "categoryLabel": "Word Meaning from Simple Context",
+     "prompt": "Look at the following sentence!\n\"The teacher was FURIOUS when the students broke the window.\"\n\nWhat does the word \"FURIOUS\" mean in this sentence?",
+     "options": [
+      "very tired",
+      "very angry",
+      "very happy",
+      "very calm"
+     ],
+     "correctIndex": 1,
+     "explanation": "In the context of this sentence, the word 'FURIOUS' means 'very angry'."
+    },
+    {
+     "id": "I-06",
+     "number": 6,
+     "category": "word_meaning",
+     "categoryLabel": "Word Meaning from Picture/Context",
+     "prompt": "Look at the picture below: 🕷️\n\nWhat is the correct English word for this picture?",
+     "options": [
+      "spider",
+      "beetle",
+      "fly",
+      "ant"
+     ],
+     "correctIndex": 0,
+     "explanation": "The picture (🕷️) shows something that is called 'spider' in English."
+    },
+    {
+     "id": "I-07",
+     "number": 7,
+     "category": "picture_info",
+     "categoryLabel": "Interpreting Information from a Picture",
+     "prompt": "Look at the picture below: ❄️⛄🧣🧤\n\nWhat season is it?",
+     "options": [
+      "autumn",
+      "summer",
+      "spring",
+      "winter"
+     ],
+     "correctIndex": 3,
+     "explanation": "The symbols in the picture (❄️⛄🧣🧤) together describe the situation 'winter', which is the correct answer."
+    },
+    {
+     "id": "I-08",
+     "number": 8,
+     "category": "reading",
+     "categoryLabel": "Finding Key Information from a Text",
+     "prompt": "Read the following text!\n\"Rani's favorite fruit is mango. She eats one mango every afternoon.\"\n\nWhat is Rani's favorite fruit?",
+     "options": [
+      "apple",
+      "banana",
+      "mango",
+      "grape"
+     ],
+     "correctIndex": 2,
+     "explanation": "According to the text, the information clearly stated is 'mango'."
+    },
+    {
+     "id": "I-09",
+     "number": 9,
+     "category": "word_meaning",
+     "categoryLabel": "Word Meaning from Picture/Context",
+     "prompt": "Look at the picture below: 🚪\n\nWhat is the correct English word for this picture?",
+     "options": [
+      "door",
+      "wall",
+      "gate",
+      "window"
+     ],
+     "correctIndex": 0,
+     "explanation": "The picture (🚪) shows something that is called 'door' in English."
+    },
+    {
+     "id": "I-10",
+     "number": 10,
+     "category": "categorize",
+     "categoryLabel": "Classifying Vocabulary by Category",
+     "prompt": "Which word does NOT belong to the same group as the others?\n\nrun, jump, swim, chair",
+     "options": [
+      "run",
+      "chair",
+      "swim",
+      "jump"
+     ],
+     "correctIndex": 1,
+     "explanation": "The word 'chair' belongs to a different category from the other words in the group."
+    },
+    {
+     "id": "I-11",
+     "number": 11,
+     "category": "logic",
+     "categoryLabel": "Solving English Logic Problems",
+     "prompt": "Riddle: The more you take, the more you leave behind. What am I?",
+     "options": [
+      "footsteps",
+      "time",
+      "shadows",
+      "money"
+     ],
+     "correctIndex": 0,
+     "explanation": "Based on the pattern/logic in the question, the correct answer is 'footsteps'."
+    },
+    {
+     "id": "I-12",
+     "number": 12,
+     "category": "sequence",
+     "categoryLabel": "Sequencing a Simple Story",
+     "prompt": "Put the following steps of 'Watering a plant' into the correct order!\n\nP. Walk to the plant\nQ. Watch the plant grow\nR. Pour water onto the soil\nS. Fill a watering can with water\n\nWhich order is correct?",
+     "options": [
+      "P-R-Q-S",
+      "P-S-Q-R",
+      "P-R-S-Q",
+      "S-P-R-Q"
+     ],
+     "correctIndex": 3,
+     "explanation": "The logical order for 'Watering a plant' is: Fill a watering can with water -> Walk to the plant -> Pour water onto the soil -> Watch the plant grow. So the correct label order is S-P-R-Q."
+    },
+    {
+     "id": "I-13",
+     "number": 13,
+     "category": "logic",
+     "categoryLabel": "Solving English Logic Problems",
+     "prompt": "Riddle: I have keys but no locks, I have space but no room. What am I?",
+     "options": [
+      "a book",
+      "a car",
+      "a keyboard",
+      "a house"
+     ],
+     "correctIndex": 2,
+     "explanation": "Based on the pattern/logic in the question, the correct answer is 'a keyboard'."
+    },
+    {
+     "id": "I-14",
+     "number": 14,
+     "category": "function_match",
+     "categoryLabel": "Matching Words to Picture/Function",
+     "prompt": "What do we use to carry books to school?",
+     "options": [
+      "box",
+      "bucket",
+      "bag",
+      "basket"
+     ],
+     "correctIndex": 2,
+     "explanation": "The correct item used to carry books to school is 'bag'."
+    },
+    {
+     "id": "I-15",
+     "number": 15,
+     "category": "reading",
+     "categoryLabel": "Finding Key Information from a Text",
+     "prompt": "Read the following text!\n\"The old man feeds the birds bread crumbs in the park every morning.\"\n\nWhat does the old man feed the birds?",
+     "options": [
+      "fruit",
+      "seeds",
+      "bread crumbs",
+      "rice"
+     ],
+     "correctIndex": 2,
+     "explanation": "According to the text, the information clearly stated is 'bread crumbs'."
+    },
+    {
+     "id": "I-16",
+     "number": 16,
+     "category": "function_match",
+     "categoryLabel": "Matching Words to Picture/Function",
+     "prompt": "What do we use to clean the floor?",
+     "options": [
+      "hammer",
+      "scissors",
+      "broom",
+      "spoon"
+     ],
+     "correctIndex": 2,
+     "explanation": "The correct item used to clean the floor is 'broom'."
+    },
+    {
+     "id": "I-17",
+     "number": 17,
+     "category": "instruction",
+     "categoryLabel": "Interpreting Simple Instructions",
+     "prompt": "Read the following instruction!\n\"Open the box, take out the red ball, and put it on the table.\"\n\nWhere should the red ball go?",
+     "options": [
+      "on the floor",
+      "back in the box",
+      "on the table",
+      "in your pocket"
+     ],
+     "correctIndex": 2,
+     "explanation": "According to the instruction given, the correct answer is 'on the table'."
+    },
+    {
+     "id": "I-18",
+     "number": 18,
+     "category": "situation",
+     "categoryLabel": "Solving Simple Situational Problems",
+     "prompt": "Situation: Budi wants to use the classroom computer his friend is using.\n\nWhat should he say?",
+     "options": [
+      "(take it without asking)",
+      "It's my turn!",
+      "Give it to me now!",
+      "May I use it after you, please?"
+     ],
+     "correctIndex": 3,
+     "explanation": "The most appropriate and polite response/action for this situation is: \"May I use it after you, please?\"."
+    },
+    {
+     "id": "I-19",
+     "number": 19,
+     "category": "logic",
+     "categoryLabel": "Solving English Logic Problems",
+     "prompt": "Which is heavier: a kilogram of feathers or a kilogram of stones?",
+     "options": [
+      "The stones",
+      "Cannot be told",
+      "The feathers",
+      "They are the same"
+     ],
+     "correctIndex": 3,
+     "explanation": "Based on the pattern/logic in the question, the correct answer is 'They are the same'."
+    },
+    {
+     "id": "I-20",
+     "number": 20,
+     "category": "picture_info",
+     "categoryLabel": "Interpreting Information from a Picture",
+     "prompt": "Look at the picture below: 📚✏️🎒\n\nWhat does the child need?",
+     "options": [
+      "kitchen tools",
+      "school supplies",
+      "garden tools",
+      "sports equipment"
+     ],
+     "correctIndex": 1,
+     "explanation": "The symbols in the picture (📚✏️🎒) together describe the situation 'school supplies', which is the correct answer."
+    },
+    {
+     "id": "I-21",
+     "number": 21,
+     "category": "instruction",
+     "categoryLabel": "Interpreting Simple Instructions",
+     "prompt": "Read the following instruction!\n\"Pack your bag with a water bottle, a hat, and sunscreen before the picnic.\"\n\nWhat should NOT be missing from the bag?",
+     "options": [
+      "a laptop",
+      "an umbrella",
+      "a water bottle, a hat, and sunscreen",
+      "a football"
+     ],
+     "correctIndex": 2,
+     "explanation": "According to the instruction given, the correct answer is 'a water bottle, a hat, and sunscreen'."
+    },
+    {
+     "id": "I-22",
+     "number": 22,
+     "category": "context_meaning",
+     "categoryLabel": "Word Meaning from Simple Context",
+     "prompt": "Look at the following sentence!\n\"The weather turned GLOOMY just before the storm arrived.\"\n\nWhat does the word \"GLOOMY\" mean in this sentence?",
+     "options": [
+      "warm and pleasant",
+      "dark and sad-looking",
+      "cool and windy",
+      "bright and sunny"
+     ],
+     "correctIndex": 1,
+     "explanation": "In the context of this sentence, the word 'GLOOMY' means 'dark and sad-looking'."
+    },
+    {
+     "id": "I-23",
+     "number": 23,
+     "category": "word_meaning",
+     "categoryLabel": "Word Meaning from Picture/Context",
+     "prompt": "Look at the picture below: 🍯\n\nWhat is the correct English word for this picture?",
+     "options": [
+      "sugar",
+      "jam",
+      "honey",
+      "butter"
+     ],
+     "correctIndex": 2,
+     "explanation": "The picture (🍯) shows something that is called 'honey' in English."
+    },
+    {
+     "id": "I-24",
+     "number": 24,
+     "category": "picture_info",
+     "categoryLabel": "Interpreting Information from a Picture",
+     "prompt": "Look at the picture below: 🌳🍂🍁🍃\n\nWhat season is shown?",
+     "options": [
+      "autumn",
+      "spring",
+      "winter",
+      "summer"
+     ],
+     "correctIndex": 0,
+     "explanation": "The symbols in the picture (🌳🍂🍁🍃) together describe the situation 'autumn', which is the correct answer."
+    },
+    {
+     "id": "I-25",
+     "number": 25,
+     "category": "situation",
+     "categoryLabel": "Solving Simple Situational Problems",
+     "prompt": "Situation: Nita wants to cross the street.\n\nWhat should she do first?",
+     "options": [
+      "close her eyes",
+      "run across quickly",
+      "look both ways for cars",
+      "jump"
+     ],
+     "correctIndex": 2,
+     "explanation": "The most appropriate and polite response/action for this situation is: \"look both ways for cars\"."
+    },
+    {
+     "id": "I-26",
+     "number": 26,
+     "category": "sequence",
+     "categoryLabel": "Sequencing a Simple Story",
+     "prompt": "Put the following steps of 'Flying a kite' into the correct order!\n\nP. Watch the kite fly high\nQ. Hold the kite string\nR. Run while releasing the string\nS. Choose an open field\n\nWhich order is correct?",
+     "options": [
+      "P-S-R-Q",
+      "Q-S-P-R",
+      "R-Q-P-S",
+      "S-Q-R-P"
+     ],
+     "correctIndex": 3,
+     "explanation": "The logical order for 'Flying a kite' is: Choose an open field -> Hold the kite string -> Run while releasing the string -> Watch the kite fly high. So the correct label order is S-Q-R-P."
+    },
+    {
+     "id": "I-27",
+     "number": 27,
+     "category": "reading",
+     "categoryLabel": "Finding Key Information from a Text",
+     "prompt": "Read the following text!\n\"Every night before sleeping, Dito brushes his teeth for two minutes.\"\n\nHow long does Dito brush his teeth?",
+     "options": [
+      "five minutes",
+      "two minutes",
+      "three minutes",
+      "one minute"
+     ],
+     "correctIndex": 1,
+     "explanation": "According to the text, the information clearly stated is 'two minutes'."
+    },
+    {
+     "id": "I-28",
+     "number": 28,
+     "category": "situation",
+     "categoryLabel": "Solving Simple Situational Problems",
+     "prompt": "Situation: Budi wants to borrow his friend's eraser.\n\nWhat should he say?",
+     "options": [
+      "Give me your eraser now!",
+      "This is mine.",
+      "No thanks.",
+      "Can I borrow your eraser, please?"
+     ],
+     "correctIndex": 3,
+     "explanation": "The most appropriate and polite response/action for this situation is: \"Can I borrow your eraser, please?\"."
+    },
+    {
+     "id": "I-29",
+     "number": 29,
+     "category": "context_meaning",
+     "categoryLabel": "Word Meaning from Simple Context",
+     "prompt": "Look at the following sentence!\n\"The tiny ant carried a HEAVY leaf twice its size.\"\n\nWhat does the word \"HEAVY\" mean in this sentence?",
+     "options": [
+      "very colorful",
+      "having great weight",
+      "very light",
+      "very small"
+     ],
+     "correctIndex": 1,
+     "explanation": "In the context of this sentence, the word 'HEAVY' means 'having great weight'."
+    },
+    {
+     "id": "I-30",
+     "number": 30,
+     "category": "instruction",
+     "categoryLabel": "Interpreting Simple Instructions",
+     "prompt": "Read the following instruction!\n\"Color the sun yellow and the sky blue.\"\n\nWhat color is the sky?",
+     "options": [
+      "blue",
+      "green",
+      "red",
+      "yellow"
+     ],
+     "correctIndex": 0,
+     "explanation": "According to the instruction given, the correct answer is 'blue'."
+    }
+   ]
+  },
+  {
+   "id": "J",
+   "name": "Package J",
+   "questions": [
+    {
+     "id": "J-01",
+     "number": 1,
+     "category": "situation",
+     "categoryLabel": "Solving Simple Situational Problems",
+     "prompt": "Situation: It is lunchtime and Rafi forgot to bring money.\n\nWhat should he do?",
+     "options": [
+      "ask a teacher or friend for help politely",
+      "take food without paying",
+      "cry loudly",
+      "skip lunch and hide"
+     ],
+     "correctIndex": 0,
+     "explanation": "The most appropriate and polite response/action for this situation is: \"ask a teacher or friend for help politely\"."
+    },
+    {
+     "id": "J-02",
+     "number": 2,
+     "category": "picture_info",
+     "categoryLabel": "Interpreting Information from a Picture",
+     "prompt": "Look at the picture below: 🚗🚦🔴\n\nWhat should the car do?",
+     "options": [
+      "honk",
+      "stop",
+      "go",
+      "turn"
+     ],
+     "correctIndex": 1,
+     "explanation": "The symbols in the picture (🚗🚦🔴) together describe the situation 'stop', which is the correct answer."
+    },
+    {
+     "id": "J-03",
+     "number": 3,
+     "category": "categorize",
+     "categoryLabel": "Classifying Vocabulary by Category",
+     "prompt": "Which word does NOT belong to the same group as the others?\n\nhead, hand, foot, house",
+     "options": [
+      "hand",
+      "house",
+      "foot",
+      "head"
+     ],
+     "correctIndex": 1,
+     "explanation": "The word 'house' belongs to a different category from the other words in the group."
+    },
+    {
+     "id": "J-04",
+     "number": 4,
+     "category": "instruction",
+     "categoryLabel": "Interpreting Simple Instructions",
+     "prompt": "Read the following instruction!\n\"Cut the paper in half, then color one half red and the other half blue.\"\n\nHow many colors are used?",
+     "options": [
+      "four",
+      "three",
+      "two",
+      "one"
+     ],
+     "correctIndex": 2,
+     "explanation": "According to the instruction given, the correct answer is 'two'."
+    },
+    {
+     "id": "J-05",
+     "number": 5,
+     "category": "function_match",
+     "categoryLabel": "Matching Words to Picture/Function",
+     "prompt": "What do we use to tell direction?",
+     "options": [
+      "clock",
+      "ruler",
+      "thermometer",
+      "compass"
+     ],
+     "correctIndex": 3,
+     "explanation": "The correct item used to tell direction is 'compass'."
+    },
+    {
+     "id": "J-06",
+     "number": 6,
+     "category": "context_meaning",
+     "categoryLabel": "Word Meaning from Simple Context",
+     "prompt": "Look at the following sentence!\n\"The mountain path was NARROW, so only one person could walk at a time.\"\n\nWhat does the word \"NARROW\" mean in this sentence?",
+     "options": [
+      "very wide",
+      "very long",
+      "not wide",
+      "very short"
+     ],
+     "correctIndex": 2,
+     "explanation": "In the context of this sentence, the word 'NARROW' means 'not wide'."
+    },
+    {
+     "id": "J-07",
+     "number": 7,
+     "category": "reading",
+     "categoryLabel": "Finding Key Information from a Text",
+     "prompt": "Read the following text!\n\"Toni cannot find his shoes. He looks under the bed and behind the door.\"\n\nWhat is Toni looking for?",
+     "options": [
+      "his book",
+      "his bag",
+      "his shoes",
+      "his hat"
+     ],
+     "correctIndex": 2,
+     "explanation": "According to the text, the information clearly stated is 'his shoes'."
+    },
+    {
+     "id": "J-08",
+     "number": 8,
+     "category": "word_meaning",
+     "categoryLabel": "Word Meaning from Picture/Context",
+     "prompt": "Look at the picture below: 🍓\n\nWhat is the correct English word for this picture?",
+     "options": [
+      "strawberry",
+      "cherry",
+      "grape",
+      "raspberry"
+     ],
+     "correctIndex": 0,
+     "explanation": "The picture (🍓) shows something that is called 'strawberry' in English."
+    },
+    {
+     "id": "J-09",
+     "number": 9,
+     "category": "context_meaning",
+     "categoryLabel": "Word Meaning from Simple Context",
+     "prompt": "Look at the following sentence!\n\"The kitten looked FRAGILE, as if it could break easily.\"\n\nWhat does the word \"FRAGILE\" mean in this sentence?",
+     "options": [
+      "very fast",
+      "very strong",
+      "easily broken or hurt",
+      "very heavy"
+     ],
+     "correctIndex": 2,
+     "explanation": "In the context of this sentence, the word 'FRAGILE' means 'easily broken or hurt'."
+    },
+    {
+     "id": "J-10",
+     "number": 10,
+     "category": "sequence",
+     "categoryLabel": "Sequencing a Simple Story",
+     "prompt": "Put the following steps of 'Going to bed' into the correct order!\n\nP. Change into pajamas\nQ. Brush teeth\nR. Turn off the light and sleep\nS. Read a short story\n\nWhich order is correct?",
+     "options": [
+      "P-Q-S-R",
+      "S-R-P-Q",
+      "P-R-Q-S",
+      "P-Q-R-S"
+     ],
+     "correctIndex": 0,
+     "explanation": "The logical order for 'Going to bed' is: Change into pajamas -> Brush teeth -> Read a short story -> Turn off the light and sleep. So the correct label order is P-Q-S-R."
+    },
+    {
+     "id": "J-11",
+     "number": 11,
+     "category": "word_meaning",
+     "categoryLabel": "Word Meaning from Picture/Context",
+     "prompt": "Look at the picture below: ⭐\n\nWhat is the correct English word for this picture?",
+     "options": [
+      "cloud",
+      "sun",
+      "moon",
+      "star"
+     ],
+     "correctIndex": 3,
+     "explanation": "The picture (⭐) shows something that is called 'star' in English."
+    },
+    {
+     "id": "J-12",
+     "number": 12,
+     "category": "logic",
+     "categoryLabel": "Solving English Logic Problems",
+     "prompt": "If it is sunny, John plays outside. Today John is playing outside. What can we say about the weather?",
+     "options": [
+      "We cannot know at all",
+      "It is definitely raining",
+      "It is definitely snowing",
+      "It is likely sunny"
+     ],
+     "correctIndex": 3,
+     "explanation": "Based on the pattern/logic in the question, the correct answer is 'It is likely sunny'."
+    },
+    {
+     "id": "J-13",
+     "number": 13,
+     "category": "reading",
+     "categoryLabel": "Finding Key Information from a Text",
+     "prompt": "Read the following text!\n\"The fisherman catches three fish and brings them home for dinner.\"\n\nHow many fish does the fisherman catch?",
+     "options": [
+      "two",
+      "five",
+      "three",
+      "four"
+     ],
+     "correctIndex": 2,
+     "explanation": "According to the text, the information clearly stated is 'three'."
+    },
+    {
+     "id": "J-14",
+     "number": 14,
+     "category": "instruction",
+     "categoryLabel": "Interpreting Simple Instructions",
+     "prompt": "Read the following instruction!\n\"Draw a line under every noun in the sentence.\"\n\nWhat should you underline?",
+     "options": [
+      "every noun",
+      "every verb",
+      "every letter",
+      "every adjective"
+     ],
+     "correctIndex": 0,
+     "explanation": "According to the instruction given, the correct answer is 'every noun'."
+    },
+    {
+     "id": "J-15",
+     "number": 15,
+     "category": "instruction",
+     "categoryLabel": "Interpreting Simple Instructions",
+     "prompt": "Read the following instruction!\n\"Put your pencil case in your bag before you leave your desk.\"\n\nWhat must happen before leaving the desk?",
+     "options": [
+      "putting the pencil case in the bag",
+      "closing the book",
+      "leaving the classroom",
+      "sharpening the pencil"
+     ],
+     "correctIndex": 0,
+     "explanation": "According to the instruction given, the correct answer is 'putting the pencil case in the bag'."
+    },
+    {
+     "id": "J-16",
+     "number": 16,
+     "category": "situation",
+     "categoryLabel": "Solving Simple Situational Problems",
+     "prompt": "Situation: Farel finishes his food and wants to leave the table.\n\nWhat should he say?",
+     "options": [
+      "May I be excused, please?",
+      "(say nothing)",
+      "I'm leaving now.",
+      "Bye!"
+     ],
+     "correctIndex": 0,
+     "explanation": "The most appropriate and polite response/action for this situation is: \"May I be excused, please?\"."
+    },
+    {
+     "id": "J-17",
+     "number": 17,
+     "category": "logic",
+     "categoryLabel": "Solving English Logic Problems",
+     "prompt": "What comes next: 1, 1, 2, 3, 5, __ ?",
+     "options": [
+      "7",
+      "6",
+      "9",
+      "8"
+     ],
+     "correctIndex": 3,
+     "explanation": "Based on the pattern/logic in the question, the correct answer is '8'."
+    },
+    {
+     "id": "J-18",
+     "number": 18,
+     "category": "function_match",
+     "categoryLabel": "Matching Words to Picture/Function",
+     "prompt": "What do we use to keep food cold?",
+     "options": [
+      "refrigerator",
+      "oven",
+      "microwave",
+      "stove"
+     ],
+     "correctIndex": 0,
+     "explanation": "The correct item used to keep food cold is 'refrigerator'."
+    },
+    {
+     "id": "J-19",
+     "number": 19,
+     "category": "logic",
+     "categoryLabel": "Solving English Logic Problems",
+     "prompt": "A farmer has 5 cows and 3 chickens. How many animals in total?",
+     "options": [
+      "8",
+      "9",
+      "5",
+      "7"
+     ],
+     "correctIndex": 0,
+     "explanation": "Based on the pattern/logic in the question, the correct answer is '8'."
+    },
+    {
+     "id": "J-20",
+     "number": 20,
+     "category": "picture_info",
+     "categoryLabel": "Interpreting Information from a Picture",
+     "prompt": "Look at the picture below: ✈️🧳🛂\n\nWhere are they going?",
+     "options": [
+      "to the airport",
+      "to school",
+      "to the beach",
+      "to the park"
+     ],
+     "correctIndex": 0,
+     "explanation": "The symbols in the picture (✈️🧳🛂) together describe the situation 'to the airport', which is the correct answer."
+    },
+    {
+     "id": "J-21",
+     "number": 21,
+     "category": "situation",
+     "categoryLabel": "Solving Simple Situational Problems",
+     "prompt": "Situation: The class is asked to work in groups, but Dodi doesn't understand the task.\n\nWhat should Dodi do?",
+     "options": [
+      "ask the teacher to explain again",
+      "stay quiet and confused",
+      "copy his friend's answer",
+      "refuse to work"
+     ],
+     "correctIndex": 0,
+     "explanation": "The most appropriate and polite response/action for this situation is: \"ask the teacher to explain again\"."
+    },
+    {
+     "id": "J-22",
+     "number": 22,
+     "category": "categorize",
+     "categoryLabel": "Classifying Vocabulary by Category",
+     "prompt": "Which word does NOT belong to the same group as the others?\n\ncow, goat, sheep, car",
+     "options": [
+      "goat",
+      "cow",
+      "car",
+      "sheep"
+     ],
+     "correctIndex": 2,
+     "explanation": "The word 'car' belongs to a different category from the other words in the group."
+    },
+    {
+     "id": "J-23",
+     "number": 23,
+     "category": "picture_info",
+     "categoryLabel": "Interpreting Information from a Picture",
+     "prompt": "Look at the picture below: ☀️🏖️👧👦⛱️🏊\n\nWhat are the children doing?",
+     "options": [
+      "cooking dinner",
+      "reading books",
+      "playing football",
+      "swimming at the beach"
+     ],
+     "correctIndex": 3,
+     "explanation": "The symbols in the picture (☀️🏖️👧👦⛱️🏊) together describe the situation 'swimming at the beach', which is the correct answer."
+    },
+    {
+     "id": "J-24",
+     "number": 24,
+     "category": "function_match",
+     "categoryLabel": "Matching Words to Picture/Function",
+     "prompt": "What do we use to open a locked door?",
+     "options": [
+      "key",
+      "spoon",
+      "hammer",
+      "needle"
+     ],
+     "correctIndex": 0,
+     "explanation": "The correct item used to open a locked door is 'key'."
+    },
+    {
+     "id": "J-25",
+     "number": 25,
+     "category": "sequence",
+     "categoryLabel": "Sequencing a Simple Story",
+     "prompt": "Put the following steps of 'Planting a seed' into the correct order!\n\nP. Cover it with soil\nQ. Water it\nR. Put the seed in the hole\nS. Dig a small hole\n\nWhich order is correct?",
+     "options": [
+      "Q-R-P-S",
+      "S-R-Q-P",
+      "P-R-S-Q",
+      "S-R-P-Q"
+     ],
+     "correctIndex": 3,
+     "explanation": "The logical order for 'Planting a seed' is: Dig a small hole -> Put the seed in the hole -> Cover it with soil -> Water it. So the correct label order is S-R-P-Q."
+    },
+    {
+     "id": "J-26",
+     "number": 26,
+     "category": "word_meaning",
+     "categoryLabel": "Word Meaning from Picture/Context",
+     "prompt": "Look at the picture below: 🧺\n\nWhat is the correct English word for this picture?",
+     "options": [
+      "bag",
+      "box",
+      "bucket",
+      "basket"
+     ],
+     "correctIndex": 3,
+     "explanation": "The picture (🧺) shows something that is called 'basket' in English."
+    },
+    {
+     "id": "J-27",
+     "number": 27,
+     "category": "sequence",
+     "categoryLabel": "Sequencing a Simple Story",
+     "prompt": "Put the following steps of 'Cleaning a room' into the correct order!\n\nP. Pick up toys from the floor\nQ. Sweep the floor\nR. Arrange the books neatly\nS. Wipe the table\n\nWhich order is correct?",
+     "options": [
+      "P-Q-S-R",
+      "Q-R-P-S",
+      "R-S-Q-P",
+      "S-R-Q-P"
+     ],
+     "correctIndex": 0,
+     "explanation": "The logical order for 'Cleaning a room' is: Pick up toys from the floor -> Sweep the floor -> Wipe the table -> Arrange the books neatly. So the correct label order is P-Q-S-R."
+    },
+    {
+     "id": "J-28",
+     "number": 28,
+     "category": "reading",
+     "categoryLabel": "Finding Key Information from a Text",
+     "prompt": "Read the following text!\n\"Maya's grandmother bakes a chocolate cake every Sunday for the family.\"\n\nWhat does Maya's grandmother bake?",
+     "options": [
+      "a chocolate cake",
+      "bread",
+      "a vanilla cake",
+      "cookies"
+     ],
+     "correctIndex": 0,
+     "explanation": "According to the text, the information clearly stated is 'a chocolate cake'."
+    },
+    {
+     "id": "J-29",
+     "number": 29,
+     "category": "context_meaning",
+     "categoryLabel": "Word Meaning from Simple Context",
+     "prompt": "Look at the following sentence!\n\"The forest was SILENT except for the sound of birds.\"\n\nWhat does the word \"SILENT\" mean in this sentence?",
+     "options": [
+      "very dark",
+      "very noisy",
+      "very bright",
+      "very quiet"
+     ],
+     "correctIndex": 3,
+     "explanation": "In the context of this sentence, the word 'SILENT' means 'very quiet'."
+    },
+    {
+     "id": "J-30",
+     "number": 30,
+     "category": "categorize",
+     "categoryLabel": "Classifying Vocabulary by Category",
+     "prompt": "Which word does NOT belong to the same group as the others?\n\nJakarta, Bandung, Bali, banana",
+     "options": [
+      "banana",
+      "Bali",
+      "Jakarta",
+      "Bandung"
+     ],
+     "correctIndex": 0,
+     "explanation": "The word 'banana' belongs to a different category from the other words in the group."
+    }
+   ]
+  }
+ ]
+}
+</script>
+<script>
+(function(){
+  "use strict";
+  var DATA = JSON.parse(document.getElementById('exam-data').textContent);
+  var META = DATA.meta;
+  var PACKAGES = DATA.packages;
+
+  // ---------- state ----------
+  var state = {
+    selectedPkgId: null,
+    participantName: "",
+    pkg: null,
+    answers: {},      // qid -> optionIndex
+    flags: {},         // qid -> bool
+    currentIndex: 0,
+    timeLeft: META.durationMinutes * 60,
+    timerHandle: null,
+    submitted: false,
+  };
+
+  // ---------- home screen setup ----------
+  var kisiList = document.getElementById('kisi-list');
+  Object.keys(META.categories).forEach(function(key){
+    var li = document.createElement('li');
+    li.textContent = META.categories[key];
+    kisiList.appendChild(li);
+  });
+
+  var pkgGrid = document.getElementById('pkgGrid');
+  PACKAGES.forEach(function(pkg){
+    var btn = document.createElement('button');
+    btn.className = 'pkg-btn';
+    btn.textContent = pkg.id;
+    btn.setAttribute('data-id', pkg.id);
+    btn.addEventListener('click', function(){
+      state.selectedPkgId = pkg.id;
+      Array.prototype.forEach.call(pkgGrid.children, function(c){ c.classList.remove('selected'); });
+      btn.classList.add('selected');
+      document.getElementById('startBtn').disabled = false;
+    });
+    pkgGrid.appendChild(btn);
+  });
+
+  document.getElementById('startBtn').addEventListener('click', startExam);
+
+  function startExam(){
+    if(!state.selectedPkgId) return;
+    state.participantName = document.getElementById('nameInput').value.trim();
+    state.pkg = PACKAGES.filter(function(p){ return p.id === state.selectedPkgId; })[0];
+    state.answers = {};
+    state.flags = {};
+    state.currentIndex = 0;
+    state.timeLeft = META.durationMinutes * 60;
+    state.submitted = false;
+
+    document.getElementById('screen-home').classList.add('hidden');
+    document.getElementById('screen-result').classList.add('hidden');
+    document.getElementById('screen-exam').classList.remove('hidden');
+    document.getElementById('examPkgTag').textContent = 'Paket ' + state.pkg.id;
+
+    buildNavGrid();
+    renderQuestion();
+    startTimer();
+
+    window.onbeforeunload = function(){
+      if(!state.submitted){ return "Ujian sedang berlangsung. Yakin ingin meninggalkan halaman?"; }
+    };
+  }
+
+  // ---------- timer ----------
+  function startTimer(){
+    updateTimerDisplay();
+    state.timerHandle = setInterval(function(){
+      state.timeLeft--;
+      if(state.timeLeft <= 0){
+        state.timeLeft = 0;
+        updateTimerDisplay();
+        clearInterval(state.timerHandle);
+        finishExam(true);
+        return;
+      }
+      updateTimerDisplay();
+    }, 1000);
+  }
+
+  function updateTimerDisplay(){
+    var m = Math.floor(state.timeLeft / 60);
+    var s = state.timeLeft % 60;
+    var box = document.getElementById('timerBox');
+    box.textContent = (m<10?'0':'')+m + ':' + (s<10?'0':'')+s;
+    box.classList.remove('warn','danger');
+    if(state.timeLeft <= 60){ box.classList.add('danger'); }
+    else if(state.timeLeft <= 300){ box.classList.add('warn'); }
+  }
+
+  // ---------- question rendering ----------
+  function renderQuestion(){
+    var q = state.pkg.questions[state.currentIndex];
+    document.getElementById('qCategory').textContent = q.categoryLabel;
+    document.getElementById('qNum').textContent = 'Soal ' + (state.currentIndex+1) + ' dari ' + state.pkg.questions.length;
+    document.getElementById('qPrompt').textContent = q.prompt;
+
+    var flagBtn = document.getElementById('flagBtn');
+    flagBtn.classList.toggle('on', !!state.flags[q.id]);
+    flagBtn.onclick = function(){
+      state.flags[q.id] = !state.flags[q.id];
+      flagBtn.classList.toggle('on', !!state.flags[q.id]);
+      updateNavCell(state.currentIndex);
+    };
+
+    var box = document.getElementById('optionsBox');
+    box.innerHTML = '';
+    var letters = ['A','B','C','D'];
+    q.options.forEach(function(opt, i){
+      var div = document.createElement('div');
+      div.className = 'option' + (state.answers[q.id]===i ? ' selected' : '');
+      div.innerHTML = '<span class="letter">'+letters[i]+'</span><span class="otext"></span>';
+      div.querySelector('.otext').textContent = opt;
+      div.addEventListener('click', function(){
+        state.answers[q.id] = i;
+        renderQuestion();
+        updateNavCell(state.currentIndex);
+      });
+      box.appendChild(div);
+    });
+
+    document.getElementById('prevBtn').disabled = state.currentIndex === 0;
+    document.getElementById('prevBtn').style.visibility = state.currentIndex===0 ? 'hidden' : 'visible';
+    document.getElementById('nextBtn').textContent = (state.currentIndex === state.pkg.questions.length-1) ? 'Selesai →' : 'Selanjutnya →';
+
+    updateNavActive();
+  }
+
+  document.getElementById('prevBtn').addEventListener('click', function(){
+    if(state.currentIndex>0){ state.currentIndex--; renderQuestion(); }
+  });
+  document.getElementById('nextBtn').addEventListener('click', function(){
+    if(state.currentIndex < state.pkg.questions.length-1){ state.currentIndex++; renderQuestion(); }
+    else { openConfirmModal(); }
+  });
+
+  // ---------- nav grid ----------
+  function buildNavGrid(){
+    var grid = document.getElementById('navGrid');
+    grid.innerHTML = '';
+    state.pkg.questions.forEach(function(q, i){
+      var cell = document.createElement('div');
+      cell.className = 'nav-cell';
+      cell.textContent = (i+1);
+      cell.id = 'nav-cell-' + i;
+      cell.addEventListener('click', function(){
+        state.currentIndex = i;
+        renderQuestion();
+      });
+      grid.appendChild(cell);
+    });
+    updateNavActive();
+  }
+
+  function updateNavCell(i){
+    var q = state.pkg.questions[i];
+    var cell = document.getElementById('nav-cell-'+i);
+    if(!cell) return;
+    cell.classList.toggle('answered', state.answers[q.id] !== undefined);
+    cell.classList.toggle('flagged', !!state.flags[q.id]);
+  }
+
+  function updateNavActive(){
+    state.pkg.questions.forEach(function(q,i){ updateNavCell(i); });
+    Array.prototype.forEach.call(document.getElementById('navGrid').children, function(c,i){
+      c.classList.toggle('current', i === state.currentIndex);
+    });
+  }
+
+  // ---------- submit flow ----------
+  document.getElementById('submitBtn').addEventListener('click', openConfirmModal);
+
+  function openConfirmModal(){
+    var total = state.pkg.questions.length;
+    var answered = Object.keys(state.answers).length;
+    var unanswered = total - answered;
+    var flagged = Object.keys(state.flags).filter(function(k){return state.flags[k];}).length;
+    document.getElementById('confirmText').textContent =
+      'Kamu telah menjawab ' + answered + ' dari ' + total + ' soal. ' +
+      (unanswered>0 ? unanswered + ' soal belum dijawab. ' : '') +
+      (flagged>0 ? flagged + ' soal ditandai untuk ditinjau. ' : '') +
+      'Setelah dikumpulkan, jawaban tidak dapat diubah lagi.';
+    document.getElementById('confirmModal').classList.remove('hidden');
+  }
+  document.getElementById('cancelSubmitBtn').addEventListener('click', function(){
+    document.getElementById('confirmModal').classList.add('hidden');
+  });
+  document.getElementById('confirmSubmitBtn').addEventListener('click', function(){
+    document.getElementById('confirmModal').classList.add('hidden');
+    finishExam(false);
+  });
+
+  function finishExam(timeUp){
+    if(state.submitted) return;
+    state.submitted = true;
+    clearInterval(state.timerHandle);
+    window.onbeforeunload = null;
+
+    document.getElementById('screen-exam').classList.add('hidden');
+    document.getElementById('screen-result').classList.remove('hidden');
+
+    computeAndShowResult(timeUp);
+  }
+
+  // ---------- scoring & result ----------
+  function computeAndShowResult(timeUp){
+    var correct=0, wrong=0, blank=0, score=0;
+    var catStats = {};
+    Object.keys(META.categories).forEach(function(k){ catStats[k] = {correct:0,total:0,label:META.categories[k]}; });
+
+    state.pkg.questions.forEach(function(q){
+      catStats[q.category].total++;
+      var a = state.answers[q.id];
+      if(a === undefined){
+        blank++;
+      } else if(a === q.correctIndex){
+        correct++;
+        score += META.scoring.correct;
+        catStats[q.category].correct++;
+      } else {
+        wrong++;
+        score += META.scoring.wrong;
+      }
+    });
+
+    var maxScore = state.pkg.questions.length * META.scoring.correct;
+
+    document.getElementById('resultName').textContent =
+      (state.participantName ? state.participantName + ' — ' : '') + 'Paket ' + state.pkg.id +
+      (timeUp ? ' (waktu habis, otomatis dikumpulkan)' : '');
+    document.getElementById('scoreNum').textContent = score;
+    document.getElementById('scoreMax').textContent = 'dari skor maksimal ' + maxScore;
+    document.getElementById('statCorrect').textContent = correct;
+    document.getElementById('statWrong').textContent = wrong;
+    document.getElementById('statBlank').textContent = blank;
+
+    var catBox = document.getElementById('catBreakdown');
+    catBox.innerHTML = '';
+    Object.keys(catStats).forEach(function(k){
+      var cs = catStats[k];
+      var pct = cs.total ? Math.round((cs.correct/cs.total)*100) : 0;
+      var row = document.createElement('div');
+      row.className = 'cat-row';
+      row.innerHTML = '<span style="flex:0 0 auto;max-width:44%;">'+cs.label+'</span>' +
+        '<span class="cat-bar-wrap"><span class="cat-bar" style="width:'+pct+'%"></span></span>' +
+        '<span style="flex:0 0 auto;font-weight:700;">'+cs.correct+'/'+cs.total+'</span>';
+      catBox.appendChild(row);
+    });
+
+    // render answer key directly (no unlock needed)
+    renderReview();
+  }
+
+  function renderReview(){
+    var list = document.getElementById('reviewList');
+    list.innerHTML = '';
+    var letters = ['A','B','C','D'];
+    state.pkg.questions.forEach(function(q, idx){
+      var userAns = state.answers[q.id];
+      var status = (userAns === undefined) ? 'blank' : (userAns === q.correctIndex ? 'ok' : 'no');
+      var wrap = document.createElement('div');
+      wrap.className = 'review-q';
+
+      var head = document.createElement('div');
+      head.style.display = 'flex';
+      head.style.justifyContent = 'space-between';
+      head.style.alignItems = 'center';
+      head.style.flexWrap = 'wrap';
+      head.style.gap = '8px';
+      var statusLabel = status==='ok' ? 'Benar' : (status==='no' ? 'Salah' : 'Tidak Dijawab');
+      head.innerHTML = '<span class="q-badge">'+q.categoryLabel+'</span>' +
+        '<span class="review-status '+status+'">Soal '+(idx+1)+' — '+statusLabel+'</span>';
+      wrap.appendChild(head);
+
+      var prompt = document.createElement('div');
+      prompt.className = 'q-prompt';
+      prompt.textContent = q.prompt;
+      wrap.appendChild(prompt);
+
+      q.options.forEach(function(opt, i){
+        var row = document.createElement('div');
+        var cls = 'review-opt';
+        if(i === q.correctIndex) cls += ' correct';
+        else if(i === userAns) cls += ' wrong-picked';
+        row.className = cls;
+        var tagHtml = '';
+        if(i === q.correctIndex) tagHtml = '<span class="review-tag correct">Kunci Jawaban</span>';
+        else if(i === userAns) tagHtml = '<span class="review-tag wrong">Jawaban Kamu</span>';
+        row.innerHTML = '<strong>'+letters[i]+'.</strong><span></span>' + tagHtml;
+        row.querySelector('span').textContent = ' ' + opt;
+        wrap.appendChild(row);
+      });
+
+      list.appendChild(wrap);
+    });
+  }
+
+  // ---------- restart ----------
+  document.getElementById('restartBtn').addEventListener('click', function(){
+    document.getElementById('screen-result').classList.add('hidden');
+    document.getElementById('screen-home').classList.remove('hidden');
+    document.getElementById('nameInput').value = state.participantName;
+    Array.prototype.forEach.call(pkgGrid.children, function(c){ c.classList.remove('selected'); });
+    state.selectedPkgId = null;
+    document.getElementById('startBtn').disabled = true;
+  });
+
+})();
+
+</script>
+</body>
+</html>
