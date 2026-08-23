@@ -6,3 +6,4 @@
 30-7 Improve the UI
 31-7 Add auto fit
 20-8 Fix margin function for 2 sided
+24-8 Add cropmarks on the second grid, notify form/annotation
