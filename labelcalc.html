@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Imposition Multi-Layout Gang-Run Planner</title>
+<style>
+  :root{
+    --bg:#12151a; --panel:#1b1f27; --panel2:#20252f; --border:#2c313d;
+    --text:#e6e9ef; --muted:#8b93a3; --accent:#4f9dff; --accent2:#33d19a;
+    --warn:#e0a83e; --danger:#e0555a; --mono:'SF Mono',Consolas,'Courier New',monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    padding:24px; line-height:1.4;
+  }
+  .wrap{max-width:1180px; margin:0 auto;}
+  h1{font-size:19px; font-weight:600; margin:0 0 4px;}
+  .sub{color:var(--muted); font-size:13px; margin:0 0 20px;}
+  .panel{
+    background:var(--panel); border:1px solid var(--border); border-radius:10px;
+    padding:16px; margin-bottom:18px;
+  }
+  .panel h2{
+    font-size:12px; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--muted); margin:0 0 14px; font-weight:600; display:flex; justify-content:space-between; align-items:center;
+  }
+  label{display:block; font-size:12px; color:var(--muted); margin-bottom:4px;}
+  input[type=number], input[type=text]{
+    background:var(--panel2); border:1px solid var(--border);
+    color:var(--text); border-radius:6px; padding:7px 9px; font-size:13px;
+    font-family:var(--mono);
+  }
+  input:focus{outline:none; border-color:var(--accent);}
+  .field{margin-bottom:0;}
+  .field-row{display:flex; gap:10px; flex-wrap:wrap;}
+  .field-row .field{flex:1; min-width:120px;}
+  .field-row input{width:100%;}
+  .slots-readout{
+    background:var(--panel2); border:1px solid var(--border); border-radius:6px;
+    padding:10px; font-family:var(--mono); font-size:13px; margin-top:12px;
+  }
+  .slots-readout b{color:var(--accent2);}
+  .hint{font-size:11.5px; color:var(--muted); margin-top:4px;}
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th, td{padding:7px 9px; text-align:right; border-bottom:1px solid var(--border);}
+  th:first-child, td:first-child{text-align:left;}
+  th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.04em;}
+  tr:last-child td{border-bottom:none;}
+  td input{width:100%; text-align:right;}
+  td input.name{text-align:left; font-family:inherit;}
+  .btn{
+    background:var(--accent); color:#fff; border:none; border-radius:6px;
+    padding:8px 13px; font-size:12.5px; font-weight:600; cursor:pointer;
+  }
+  .btn.secondary{background:var(--panel2); color:var(--text); border:1px solid var(--border);}
+  .btn.small{padding:5px 10px; font-size:11.5px;}
+  .btn.danger{background:transparent; color:var(--danger); border:1px solid var(--danger); padding:5px 10px; font-size:11.5px;}
+  .btn:hover{opacity:.88;}
+  .toolbar{display:flex; gap:8px; margin-top:10px;}
+  .layout-card{
+    background:var(--panel2); border:1px solid var(--border); border-radius:8px;
+    padding:14px; margin-bottom:12px;
+  }
+  .layout-card-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;}
+  .layout-card-head input.layoutName{font-size:13px; font-weight:600; font-family:inherit; background:transparent; border:none; color:var(--text); padding:2px 0;}
+  .gang-row{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:10px;}
+  .swatch{width:10px; height:10px; border-radius:2px; display:inline-block; flex-shrink:0;}
+  .gang-chip{
+    display:flex; align-items:center; gap:6px; background:var(--panel); border:1px solid var(--border);
+    border-radius:20px; padding:5px 10px 5px 8px; font-size:13px;
+  }
+  .gang-chip input{width:42px; padding:3px 6px; text-align:center; font-size:12px;}
+  .lane-usage{font-size:12px; color:var(--muted); margin-bottom:10px;}
+  .lane-usage b{color:var(--text);}
+  .lane-usage.over{color:var(--danger);}
+  .sheets-row{display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;}
+  .sheets-row .field{flex:0 0 140px;}
+  .summary{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:6px;}
+  @media (max-width:820px){ .summary{grid-template-columns:repeat(2,1fr);} .lane-grid{grid-template-columns:repeat(2,1fr);} }
+  .stat{background:var(--panel2); border:1px solid var(--border); border-radius:8px; padding:12px;}
+  .stat .v{font-size:20px; font-weight:700; font-family:var(--mono);}
+  .stat .l{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-top:2px;}
+  .stat.warn .v{color:var(--warn);}
+  .stat.good .v{color:var(--accent2);}
+  .status-ok{color:var(--accent2);}
+  .status-short{color:var(--danger);}
+  .status-over{color:var(--warn);}
+  .msg{font-size:12.5px; padding:9px 11px; border-radius:6px; margin-top:10px; border:1px solid var(--border); background:var(--panel2); color:var(--muted);}
+  .msg.danger{border-color:var(--danger); color:var(--danger); background:rgba(224,85,90,.08);}
+  .msg.warn{border-color:var(--warn); color:var(--warn); background:rgba(224,168,62,.08);}
+  .footer-note{font-size:11.5px; color:var(--muted); margin-top:4px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Label Imposition Multi-Layout Gang-Run Planner</h1>
+  <p class="sub">Build several sheet layouts - each a different mix of kinds across the Up Across - and run each for its own sheet count so every kind's quantity is met with minimal waste.</p>
+
+  <div class="panel">
+    <h2>Sheet Setup</h2>
+    <div class="field-row">
+      <div class="field">
+        <label>Repeat across (Up Across)</label>
+        <input type="number" id="acrossInput" min="1" value="3">
+      </div>
+      <div class="field">
+        <label>Sheet length (mm)</label>
+        <input type="number" id="sheetLenInput" min="1" value="980">
+      </div>
+      <div class="field">
+        <label>Artwork height (mm)</label>
+        <input type="number" id="artHeightInput" min="0.01" step="0.01" value="40">
+      </div>
+      <div class="field">
+        <label>Gap (mm)</label>
+        <input type="number" id="gapInput" min="0" step="0.01" value="3">
+      </div>
+    </div>
+    <div class="slots-readout">
+      Repeat to length: <b id="lengthReadout">–</b> &nbsp;|&nbsp; Total up per sheet: <b id="totalUpReadout">–</b>
+      <div class="hint" id="lengthFormula"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>
+      Kinds &amp; Quantities
+      <button class="btn small" id="addKindBtn">+ Add kind</button>
+    </h2>
+    <table id="kindsTable">
+      <thead><tr><th>Kind</th><th>Qty needed</th><th></th></tr></thead>
+      <tbody id="kindsBody"></tbody>
+    </table>
+  </div>
+
+  <div class="panel">
+    <h2>
+      Layouts
+      <span>
+        <button class="btn secondary small" id="autoGenBtn">⚡ Auto-generate layouts</button>
+        <button class="btn small" id="addLayoutBtn">+ Add layout</button>
+      </span>
+    </h2>
+    <p class="hint" style="margin-bottom:8px;">Auto-generate searches every way of isolating some kinds into their own dedicated full-width layout vs. combining the rest proportionally in a shared layout, and keeps whichever split produces the least total waste. Adjust Up Across/sheets by hand afterward if you want - that switches to manual mode.</p>
+    <div id="autoBanner" class="hint" style="margin-bottom:12px;"></div>
+    <div id="layoutsWrap"></div>
+  </div>
+
+  <div class="panel">
+    <h2>
+      Overall Summary
+      <span>
+        <button class="btn small" id="copyReportBtn">Copy report</button>
+      </span>
+    </h2>
+    <table id="summaryTable">
+      <thead><tr><th>Kind</th><th>Qty needed</th><th>Total produced</th><th>Overs / Short</th><th>Status</th></tr></thead>
+      <tbody id="summaryBody"></tbody>
+    </table>
+    <div class="summary" id="overallStats" style="margin-top:14px;"></div>
+    <div id="messages"></div>
+    <pre id="reportOutput" style="display:block; background:var(--panel2); border:1px solid var(--border); border-radius:6px; padding:12px; font-size:12.5px; font-family:var(--mono); white-space:pre-wrap; margin-top:12px; color:var(--text);"></pre>
+    <p class="footer-note">Total sheets = sum of sheets across all layouts (each layout is its own plate/run). Total produced per kind = sum across layouts of Up Across × repeat-to-length × sheets. Auto-generate rebuilds the layout set from scratch whenever quantities or sheet setup change - it tries every combination of "isolate this kind on its own full-width layout" vs "combine it in with the rest," and keeps the split with the least total overproduction. The per-layout "Auto-fill sheets" button is a manual-mode tool for topping up one layout's sheet count based on what's still short after the others.</p>
+  </div>
+</div>
+
+<script>
+const acrossInput = document.getElementById('acrossInput');
+const sheetLenInput = document.getElementById('sheetLenInput');
+const artHeightInput = document.getElementById('artHeightInput');
+const gapInput = document.getElementById('gapInput');
+const lengthReadout = document.getElementById('lengthReadout');
+const totalUpReadout = document.getElementById('totalUpReadout');
+const lengthFormula = document.getElementById('lengthFormula');
+const kindsBody = document.getElementById('kindsBody');
+const layoutsWrap = document.getElementById('layoutsWrap');
+const autoBanner = document.getElementById('autoBanner');
+const summaryBody = document.getElementById('summaryBody');
+const overallStats = document.getElementById('overallStats');
+const messages = document.getElementById('messages');
+
+const PALETTE = ['#4f9dff','#33d19a','#e0a83e','#e0555a','#b18cff','#4fd1e0',
+                  '#ff8fb8','#9adb56','#ffb454','#5fb0ff','#e07be0','#7de0a8'];
+
+let kinds = [
+  { name: 'Kind A', qty: 1000 },
+  { name: 'Kind B', qty: 3000 },
+  { name: 'Kind C', qty: 2000 }
+];
+
+let layouts = [];
+let autoMode = true;
+
+function computeLengthRepeat(){
+  const sheetLen = Math.max(0, parseFloat(sheetLenInput.value) || 0);
+  const h = Math.max(0.01, parseFloat(artHeightInput.value) || 0.01);
+  const gap = Math.max(0, parseFloat(gapInput.value) || 0);
+  const pitch = h + gap;
+  const l = pitch > 0 ? Math.floor(sheetLen / pitch) : 0;
+  lengthReadout.textContent = l;
+  lengthFormula.textContent = `${sheetLen} ÷ (${h} + ${gap}) = ${(sheetLen/pitch).toFixed(2)} → floor = ${l}`;
+  return Math.max(1, l);
+}
+
+function across(){ return Math.max(1, parseInt(acrossInput.value) || 1); }
+
+// ---------- Automatic layout generation ----------
+// Searches every way of splitting kinds into "isolated" (own dedicated
+// full-width layout) vs "combined" (share one layout, lanes split by qty
+// ratio) and keeps whichever split produces the least total waste.
+function proportionalLanes(items, budget){
+  if(items.length === 0) return {};
+  const n = items.length;
+  if(budget < n) return null; // can't give every item at least 1 lane
+  const sum = items.reduce((s,it)=>s+it.qty, 0);
+  const res = {};
+
+  // Reserve 1 lane per item first (the guaranteed minimum), then hand out
+  // whatever lanes remain proportionally by quantity. Doing it in this order
+  // (instead of rounding the full proportional split down and trying to
+  // "rescue" zero-lane items from whatever's left over) guarantees every
+  // item ends up with >=1 lane no matter how skewed the quantities are -
+  // otherwise a large item's rounded-down share can eat the whole leftover
+  // pool and leave a smaller item stuck at 0 lanes, which then causes a
+  // divide-by-zero (Infinity/NaN) when sheets-needed is calculated later.
+  const extra = budget - n;
+  if(sum === 0 || extra === 0){
+    const base = Math.floor(budget/n);
+    let leftover = budget - base*n;
+    items.forEach((it,idx) => { res[it.idx] = base + (idx<leftover?1:0); });
+    return res;
+  }
+
+  const raw = items.map(it => (it.qty/sum)*extra);
+  let floors = raw.map(Math.floor);
+  let leftover = extra - floors.reduce((a,b)=>a+b,0);
+  const remainders = raw.map((v,i)=>({i,frac:v-Math.floor(v)})).sort((a,b)=>b.frac-a.frac);
+  let ptr=0;
+  while(leftover>0 && ptr<remainders.length){ floors[remainders[ptr].i]++; leftover--; ptr++; }
+  items.forEach((it,idx) => { res[it.idx] = 1 + floors[idx]; });
+  return res;
+}
+
+function evaluateSubset(mask, activeKinds, A, L){
+  const isolated = [], combined = [];
+  activeKinds.forEach((k,i) => { if(mask & (1<<i)) isolated.push(k); else combined.push(k); });
+  if(combined.length > A) return null;
+  let totalWaste = 0, totalSheets = 0;
+  const plans = [];
+  isolated.forEach(k => {
+    const sheets = Math.ceil(k.qty / (A * L));
+    totalWaste += A*L*sheets - k.qty;
+    totalSheets += sheets;
+    plans.push({ lanes: { [k.idx]: A }, sheets });
+  });
+  if(combined.length > 0){
+    const lanes = proportionalLanes(combined, A);
+    if(!lanes) return null;
+    let sheets = 0;
+    combined.forEach(k => { sheets = Math.max(sheets, Math.ceil(k.qty / (lanes[k.idx]*L))); });
+    let waste = 0;
+    combined.forEach(k => { waste += lanes[k.idx]*L*sheets - k.qty; });
+    totalWaste += waste; totalSheets += sheets;
+    plans.push({ lanes, sheets });
+  }
+  return { totalWaste, totalSheets, plans };
+}
+
+function autoGenerateLayouts(){
+  const A = across();
+  const L = computeLengthRepeat();
+  const activeKinds = kinds.map((k,i) => ({ idx: i, qty: k.qty })).filter(k => k.qty > 0);
+
+  if(activeKinds.length === 0){
+    layouts = [];
+    return;
+  }
+
+  let best = null;
+  if(activeKinds.length <= 16){
+    for(let mask = 0; mask < (1 << activeKinds.length); mask++){
+      const r = evaluateSubset(mask, activeKinds, A, L);
+      if(!r) continue;
+      if(!best || r.totalWaste < best.totalWaste ||
+        (r.totalWaste === best.totalWaste && r.plans.length < best.plans.length)){
+        best = r;
+      }
+    }
+  }
+
+  if(!best){
+    // too many kinds for exhaustive search, or nothing feasible -
+    // fall back to a single proportional layout, min 1 lane each if possible
+    const lanes = proportionalLanes(activeKinds, A);
+    layouts = [];
+    if(lanes){
+      let sheets = 0;
+      activeKinds.forEach(k => { sheets = Math.max(sheets, Math.ceil(k.qty/(lanes[k.idx]*L))); });
+      const laneArr = kinds.map((k,i) => lanes[i] || 0);
+      layouts.push({ name:'Layout 1', lanes: laneArr, sheets });
+    }
+    return;
+  }
+
+  layouts = best.plans.map((p, i) => {
+    const laneArr = kinds.map((k, ki) => p.lanes[ki] || 0);
+    return { name: 'Layout ' + (i+1), lanes: laneArr, sheets: p.sheets };
+  });
+}
+
+// ---------- Kinds table ----------
+function renderKinds(){
+  kindsBody.innerHTML = '';
+  kinds.forEach((k, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>
+        <span class="swatch" style="background:${PALETTE[i % PALETTE.length]}"></span>
+        <input class="name" type="text" data-i="${i}" data-f="name" value="${k.name}" style="width:calc(100% - 18px); margin-left:4px;">
+      </td>
+      <td><input type="number" min="0" data-i="${i}" data-f="qty" value="${k.qty}"></td>
+      <td><button class="btn danger small" data-i="${i}" data-act="removeKind">Remove</button></td>
+    `;
+    kindsBody.appendChild(tr);
+  });
+  kindsBody.querySelectorAll('input').forEach(inp => inp.addEventListener('input', onKindFieldChange));
+  kindsBody.querySelectorAll('[data-act="removeKind"]').forEach(btn => btn.addEventListener('click', onRemoveKind));
+}
+
+function onKindFieldChange(e){
+  const i = parseInt(e.target.dataset.i);
+  const f = e.target.dataset.f;
+  if(f === 'name'){
+    kinds[i].name = e.target.value;
+    // Don't rebuild the kinds table here (renderAll/renderKinds would
+    // recreate the <input> elements and steal focus mid-keystroke).
+    // Only the layout chips/dropdowns show kind names elsewhere, so just
+    // refresh those, plus the summary table and swatch label.
+    renderLayouts();
+    computeAndRenderOutputs();
+    return;
+  }
+  if(f === 'qty'){ kinds[i].qty = Math.max(0, parseInt(e.target.value) || 0); }
+  if(autoMode){ autoGenerateLayouts(); renderLayouts(); }
+  computeAndRenderOutputs();
+}
+
+function onRemoveKind(e){
+  const i = parseInt(e.target.dataset.i);
+  kinds.splice(i, 1);
+  layouts.forEach(L => L.lanes.splice(i, 1));
+  if(autoMode) autoGenerateLayouts();
+  renderAll();
+}
+
+document.getElementById('addKindBtn').addEventListener('click', () => {
+  kinds.push({ name: 'Kind ' + String.fromCharCode(65 + kinds.length), qty: 0 });
+  layouts.forEach(L => L.lanes.push(0));
+  if(autoMode) autoGenerateLayouts();
+  renderAll();
+});
+
+// ---------- Layouts ----------
+function renderLayouts(){
+  layoutsWrap.innerHTML = '';
+  layouts.forEach((L, li) => {
+    while(L.lanes.length < kinds.length) L.lanes.push(0);
+    L.lanes.length = kinds.length;
+
+    const card = document.createElement('div');
+    card.className = 'layout-card';
+
+    const gangedChips = kinds.map((k,ki) => L.lanes[ki] > 0 ? `
+      <div class="gang-chip">
+        <span class="swatch" style="background:${PALETTE[ki % PALETTE.length]}"></span>
+        <span>${k.name}</span>
+        <input type="number" min="0" data-li="${li}" data-ki="${ki}" data-f="lane" value="${L.lanes[ki]}">
+        <span class="hint" style="margin:0;">Up Across</span>
+      </div>
+    ` : '').join('');
+
+    const addOptions = kinds.map((k,ki) => L.lanes[ki] > 0 ? '' : `<option value="${ki}">${k.name}</option>`).join('');
+    const addControl = addOptions ? `
+      <select data-li="${li}" data-f="addKind" style="font-size:12px; background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:6px 8px;">
+        <option value="">+ add kind…</option>
+        ${addOptions}
+      </select>` : '';
+
+    card.innerHTML = `
+      <div class="layout-card-head">
+        <input class="layoutName" data-li="${li}" data-f="layoutName" value="${L.name}">
+        <button class="btn danger small" data-li="${li}" data-act="removeLayout">Remove</button>
+      </div>
+      <div class="gang-row">
+        ${gangedChips || '<span class="hint">No kinds assigned yet.</span>'}
+        ${addControl}
+      </div>
+      <div class="lane-usage" data-usage="${li}"></div>
+      <div class="sheets-row">
+        <div class="field">
+          <label>Sheets to run</label>
+          <input type="number" min="0" data-li="${li}" data-f="sheets" value="${L.sheets}">
+        </div>
+        <button class="btn secondary small" data-li="${li}" data-act="autoFill">Auto-fill sheets</button>
+      </div>
+    `;
+    layoutsWrap.appendChild(card);
+  });
+
+  layoutsWrap.querySelectorAll('[data-f="lane"]').forEach(inp => inp.addEventListener('input', onLaneChange));
+  layoutsWrap.querySelectorAll('[data-f="sheets"]').forEach(inp => inp.addEventListener('input', onSheetsChange));
+  layoutsWrap.querySelectorAll('[data-f="layoutName"]').forEach(inp => inp.addEventListener('input', onLayoutNameChange));
+  layoutsWrap.querySelectorAll('[data-f="addKind"]').forEach(sel => sel.addEventListener('change', onAddKindToLayout));
+  layoutsWrap.querySelectorAll('[data-act="autoFill"]').forEach(btn => btn.addEventListener('click', onAutoFill));
+  layoutsWrap.querySelectorAll('[data-act="removeLayout"]').forEach(btn => btn.addEventListener('click', onRemoveLayout));
+}
+
+function onAddKindToLayout(e){
+  const li = parseInt(e.target.dataset.li);
+  const ki = parseInt(e.target.value);
+  if(isNaN(ki)) return;
+  layouts[li].lanes[ki] = 1;
+  setManualMode();
+  renderLayouts();
+  computeAndRenderOutputs();
+}
+
+function onLaneChange(e){
+  const li = parseInt(e.target.dataset.li), ki = parseInt(e.target.dataset.ki);
+  layouts[li].lanes[ki] = Math.max(0, parseInt(e.target.value) || 0);
+  setManualMode();
+  computeAndRenderOutputs();
+}
+function onSheetsChange(e){
+  const li = parseInt(e.target.dataset.li);
+  layouts[li].sheets = Math.max(0, parseInt(e.target.value) || 0);
+  setManualMode();
+  computeAndRenderOutputs();
+}
+function onLayoutNameChange(e){
+  const li = parseInt(e.target.dataset.li);
+  layouts[li].name = e.target.value;
+}
+function onRemoveLayout(e){
+  const li = parseInt(e.target.dataset.li);
+  layouts.splice(li, 1);
+  setManualMode();
+  renderAll();
+}
+
+document.getElementById('addLayoutBtn').addEventListener('click', () => {
+  layouts.push({ name: 'Layout ' + (layouts.length + 1), lanes: kinds.map(()=>0), sheets: 0 });
+  setManualMode();
+  renderAll();
+});
+
+document.getElementById('autoGenBtn').addEventListener('click', () => {
+  autoMode = true;
+  autoGenerateLayouts();
+  renderAll();
+});
+
+function onAutoFill(e){
+  const li = parseInt(e.target.dataset.li);
+  const L = layouts[li];
+  const lengthRep = computeLengthRepeat();
+
+  // production from all OTHER layouts at their current sheet counts
+  const otherProd = kinds.map((k, ki) => {
+    return layouts.reduce((s, Lx, lxi) => {
+      if(lxi === li) return s;
+      return s + Lx.lanes[ki] * lengthRep * Lx.sheets;
+    }, 0);
+  });
+
+  let neededSheets = 0;
+  kinds.forEach((k, ki) => {
+    const lanes = L.lanes[ki];
+    if(lanes > 0){
+      const remaining = Math.max(0, k.qty - otherProd[ki]);
+      const req = remaining > 0 ? Math.ceil(remaining / (lanes * lengthRep)) : 0;
+      neededSheets = Math.max(neededSheets, req);
+    }
+  });
+  L.sheets = neededSheets;
+  setManualMode();
+  renderLayouts();
+  computeAndRenderOutputs();
+}
+
+// ---------- Computation & rendering of outputs ----------
+function computeAndRenderOutputs(){
+  const lengthRep = computeLengthRepeat();
+  const A = across();
+  totalUpReadout.textContent = A * lengthRep;
+
+  let msgs = [];
+
+  // per-layout usage
+  layouts.forEach((L, li) => {
+    const used = L.lanes.reduce((a,b)=>a+b, 0);
+    const usageEl = layoutsWrap.querySelector(`[data-usage="${li}"]`);
+    if(usageEl){
+      usageEl.innerHTML = `Up Across used: <b>${used}</b> / ${A}` + (used > A ? ` - exceeds available Up Across!` : (used < A ? ` (${A-used} spare)` : ''));
+      usageEl.className = 'lane-usage' + (used > A ? ' over' : '');
+    }
+
+    if(used > A){
+      msgs.push({type:'danger', text:`${L.name}: Up Across used (${used}) exceed the ${A} available across - reduce a count.`});
+    }
+  });
+
+  // global totals per kind
+  const totals = kinds.map((k, ki) => {
+    const produced = layouts.reduce((s, L) => s + L.lanes[ki] * lengthRep * L.sheets, 0);
+    return { name: k.name, qty: k.qty, produced };
+  });
+
+  summaryBody.innerHTML = totals.map(t => {
+    const diff = t.produced - t.qty;
+    let status, statusClass;
+    if(t.qty === 0){ status = '-'; statusClass=''; }
+    else if(diff < 0){ status = 'Short'; statusClass = 'status-short'; }
+    else if(diff === 0){ status = 'Exact'; statusClass = 'status-ok'; }
+    else { status = 'Over'; statusClass = 'status-over'; }
+    return `<tr>
+      <td>${t.name}</td>
+      <td>${t.qty}</td>
+      <td>${t.produced}</td>
+      <td>${diff >= 0 ? '+' : ''}${diff}</td>
+      <td class="${statusClass}">${status}</td>
+    </tr>`;
+  }).join('');
+
+  const totalSheets = layouts.reduce((s,L) => s + L.sheets, 0);
+  const totalProduced = totals.reduce((s,t) => s + t.produced, 0);
+  const totalQty = totals.reduce((s,t) => s + t.qty, 0);
+  const totalOvers = totals.reduce((s,t) => s + Math.max(0, t.produced - t.qty), 0);
+  const totalShort = totals.reduce((s,t) => s + Math.max(0, t.qty - t.produced), 0);
+  const oversPct = totalQty > 0 ? ((totalOvers / totalQty) * 100).toFixed(1) : '0.0';
+
+  overallStats.innerHTML = `
+    <div class="stat good"><div class="v">${totalSheets}</div><div class="l">Total sheets</div></div>
+    <div class="stat"><div class="v">${totalProduced}</div><div class="l">Total pieces printed</div></div>
+    <div class="stat ${totalOvers>0?'warn':'good'}"><div class="v">${totalOvers} (${oversPct}%)</div><div class="l">Total overs</div></div>
+    <div class="stat ${totalShort>0?'warn':'good'}"><div class="v">${totalShort}</div><div class="l">Total short</div></div>
+  `;
+
+  if(totalShort > 0){
+    msgs.push({type:'warn', text:`${totalShort} piece(s) still short of demand - increase sheets on a layout covering the short kind(s), or add another layout.`});
+  }
+
+  messages.innerHTML = msgs.map(m => `<div class="msg ${m.type}">${m.text}</div>`).join('');
+
+  if(reportOutput && reportOutput.style.display === 'block'){
+    reportOutput.textContent = generateReport();
+  }
+}
+
+function renderAll(){
+  renderAutoBanner();
+  renderKinds();
+  renderLayouts();
+  computeAndRenderOutputs();
+}
+
+function setManualMode(){
+  if(autoMode){
+    autoMode = false;
+    renderAutoBanner();
+  }
+}
+
+function renderAutoBanner(){
+  if(autoMode){
+    autoBanner.innerHTML = `<span style="color:var(--accent2);">● Auto-layout is on</span> - layouts rebuild automatically whenever quantities or sheet setup change.`;
+  } else {
+    autoBanner.innerHTML = `<span style="color:var(--warn);">● Manual mode</span> - you've edited a layout directly, so auto-rebuild is paused.
+      <button class="btn small" id="reenableAutoBtn" style="margin-left:8px;">Regenerate automatically</button>`;
+    document.getElementById('reenableAutoBtn').addEventListener('click', () => {
+      autoMode = true;
+      autoGenerateLayouts();
+      renderAll();
+    });
+  }
+}
+
+function onSheetSetupChange(){
+  if(autoMode){ autoGenerateLayouts(); renderLayouts(); }
+  computeAndRenderOutputs();
+}
+
+acrossInput.addEventListener('input', onSheetSetupChange);
+sheetLenInput.addEventListener('input', onSheetSetupChange);
+artHeightInput.addEventListener('input', onSheetSetupChange);
+gapInput.addEventListener('input', onSheetSetupChange);
+
+// ---------- Report ----------
+const reportOutput = document.getElementById('reportOutput');
+const copyReportBtn = document.getElementById('copyReportBtn');
+
+function generateReport(){
+  const lengthRep = computeLengthRepeat();
+  const lines = [];
+
+  layouts.forEach((L, li) => {
+    const parts = kinds.map((k, ki) => L.lanes[ki] > 0 ? `${k.name} ${L.lanes[ki]}up Across` : '').filter(Boolean);
+    const desc = parts.length ? parts.join(', ') : 'no kinds assigned';
+    lines.push(`${L.name}: ${desc} (${L.sheets} Sheets needed)`);
+  });
+
+  lines.push('');
+
+  const totals = kinds.map((k, ki) => {
+    const produced = layouts.reduce((s, L) => s + L.lanes[ki] * lengthRep * L.sheets, 0);
+    return { name: k.name, qty: k.qty, produced, diff: produced - k.qty };
+  });
+
+  const totalSheets = layouts.reduce((s, L) => s + L.sheets, 0);
+  const totalQty = totals.reduce((s, t) => s + t.qty, 0);
+  const totalProduced = totals.reduce((s, t) => s + t.produced, 0);
+  const totalExceeds = totalProduced - totalQty;
+
+  lines.push(`Total Sheets: ${totalSheets}`);
+  lines.push(`Total QTY: ${totalQty}, Total Produced: ${totalProduced}, Exceeds: ${totalExceeds >= 0 ? '+' : ''}${totalExceeds}`);
+  lines.push('');
+
+  totals.forEach(t => {
+    const label = t.diff > 0 ? 'exceeds' : (t.diff < 0 ? 'short' : 'exact');
+    lines.push(`${t.name}: ${t.qty} qty, ${t.produced} produced, ${t.diff >= 0 ? '+' : ''}${t.diff} ${label}`);
+  });
+
+  return lines.join('\n');
+}
+
+copyReportBtn.addEventListener('click', () => {
+  navigator.clipboard.writeText(reportOutput.textContent).then(() => {
+    copyReportBtn.textContent = 'Copied!';
+    setTimeout(() => { copyReportBtn.textContent = 'Copy'; }, 1500);
+  });
+});
+
+autoGenerateLayouts();
+renderAll();
+// ---------- Basic copy/inspect deterrents ----------
+// Client-side only - a determined user can still bypass this (disable JS,
+// view source, etc). This just blocks the common casual paths: right-click
+// menu, text selection/copy, and the usual DevTools/save-page shortcuts.
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('copy', e => {
+  const tag = e.target.tagName;
+  if(tag === 'INPUT' || tag === 'TEXTAREA') return;
+  e.preventDefault();
+});
+document.addEventListener('cut', e => {
+  const tag = e.target.tagName;
+  if(tag === 'INPUT' || tag === 'TEXTAREA') return;
+  e.preventDefault();
+});
+document.addEventListener('dragstart', e => e.preventDefault());
+document.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  const inField = ['INPUT','TEXTAREA'].includes(e.target.tagName);
+  // F12
+  if(e.key === 'F12'){ e.preventDefault(); return; }
+  // Ctrl/Cmd combos: Shift+I/J/C (devtools panels), U (view-source), S (save as), P (print)
+  if((e.ctrlKey || e.metaKey) && e.shiftKey && ['i','j','c'].includes(k)){ e.preventDefault(); return; }
+  if((e.ctrlKey || e.metaKey) && ['u','s','p'].includes(k)){ e.preventDefault(); return; }
+  // Ctrl/Cmd+C: block everywhere except while editing an input/textarea
+  if((e.ctrlKey || e.metaKey) && k === 'c' && !inField){ e.preventDefault(); return; }
+});
+document.body.style.userSelect = 'none';
+document.body.style.webkitUserSelect = 'none';
+// Still allow normal selection/typing inside inputs, or editing becomes painful.
+document.addEventListener('selectstart', e => {
+  const tag = e.target.tagName;
+  if(tag === 'INPUT' || tag === 'TEXTAREA') return;
+  e.preventDefault();
+}, true);
+</script>
+</body>
+</html>
