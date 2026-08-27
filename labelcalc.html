@@ -96,8 +96,8 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>Imposition Multi-Layout Gang-Run Planner</h1>
-  <p class="sub">Build several sheet layouts — each a different mix of kinds across the Up Across — and run each for its own sheet count so every kind's quantity is met with minimal waste.</p>
+  <h1>Label Imposition Multi-Layout Gang-Run Planner</h1>
+  <p class="sub">Build several sheet layouts - each a different mix of kinds across the Up Across - and run each for its own sheet count so every kind's quantity is met with minimal waste.</p>
 
   <div class="panel">
     <h2>Sheet Setup</h2>
@@ -121,7 +121,7 @@
     </div>
     <label class="hint" style="display:flex; align-items:center; gap:6px; margin:10px 0 0; cursor:pointer;">
       <input type="checkbox" id="useDielineInput" style="width:auto; margin:0;">
-      Use existing dieline — lock Up Across to the dieline's Nup across, and round "repeat to length" down to a whole number of dieline repeats
+      Use existing dieline - lock Up Across to the dieline's Nup across, and round "repeat to length" down to a whole number of dieline repeats
     </label>
     <div class="field-row" id="dielineFields" style="display:none; margin-top:8px;">
       <div class="field">
@@ -162,11 +162,19 @@
     </h2>
     <label class="hint" style="display:flex; align-items:center; gap:6px; margin-bottom:8px; cursor:pointer;">
       <input type="checkbox" id="optimizeLayoutsInput" checked style="width:auto; margin:0;">
-      Optimize layout usage — search every way of partitioning kinds across multiple shared layouts (not just one), and keep the arrangement with least waste
+      Optimize layout usage - search every way of partitioning kinds across multiple shared layouts (not just one), and keep the arrangement with least waste
     </label>
-    <p class="hint" style="margin-bottom:8px;">With "Optimize layout usage" on, auto-generate can split kinds across several shared layouts — e.g. with 6 Up Across, two pairs of kinds can each get their own 3+3 shared layout, instead of forcing everyone into a single shared layout. Turn it off to go back to the simpler search: isolate some kinds onto their own full-width layout, and combine everything else into just one shared layout. Adjust Up Across/sheets by hand afterward if you want — that switches to manual mode.</p>
+    <label class="hint" style="display:flex; align-items:center; gap:6px; margin-bottom:8px; cursor:pointer;">
+      <input type="checkbox" id="allowSplitKindInput" style="width:auto; margin:0;">
+      Allow a kind to span more than one layout - level production across as many rounds/layouts as needed, letting any kind's demand be split across several layouts
+    </label>
+    <p class="hint" style="margin-bottom:8px;">With "Optimize layout usage" on, auto-generate can split kinds across several shared layouts - e.g. with 6 Up Across, two pairs of kinds can each get their own 3+3 shared layout, instead of forcing everyone into a single shared layout. Turn it off to go back to the simpler search: isolate some kinds onto their own full-width layout, and combine everything else into just one shared layout. Adjust Up Across/sheets by hand afterward if you want - that switches to manual mode.</p>
+    <p class="hint" style="margin-bottom:8px;">With "Allow a kind to span more than one layout" on, auto-generate instead builds layouts round by round: each round apportions all the lanes among whatever kinds still need production (weighted by how much they still need), runs just enough sheets to exactly finish whichever kind is tightest that round, then carries every kind's leftover into the next round - so a kind can appear across as many layouts as it takes, each time paired with whatever else still needs finishing. This overrides "Optimize layout usage" while on, and usually gives the lowest waste of all the modes, at the cost of more separate layouts/plates.</p>
     <div id="autoBanner" class="hint" style="margin-bottom:12px;"></div>
     <div id="layoutsWrap"></div>
+    <div class="hint" style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border);">
+      Total material length across all layouts: <b id="totalMetersReadout" style="color:var(--text);">–</b>
+    </div>
   </div>
 
   <div class="panel">
@@ -183,13 +191,14 @@
     <div class="summary" id="overallStats" style="margin-top:14px;"></div>
     <div id="messages"></div>
     <pre id="reportOutput" style="display:block; background:var(--panel2); border:1px solid var(--border); border-radius:6px; padding:12px; font-size:12.5px; font-family:var(--mono); white-space:pre-wrap; margin-top:12px; color:var(--text);"></pre>
-    <p class="footer-note">Total sheets = sum of sheets across all layouts (each layout is its own plate/run). Total produced per kind = sum across layouts of Up Across × repeat-to-length × sheets. Auto-generate rebuilds the layout set from scratch whenever quantities or sheet setup change — it tries every combination of "isolate this kind on its own full-width layout" vs "combine it in with the rest," and keeps the split with the least total overproduction. The per-layout "Auto-fill sheets" button is a manual-mode tool for topping up one layout's sheet count based on what's still short after the others.</p>
+    <p class="footer-note">Total sheets = sum of sheets across all layouts (each layout is its own plate/run). Total produced per kind = sum across layouts of Up Across × repeat-to-length × sheets. Auto-generate rebuilds the layout set from scratch whenever quantities or sheet setup change - it tries every combination of "isolate this kind on its own full-width layout" vs "combine it in with the rest," and keeps the split with the least total overproduction. The per-layout "Auto-fill sheets" button is a manual-mode tool for topping up one layout's sheet count based on what's still short after the others.</p>
   </div>
 </div>
 
 <script>
 const acrossInput = document.getElementById('acrossInput');
 const optimizeLayoutsInput = document.getElementById('optimizeLayoutsInput');
+const allowSplitKindInput = document.getElementById('allowSplitKindInput');
 const sheetLenInput = document.getElementById('sheetLenInput');
 const artHeightInput = document.getElementById('artHeightInput');
 const gapInput = document.getElementById('gapInput');
@@ -200,6 +209,7 @@ const dielineAroundInput = document.getElementById('dielineAroundInput');
 const dielineWarning = document.getElementById('dielineWarning');
 const lengthReadout = document.getElementById('lengthReadout');
 const totalUpReadout = document.getElementById('totalUpReadout');
+const totalMetersReadout = document.getElementById('totalMetersReadout');
 const lengthFormula = document.getElementById('lengthFormula');
 const kindsBody = document.getElementById('kindsBody');
 const layoutsWrap = document.getElementById('layoutsWrap');
@@ -299,17 +309,40 @@ function proportionalLanes(items, budget){
   return res;
 }
 
-function evaluateSubset(mask, activeKinds, A, L){
+// Evaluate a single kind isolated on its own layout. When allowVariableLanes
+// is on, search every lane count from 1..A instead of always using the full
+// Up Across, and keep whichever minimizes waste. This is only safe to enable
+// for small/bounded quantities (see the bulk/remainder split in
+// autoGenerateLayouts) - for a large quantity, fewer lanes can look better on
+// pure piece-waste while actually requiring drastically more sheets, which
+// isn't a real improvement.
+function evaluateIsolatedSingle(k, A, L, allowVariableLanes){
+  let bestLanes = A;
+  let bestSheets = Math.ceil(k.qty / (A * L));
+  let bestWaste = A*L*bestSheets - k.qty;
+  if(allowVariableLanes){
+    for(let lanes = 1; lanes < A; lanes++){
+      const sheets = Math.ceil(k.qty / (lanes * L));
+      const waste = lanes*L*sheets - k.qty;
+      if(waste < bestWaste){
+        bestWaste = waste; bestSheets = sheets; bestLanes = lanes;
+      }
+    }
+  }
+  return { lanes: bestLanes, sheets: bestSheets, waste: bestWaste };
+}
+
+function evaluateSubset(mask, activeKinds, A, L, allowVariableLanes){
   const isolated = [], combined = [];
   activeKinds.forEach((k,i) => { if(mask & (1<<i)) isolated.push(k); else combined.push(k); });
   if(combined.length > A) return null;
   let totalWaste = 0, totalSheets = 0;
   const plans = [];
   isolated.forEach(k => {
-    const sheets = Math.ceil(k.qty / (A * L));
-    totalWaste += A*L*sheets - k.qty;
-    totalSheets += sheets;
-    plans.push({ lanes: { [k.idx]: A }, sheets });
+    const r = evaluateIsolatedSingle(k, A, L, allowVariableLanes);
+    totalWaste += r.waste;
+    totalSheets += r.sheets;
+    plans.push({ lanes: { [k.idx]: r.lanes }, sheets: r.sheets });
   });
   if(combined.length > 0){
     const lanes = proportionalLanes(combined, A);
@@ -331,19 +364,18 @@ function popcount(x){
 }
 
 // Evaluate a single candidate layout (group of kinds sharing it), given as a
-// bitmask over activeKinds' positions. A group of 1 kind always gets the
-// full Up Across; a group of >1 kinds splits the full Up Across proportionally
-// by remaining qty (see proportionalLanes). Groups larger than A are infeasible.
-function evaluateGroupMask(mask, activeKinds, A, L, cache){
+// bitmask over activeKinds' positions. A group of >1 kinds splits the full
+// Up Across proportionally by remaining qty (see proportionalLanes). Groups
+// larger than A are infeasible.
+function evaluateGroupMask(mask, activeKinds, A, L, cache, allowVariableLanes){
   if(cache.has(mask)) return cache.get(mask);
   const members = [];
   for(let i=0;i<activeKinds.length;i++){ if(mask & (1<<i)) members.push(activeKinds[i]); }
   let result = null;
   if(members.length === 1){
     const k = members[0];
-    const sheets = Math.ceil(k.qty / (A * L));
-    const waste = A*L*sheets - k.qty;
-    result = { waste, sheets, lanes: { [k.idx]: A } };
+    const r = evaluateIsolatedSingle(k, A, L, allowVariableLanes);
+    result = { waste: r.waste, sheets: r.sheets, lanes: { [k.idx]: r.lanes } };
   } else if(members.length > 0 && members.length <= A){
     const lanes = proportionalLanes(members, A);
     if(lanes){
@@ -375,7 +407,7 @@ function evaluateGroupMask(mask, activeKinds, A, L, cache){
 // back to the cheaper two-bucket search.
 const GENERALIZED_OPT_MAX_KINDS = 16;
 
-function optimizePartition(activeKinds, A, L){
+function optimizePartition(activeKinds, A, L, allowVariableLanes){
   const n = activeKinds.length;
   const full = (1 << n) - 1;
   const cache = new Map();
@@ -390,7 +422,7 @@ function optimizePartition(activeKinds, A, L){
     while(true){
       const group = low | t;
       if(popcount(group) <= A){
-        const g = evaluateGroupMask(group, activeKinds, A, L, cache);
+        const g = evaluateGroupMask(group, activeKinds, A, L, cache, allowVariableLanes);
         if(g){
           const remaining = dp[mask ^ group];
           if(remaining){
@@ -414,7 +446,7 @@ function optimizePartition(activeKinds, A, L){
   let mask = full;
   while(mask !== 0){
     const group = choice[mask];
-    groups.push(evaluateGroupMask(group, activeKinds, A, L, cache));
+    groups.push(evaluateGroupMask(group, activeKinds, A, L, cache, allowVariableLanes));
     mask ^= group;
   }
   return { totalWaste: dp[full].waste, plans: groups };
@@ -424,25 +456,44 @@ function optimizePartition(activeKinds, A, L){
 function autoGenerateLayouts(){
   const A = across();
   const L = computeLengthRepeat();
-  const activeKinds = kinds.map((k,i) => ({ idx: i, qty: k.qty })).filter(k => k.qty > 0);
+  const activeKindsFull = kinds.map((k,i) => ({ idx: i, qty: k.qty })).filter(k => k.qty > 0);
   const optimize = optimizeLayoutsInput ? optimizeLayoutsInput.checked : true;
+  const allowSplit = allowSplitKindInput ? allowSplitKindInput.checked : false;
 
-  if(activeKinds.length === 0){
+  if(activeKindsFull.length === 0){
     layouts = [];
+    return;
+  }
+
+  if(allowSplit){
+    // A kind's demand can span any number of layouts. Use iterative
+    // apportionment ("leveling"): each round, hand out all A lanes among
+    // whatever kinds still need production, proportionally by how much they
+    // still need (via the D'Hondt/Jefferson divisor method - the same
+    // method used for proportional seat allocation, which naturally lets a
+    // kind with too little remaining need to compete this round get 0 lanes
+    // and simply wait for a later round once bigger kinds are out of the
+    // way). Run just enough sheets to exactly finish the tightest kind in
+    // the round, drop it out, and repeat with whoever (and whatever
+    // leftovers) remain until every kind is fully covered.
+    layouts = generateLeveledLayouts(activeKindsFull, A, L).map((p, i) => {
+      const laneArr = kinds.map((k, ki) => p.lanes[ki] || 0);
+      return { name: 'Layout ' + (i+1), lanes: laneArr, sheets: p.sheets };
+    });
     return;
   }
 
   let best = null;
 
-  if(optimize && activeKinds.length <= GENERALIZED_OPT_MAX_KINDS){
+  if(optimize && activeKindsFull.length <= GENERALIZED_OPT_MAX_KINDS){
     // Full search: partition kinds into any number of shared layouts.
-    best = optimizePartition(activeKinds, A, L);
-  } else if(activeKinds.length <= 16){
+    best = optimizePartition(activeKindsFull, A, L, false);
+  } else if(activeKindsFull.length <= 16){
     // Optimization off (or too many kinds for the full partition search):
     // fall back to the simpler "isolate some kinds, combine the rest into
     // one shared layout" search.
-    for(let mask = 0; mask < (1 << activeKinds.length); mask++){
-      const r = evaluateSubset(mask, activeKinds, A, L);
+    for(let mask = 0; mask < (1 << activeKindsFull.length); mask++){
+      const r = evaluateSubset(mask, activeKindsFull, A, L, false);
       if(!r) continue;
       if(!best || r.totalWaste < best.totalWaste ||
         (r.totalWaste === best.totalWaste && r.plans.length < best.plans.length)){
@@ -454,13 +505,13 @@ function autoGenerateLayouts(){
   if(!best){
     // too many kinds for exhaustive search, or nothing feasible -
     // fall back to a single proportional layout, min 1 lane each if possible
-    const lanes = proportionalLanes(activeKinds, A);
+    const lanes = proportionalLanes(activeKindsFull, A);
     layouts = [];
     if(lanes){
       let sheets = 0;
-      activeKinds.forEach(k => { sheets = Math.max(sheets, Math.ceil(k.qty/(lanes[k.idx]*L))); });
+      activeKindsFull.forEach(k => { sheets = Math.max(sheets, Math.ceil(k.qty/(lanes[k.idx]*L))); });
       const laneArr = kinds.map((k,i) => lanes[i] || 0);
-      layouts.push({ name:'Layout 1', lanes: laneArr, sheets });
+      layouts.push({ name: 'Layout 1', lanes: laneArr, sheets });
     }
     return;
   }
@@ -470,6 +521,174 @@ function autoGenerateLayouts(){
     return { name: 'Layout ' + (i+1), lanes: laneArr, sheets: p.sheets };
   });
 }
+
+// Apportion `budget` whole lanes among `items` proportionally to qty, using
+// the D'Hondt/Jefferson divisor method: repeatedly give the next lane to
+// whichever item currently has the highest qty/(lanesSoFar+1) quotient. If
+// there are more items than lanes (or some items are far smaller than
+// others), some items can legitimately end up with 0 lanes this round -
+// that's intentional here, since generateLeveledLayouts simply defers them
+// to a later round.
+function dHondtLanes(items, budget){
+  const lanes = {};
+  items.forEach(it => { lanes[it.idx] = 0; });
+  for(let seat = 0; seat < budget; seat++){
+    let bestIdx = null, bestQuotient = -1;
+    items.forEach(it => {
+      const q = it.qty / (lanes[it.idx] + 1);
+      if(q > bestQuotient){ bestQuotient = q; bestIdx = it.idx; }
+    });
+    if(bestIdx === null) break;
+    lanes[bestIdx]++;
+  }
+  return lanes;
+}
+
+// Split `budget` lanes as evenly as possible among `items` (used for a
+// cluster of kinds that all need exactly the same remaining quantity - they
+// should just split the width evenly between themselves, not be weighted
+// against each other by a proportional method that would treat identical
+// quantities as identical anyway but obscure the intent). Any remainder
+// (when budget doesn't divide evenly) is handed out one lane at a time.
+function evenLanes(items, budget){
+  const n = items.length;
+  const base = Math.floor(budget / n);
+  const leftover = budget - base*n;
+  const lanes = {};
+  items.forEach((it,i) => { lanes[it.idx] = base + (i < leftover ? 1 : 0); });
+  return lanes;
+}
+
+// Recursively finds the true minimum-waste sequence of leveling rounds,
+// rather than guessing with a fixed rule. At each round there are only ever
+// two sensible ways to group the currently-unfinished kinds:
+//   (a) a same-quantity tie cluster (if one exists and A divides evenly
+//       among its members) getting its own evenly-split dedicated layout, or
+//   (b) the full D'Hondt apportionment across everyone still active.
+// For whichever grouping(s) are available, the only sheet counts worth
+// trying are the "needed sheets" values of the group's own members (any
+// other value either wastes more for no benefit, or doesn't finish anyone
+// new) - so we branch on exactly those, recurse on what's left over, and
+// keep whichever branch yields the lowest total waste (fewest layouts as
+// tie-break). Memoized on the remaining-quantity state so repeated states
+// (e.g. two different paths reaching the same leftover amounts) aren't
+// recomputed.
+function solveLeveling(remaining, A, L, memo){
+  const active = [...remaining.entries()].filter(([, q]) => q > 0).map(([idx, qty]) => ({ idx, qty }));
+  if(active.length === 0) return { waste: 0, plans: [] };
+
+  const key = active.map(k => k.idx + ':' + k.qty).sort().join(',');
+  if(memo.has(key)) return memo.get(key);
+  // Guard against pathological explosion on the rare state that recurs at
+  // huge depth - shouldn't trigger in normal use, just a safety valve.
+  if(memo.size > 200000) return null;
+
+  const byQty = new Map();
+  active.forEach(k => {
+    if(!byQty.has(k.qty)) byQty.set(k.qty, []);
+    byQty.get(k.qty).push(k);
+  });
+  let tieCluster = null;
+  byQty.forEach(g => {
+    if(g.length >= 2 && A % g.length === 0 && (!tieCluster || g.length > tieCluster.length)) tieCluster = g;
+  });
+
+  const groupOptions = [];
+  if(tieCluster) groupOptions.push({ group: tieCluster, lanes: evenLanes(tieCluster, A) });
+  const dLanes = dHondtLanes(active, A);
+  const dGroup = active.filter(k => dLanes[k.idx] > 0);
+  if(dGroup.length > 0) groupOptions.push({ group: dGroup, lanes: dLanes });
+
+  let best = null;
+  groupOptions.forEach(({ group, lanes }) => {
+    const neededSheets = [...new Set(group.map(k => Math.ceil(remaining.get(k.idx) / (lanes[k.idx] * L))))];
+    neededSheets.forEach(sheets => {
+      const nextRemaining = new Map(remaining);
+      let roundWaste = 0;
+      group.forEach(k => {
+        const before = nextRemaining.get(k.idx);
+        const produced = lanes[k.idx] * L * sheets;
+        roundWaste += Math.max(0, produced - before);
+        nextRemaining.set(k.idx, Math.max(0, before - produced));
+      });
+      const rest = solveLeveling(nextRemaining, A, L, memo);
+      if(!rest) return; // hit the safety cap somewhere below - skip this branch
+      const totalWaste = roundWaste + rest.waste;
+      const laneObj = {};
+      group.forEach(k => { laneObj[k.idx] = lanes[k.idx]; });
+      const plans = [{ lanes: laneObj, sheets }, ...rest.plans];
+      if(!best || totalWaste < best.waste || (totalWaste === best.waste && plans.length < best.plans.length)){
+        best = { waste: totalWaste, plans };
+      }
+    });
+  });
+
+  memo.set(key, best);
+  return best;
+}
+
+// Iteratively builds however many layouts are needed so that every kind's
+// full quantity gets covered, letting a kind appear across as many layouts
+// as it takes, choosing the sequence of rounds that gives the least total
+// waste (see solveLeveling above). Falls back to a fast single-pass greedy
+// version (minimum sheets per round, D'Hondt/tie-cluster grouping) above a
+// kind-count threshold, since the exact search's cost grows with both the
+// number of kinds and how many distinct "needed sheets" values show up per
+// round.
+const LEVELING_EXACT_MAX_KINDS = 14;
+
+function generateLeveledLayouts(activeKindsFull, A, L){
+  const remaining = new Map(activeKindsFull.map(k => [k.idx, k.qty]));
+
+  if(activeKindsFull.length <= LEVELING_EXACT_MAX_KINDS){
+    const solved = solveLeveling(remaining, A, L, new Map());
+    if(solved) return solved.plans;
+    // fell through the safety cap - fall back to the greedy version below
+  }
+
+  const plans = [];
+  let iterations = 0;
+  const maxIterations = activeKindsFull.length*2 + 10; // safety margin
+  while(iterations < maxIterations){
+    const active = [...remaining.entries()]
+      .filter(([, q]) => q > 0)
+      .map(([idx, qty]) => ({ idx, qty }));
+    if(active.length === 0) break;
+    iterations++;
+
+    const byQty = new Map();
+    active.forEach(k => {
+      if(!byQty.has(k.qty)) byQty.set(k.qty, []);
+      byQty.get(k.qty).push(k);
+    });
+    let tieCluster = null;
+    byQty.forEach(g => {
+      if(g.length >= 2 && A % g.length === 0 && (!tieCluster || g.length > tieCluster.length)) tieCluster = g;
+    });
+
+    let group, lanes;
+    if(tieCluster){
+      group = tieCluster;
+      lanes = evenLanes(group, A);
+    } else {
+      lanes = dHondtLanes(active, A);
+      group = active.filter(k => lanes[k.idx] > 0);
+    }
+    if(group.length === 0) break; // safety net
+
+    const sheets = Math.min(...group.map(k => Math.ceil(remaining.get(k.idx) / (lanes[k.idx] * L))));
+
+    const laneObj = {};
+    group.forEach(k => { laneObj[k.idx] = lanes[k.idx]; });
+    plans.push({ lanes: laneObj, sheets });
+    group.forEach(k => {
+      const produced = lanes[k.idx] * L * sheets;
+      remaining.set(k.idx, Math.max(0, remaining.get(k.idx) - produced));
+    });
+  }
+  return plans;
+}
+
 
 
 
@@ -569,6 +788,7 @@ function renderLayouts(){
         </div>
         <button class="btn secondary small" data-li="${li}" data-act="autoFill">Auto-fill sheets</button>
       </div>
+      <div class="lane-usage" data-meters="${li}"></div>
     `;
     layoutsWrap.appendChild(card);
   });
@@ -660,21 +880,33 @@ function computeAndRenderOutputs(){
   const A = across();
   totalUpReadout.textContent = A * lengthRep;
 
+  const sheetLenMM = Math.max(0, parseFloat(sheetLenInput.value) || 0);
   let msgs = [];
+  let grandTotalMeters = 0;
 
   // per-layout usage
   layouts.forEach((L, li) => {
     const used = L.lanes.reduce((a,b)=>a+b, 0);
     const usageEl = layoutsWrap.querySelector(`[data-usage="${li}"]`);
     if(usageEl){
-      usageEl.innerHTML = `Up Across used: <b>${used}</b> / ${A}` + (used > A ? ` — exceeds available Up Across!` : (used < A ? ` (${A-used} spare)` : ''));
+      usageEl.innerHTML = `Up Across used: <b>${used}</b> / ${A}` + (used > A ? ` - exceeds available Up Across!` : (used < A ? ` (${A-used} spare)` : ''));
       usageEl.className = 'lane-usage' + (used > A ? ' over' : '');
     }
 
+    // total length of material run for this layout = sheet length x sheets
+    const meters = (sheetLenMM * L.sheets) / 1000;
+    grandTotalMeters += meters;
+    const metersEl = layoutsWrap.querySelector(`[data-meters="${li}"]`);
+    if(metersEl){
+      metersEl.innerHTML = `Total length: <b>${meters.toLocaleString(undefined, {maximumFractionDigits:2})} m</b> (${sheetLenMM}mm × ${L.sheets} sheets)`;
+    }
+
     if(used > A){
-      msgs.push({type:'danger', text:`${L.name}: Up Across used (${used}) exceed the ${A} available across — reduce a count.`});
+      msgs.push({type:'danger', text:`${L.name}: Up Across used (${used}) exceed the ${A} available across - reduce a count.`});
     }
   });
+
+  totalMetersReadout.textContent = grandTotalMeters.toLocaleString(undefined, {maximumFractionDigits:2}) + ' m';
 
   // global totals per kind
   const totals = kinds.map((k, ki) => {
@@ -685,7 +917,7 @@ function computeAndRenderOutputs(){
   summaryBody.innerHTML = totals.map(t => {
     const diff = t.produced - t.qty;
     let status, statusClass;
-    if(t.qty === 0){ status = '—'; statusClass=''; }
+    if(t.qty === 0){ status = '-'; statusClass=''; }
     else if(diff < 0){ status = 'Short'; statusClass = 'status-short'; }
     else if(diff === 0){ status = 'Exact'; statusClass = 'status-ok'; }
     else { status = 'Over'; statusClass = 'status-over'; }
@@ -713,7 +945,7 @@ function computeAndRenderOutputs(){
   `;
 
   if(totalShort > 0){
-    msgs.push({type:'warn', text:`${totalShort} piece(s) still short of demand — increase sheets on a layout covering the short kind(s), or add another layout.`});
+    msgs.push({type:'warn', text:`${totalShort} piece(s) still short of demand - increase sheets on a layout covering the short kind(s), or add another layout.`});
   }
 
   messages.innerHTML = msgs.map(m => `<div class="msg ${m.type}">${m.text}</div>`).join('');
@@ -739,9 +971,9 @@ function setManualMode(){
 
 function renderAutoBanner(){
   if(autoMode){
-    autoBanner.innerHTML = `<span style="color:var(--accent2);">● Auto-layout is on</span> — layouts rebuild automatically whenever quantities or sheet setup change.`;
+    autoBanner.innerHTML = `<span style="color:var(--accent2);">● Auto-layout is on</span> - layouts rebuild automatically whenever quantities or sheet setup change.`;
   } else {
-    autoBanner.innerHTML = `<span style="color:var(--warn);">● Manual mode</span> — you've edited a layout directly, so auto-rebuild is paused.
+    autoBanner.innerHTML = `<span style="color:var(--warn);">● Manual mode</span> - you've edited a layout directly, so auto-rebuild is paused.
       <button class="btn small" id="reenableAutoBtn" style="margin-left:8px;">Regenerate automatically</button>`;
     document.getElementById('reenableAutoBtn').addEventListener('click', () => {
       autoMode = true;
@@ -761,6 +993,7 @@ sheetLenInput.addEventListener('input', onSheetSetupChange);
 artHeightInput.addEventListener('input', onSheetSetupChange);
 gapInput.addEventListener('input', onSheetSetupChange);
 optimizeLayoutsInput.addEventListener('change', onSheetSetupChange);
+allowSplitKindInput.addEventListener('change', onSheetSetupChange);
 useDielineInput.addEventListener('change', onSheetSetupChange);
 dielineAcrossInput.addEventListener('input', onSheetSetupChange);
 dielineAroundInput.addEventListener('input', onSheetSetupChange);
@@ -773,13 +1006,16 @@ function generateReport(){
   const lengthRep = computeLengthRepeat();
   const lines = [];
 
-  layouts.forEach((L, li) => {
-    const parts = kinds.map((k, ki) => L.lanes[ki] > 0 ? `${k.name} ${L.lanes[ki]}up Across` : '').filter(Boolean);
-    const desc = parts.length ? parts.join(', ') : 'no kinds assigned';
-    lines.push(`${L.name}: ${desc} (${L.sheets} Sheets needed)`);
+  layouts.forEach((L) => {
+    lines.push(`${L.name}: (${L.sheets} Sheets needed)`);
+    kinds.forEach((k, ki) => {
+      if(L.lanes[ki] > 0){
+        const producedHere = L.lanes[ki] * lengthRep * L.sheets;
+        lines.push(`${k.name} --> ${L.lanes[ki]} Across (${producedHere} qty produced)`);
+      }
+    });
+    lines.push('');
   });
-
-  lines.push('');
 
   const totals = kinds.map((k, ki) => {
     const produced = layouts.reduce((s, L) => s + L.lanes[ki] * lengthRep * L.sheets, 0);
