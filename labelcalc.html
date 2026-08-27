@@ -96,8 +96,8 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>Label Imposition Multi-Layout Gang-Run Planner</h1>
-  <p class="sub">Build several sheet layouts - each a different mix of kinds across the Up Across - and run each for its own sheet count so every kind's quantity is met with minimal waste.</p>
+  <h1>Imposition Multi-Layout Gang-Run Planner</h1>
+  <p class="sub">Build several sheet layouts — each a different mix of kinds across the Up Across — and run each for its own sheet count so every kind's quantity is met with minimal waste.</p>
 
   <div class="panel">
     <h2>Sheet Setup</h2>
@@ -119,11 +119,27 @@
         <input type="number" id="gapInput" min="0" step="0.01" value="3">
       </div>
     </div>
+    <label class="hint" style="display:flex; align-items:center; gap:6px; margin:10px 0 0; cursor:pointer;">
+      <input type="checkbox" id="useDielineInput" style="width:auto; margin:0;">
+      Use existing dieline — lock Up Across to the dieline's Nup across, and round "repeat to length" down to a whole number of dieline repeats
+    </label>
+    <div class="field-row" id="dielineFields" style="display:none; margin-top:8px;">
+      <div class="field">
+        <label>Dieline Nup across</label>
+        <input type="number" id="dielineAcrossInput" min="1" value="6">
+      </div>
+      <div class="field">
+        <label>Dieline Nup around</label>
+        <input type="number" id="dielineAroundInput" min="1" value="3">
+      </div>
+    </div>
     <div class="slots-readout">
       Repeat to length: <b id="lengthReadout">–</b> &nbsp;|&nbsp; Total up per sheet: <b id="totalUpReadout">–</b>
       <div class="hint" id="lengthFormula"></div>
+      <div class="hint" id="dielineWarning" style="color:var(--warn);"></div>
     </div>
   </div>
+
 
   <div class="panel">
     <h2>
@@ -144,7 +160,11 @@
         <button class="btn small" id="addLayoutBtn">+ Add layout</button>
       </span>
     </h2>
-    <p class="hint" style="margin-bottom:8px;">Auto-generate searches every way of isolating some kinds into their own dedicated full-width layout vs. combining the rest proportionally in a shared layout, and keeps whichever split produces the least total waste. Adjust Up Across/sheets by hand afterward if you want - that switches to manual mode.</p>
+    <label class="hint" style="display:flex; align-items:center; gap:6px; margin-bottom:8px; cursor:pointer;">
+      <input type="checkbox" id="optimizeLayoutsInput" checked style="width:auto; margin:0;">
+      Optimize layout usage — search every way of partitioning kinds across multiple shared layouts (not just one), and keep the arrangement with least waste
+    </label>
+    <p class="hint" style="margin-bottom:8px;">With "Optimize layout usage" on, auto-generate can split kinds across several shared layouts — e.g. with 6 Up Across, two pairs of kinds can each get their own 3+3 shared layout, instead of forcing everyone into a single shared layout. Turn it off to go back to the simpler search: isolate some kinds onto their own full-width layout, and combine everything else into just one shared layout. Adjust Up Across/sheets by hand afterward if you want — that switches to manual mode.</p>
     <div id="autoBanner" class="hint" style="margin-bottom:12px;"></div>
     <div id="layoutsWrap"></div>
   </div>
@@ -163,15 +183,21 @@
     <div class="summary" id="overallStats" style="margin-top:14px;"></div>
     <div id="messages"></div>
     <pre id="reportOutput" style="display:block; background:var(--panel2); border:1px solid var(--border); border-radius:6px; padding:12px; font-size:12.5px; font-family:var(--mono); white-space:pre-wrap; margin-top:12px; color:var(--text);"></pre>
-    <p class="footer-note">Total sheets = sum of sheets across all layouts (each layout is its own plate/run). Total produced per kind = sum across layouts of Up Across × repeat-to-length × sheets. Auto-generate rebuilds the layout set from scratch whenever quantities or sheet setup change - it tries every combination of "isolate this kind on its own full-width layout" vs "combine it in with the rest," and keeps the split with the least total overproduction. The per-layout "Auto-fill sheets" button is a manual-mode tool for topping up one layout's sheet count based on what's still short after the others.</p>
+    <p class="footer-note">Total sheets = sum of sheets across all layouts (each layout is its own plate/run). Total produced per kind = sum across layouts of Up Across × repeat-to-length × sheets. Auto-generate rebuilds the layout set from scratch whenever quantities or sheet setup change — it tries every combination of "isolate this kind on its own full-width layout" vs "combine it in with the rest," and keeps the split with the least total overproduction. The per-layout "Auto-fill sheets" button is a manual-mode tool for topping up one layout's sheet count based on what's still short after the others.</p>
   </div>
 </div>
 
 <script>
 const acrossInput = document.getElementById('acrossInput');
+const optimizeLayoutsInput = document.getElementById('optimizeLayoutsInput');
 const sheetLenInput = document.getElementById('sheetLenInput');
 const artHeightInput = document.getElementById('artHeightInput');
 const gapInput = document.getElementById('gapInput');
+const useDielineInput = document.getElementById('useDielineInput');
+const dielineFields = document.getElementById('dielineFields');
+const dielineAcrossInput = document.getElementById('dielineAcrossInput');
+const dielineAroundInput = document.getElementById('dielineAroundInput');
+const dielineWarning = document.getElementById('dielineWarning');
 const lengthReadout = document.getElementById('lengthReadout');
 const totalUpReadout = document.getElementById('totalUpReadout');
 const lengthFormula = document.getElementById('lengthFormula');
@@ -199,9 +225,38 @@ function computeLengthRepeat(){
   const h = Math.max(0.01, parseFloat(artHeightInput.value) || 0.01);
   const gap = Math.max(0, parseFloat(gapInput.value) || 0);
   const pitch = h + gap;
-  const l = pitch > 0 ? Math.floor(sheetLen / pitch) : 0;
+  const rawL = pitch > 0 ? Math.floor(sheetLen / pitch) : 0;
+
+  const useDieline = useDielineInput && useDielineInput.checked;
+  dielineFields.style.display = useDieline ? 'flex' : 'none';
+
+  let l = rawL;
+
+  if(useDieline){
+    // Up Across is locked to the dieline's across count - they must always
+    // match, since the dieline's own across-repeat IS the sheet's Up Across.
+    const dieAcross = Math.max(1, parseInt(dielineAcrossInput.value) || 1);
+    if(acrossInput.value != dieAcross){ acrossInput.value = dieAcross; }
+    acrossInput.readOnly = true;
+    acrossInput.title = 'Locked to the dieline\'s Nup across while "Use existing dieline" is on.';
+
+    const dieAround = Math.max(1, parseInt(dielineAroundInput.value) || 1);
+    // The dieline itself repeats every `dieAround` slots down the sheet, so
+    // the sheet can only use a whole number of dieline repeats - any partial
+    // repeat at the end is unusable. Round the raw slot count down to the
+    // nearest multiple of dieAround.
+    l = Math.floor(rawL / dieAround) * dieAround;
+    lengthFormula.textContent =
+      `${sheetLen} ÷ (${h} + ${gap}) = ${(sheetLen/pitch).toFixed(2)} → floor = ${rawL}up, ` +
+      `rounded down to a multiple of dieline ${dieAround}up around = ${l}up`;
+  } else {
+    acrossInput.readOnly = false;
+    acrossInput.title = '';
+    lengthFormula.textContent = `${sheetLen} ÷ (${h} + ${gap}) = ${(sheetLen/pitch).toFixed(2)} → floor = ${l}`;
+  }
+
+  dielineWarning.textContent = '';
   lengthReadout.textContent = l;
-  lengthFormula.textContent = `${sheetLen} ÷ (${h} + ${gap}) = ${(sheetLen/pitch).toFixed(2)} → floor = ${l}`;
   return Math.max(1, l);
 }
 
@@ -269,10 +324,108 @@ function evaluateSubset(mask, activeKinds, A, L){
   return { totalWaste, totalSheets, plans };
 }
 
+function popcount(x){
+  let c = 0;
+  while(x){ x &= x-1; c++; }
+  return c;
+}
+
+// Evaluate a single candidate layout (group of kinds sharing it), given as a
+// bitmask over activeKinds' positions. A group of 1 kind always gets the
+// full Up Across; a group of >1 kinds splits the full Up Across proportionally
+// by remaining qty (see proportionalLanes). Groups larger than A are infeasible.
+function evaluateGroupMask(mask, activeKinds, A, L, cache){
+  if(cache.has(mask)) return cache.get(mask);
+  const members = [];
+  for(let i=0;i<activeKinds.length;i++){ if(mask & (1<<i)) members.push(activeKinds[i]); }
+  let result = null;
+  if(members.length === 1){
+    const k = members[0];
+    const sheets = Math.ceil(k.qty / (A * L));
+    const waste = A*L*sheets - k.qty;
+    result = { waste, sheets, lanes: { [k.idx]: A } };
+  } else if(members.length > 0 && members.length <= A){
+    const lanes = proportionalLanes(members, A);
+    if(lanes){
+      let sheets = 0;
+      members.forEach(k => { sheets = Math.max(sheets, Math.ceil(k.qty / (lanes[k.idx]*L))); });
+      let waste = 0;
+      members.forEach(k => { waste += lanes[k.idx]*L*sheets - k.qty; });
+      result = { waste, sheets, lanes };
+    }
+  }
+  cache.set(mask, result);
+  return result;
+}
+
+// Full generalized optimizer: partitions the active kinds into ANY number of
+// groups (each group sharing one layout, size <= Up Across), and finds the
+// partition with least total waste (ties broken by fewest layouts). This is
+// a superset of the old "isolate some / combine the rest into one shared
+// layout" search - it also finds partitions like two separate pairs each
+// sharing a layout (e.g. 6 across, 4 kinds -> two layouts of 3+3 lanes each),
+// which the old two-bucket search couldn't represent.
+//
+// Implemented as a submask DP: dp[mask] = best way to cover exactly the
+// kinds in `mask` using disjoint groups. For each mask we only try groups
+// that contain its lowest set bit (standard trick to avoid re-deriving the
+// same partition in multiple orders), enumerated via submask iteration.
+// Runtime is O(3^n) across all masks, so it's only used up to a moderate
+// kind count (see GENERALIZED_OPT_MAX_KINDS below); beyond that we fall
+// back to the cheaper two-bucket search.
+const GENERALIZED_OPT_MAX_KINDS = 16;
+
+function optimizePartition(activeKinds, A, L){
+  const n = activeKinds.length;
+  const full = (1 << n) - 1;
+  const cache = new Map();
+  const dp = new Array(1 << n).fill(null);
+  const choice = new Array(1 << n).fill(0);
+  dp[0] = { waste: 0, count: 0 };
+  for(let mask = 1; mask <= full; mask++){
+    const low = mask & (-mask);
+    const rest = mask & ~low;
+    let best = null, bestGroup = 0;
+    let t = rest;
+    while(true){
+      const group = low | t;
+      if(popcount(group) <= A){
+        const g = evaluateGroupMask(group, activeKinds, A, L, cache);
+        if(g){
+          const remaining = dp[mask ^ group];
+          if(remaining){
+            const waste = g.waste + remaining.waste;
+            const count = 1 + remaining.count;
+            if(!best || waste < best.waste || (waste === best.waste && count < best.count)){
+              best = { waste, count };
+              bestGroup = group;
+            }
+          }
+        }
+      }
+      if(t === 0) break;
+      t = (t - 1) & rest;
+    }
+    dp[mask] = best;
+    choice[mask] = bestGroup;
+  }
+  if(!dp[full]) return null;
+  const groups = [];
+  let mask = full;
+  while(mask !== 0){
+    const group = choice[mask];
+    groups.push(evaluateGroupMask(group, activeKinds, A, L, cache));
+    mask ^= group;
+  }
+  return { totalWaste: dp[full].waste, plans: groups };
+}
+
+
 function autoGenerateLayouts(){
   const A = across();
   const L = computeLengthRepeat();
   const activeKinds = kinds.map((k,i) => ({ idx: i, qty: k.qty })).filter(k => k.qty > 0);
+  const optimize = optimizeLayoutsInput ? optimizeLayoutsInput.checked : true;
 
   if(activeKinds.length === 0){
     layouts = [];
@@ -280,7 +433,14 @@ function autoGenerateLayouts(){
   }
 
   let best = null;
-  if(activeKinds.length <= 16){
+
+  if(optimize && activeKinds.length <= GENERALIZED_OPT_MAX_KINDS){
+    // Full search: partition kinds into any number of shared layouts.
+    best = optimizePartition(activeKinds, A, L);
+  } else if(activeKinds.length <= 16){
+    // Optimization off (or too many kinds for the full partition search):
+    // fall back to the simpler "isolate some kinds, combine the rest into
+    // one shared layout" search.
     for(let mask = 0; mask < (1 << activeKinds.length); mask++){
       const r = evaluateSubset(mask, activeKinds, A, L);
       if(!r) continue;
@@ -310,6 +470,9 @@ function autoGenerateLayouts(){
     return { name: 'Layout ' + (i+1), lanes: laneArr, sheets: p.sheets };
   });
 }
+
+
+
 
 // ---------- Kinds table ----------
 function renderKinds(){
@@ -504,12 +667,12 @@ function computeAndRenderOutputs(){
     const used = L.lanes.reduce((a,b)=>a+b, 0);
     const usageEl = layoutsWrap.querySelector(`[data-usage="${li}"]`);
     if(usageEl){
-      usageEl.innerHTML = `Up Across used: <b>${used}</b> / ${A}` + (used > A ? ` - exceeds available Up Across!` : (used < A ? ` (${A-used} spare)` : ''));
+      usageEl.innerHTML = `Up Across used: <b>${used}</b> / ${A}` + (used > A ? ` — exceeds available Up Across!` : (used < A ? ` (${A-used} spare)` : ''));
       usageEl.className = 'lane-usage' + (used > A ? ' over' : '');
     }
 
     if(used > A){
-      msgs.push({type:'danger', text:`${L.name}: Up Across used (${used}) exceed the ${A} available across - reduce a count.`});
+      msgs.push({type:'danger', text:`${L.name}: Up Across used (${used}) exceed the ${A} available across — reduce a count.`});
     }
   });
 
@@ -522,7 +685,7 @@ function computeAndRenderOutputs(){
   summaryBody.innerHTML = totals.map(t => {
     const diff = t.produced - t.qty;
     let status, statusClass;
-    if(t.qty === 0){ status = '-'; statusClass=''; }
+    if(t.qty === 0){ status = '—'; statusClass=''; }
     else if(diff < 0){ status = 'Short'; statusClass = 'status-short'; }
     else if(diff === 0){ status = 'Exact'; statusClass = 'status-ok'; }
     else { status = 'Over'; statusClass = 'status-over'; }
@@ -550,7 +713,7 @@ function computeAndRenderOutputs(){
   `;
 
   if(totalShort > 0){
-    msgs.push({type:'warn', text:`${totalShort} piece(s) still short of demand - increase sheets on a layout covering the short kind(s), or add another layout.`});
+    msgs.push({type:'warn', text:`${totalShort} piece(s) still short of demand — increase sheets on a layout covering the short kind(s), or add another layout.`});
   }
 
   messages.innerHTML = msgs.map(m => `<div class="msg ${m.type}">${m.text}</div>`).join('');
@@ -576,9 +739,9 @@ function setManualMode(){
 
 function renderAutoBanner(){
   if(autoMode){
-    autoBanner.innerHTML = `<span style="color:var(--accent2);">● Auto-layout is on</span> - layouts rebuild automatically whenever quantities or sheet setup change.`;
+    autoBanner.innerHTML = `<span style="color:var(--accent2);">● Auto-layout is on</span> — layouts rebuild automatically whenever quantities or sheet setup change.`;
   } else {
-    autoBanner.innerHTML = `<span style="color:var(--warn);">● Manual mode</span> - you've edited a layout directly, so auto-rebuild is paused.
+    autoBanner.innerHTML = `<span style="color:var(--warn);">● Manual mode</span> — you've edited a layout directly, so auto-rebuild is paused.
       <button class="btn small" id="reenableAutoBtn" style="margin-left:8px;">Regenerate automatically</button>`;
     document.getElementById('reenableAutoBtn').addEventListener('click', () => {
       autoMode = true;
@@ -597,6 +760,10 @@ acrossInput.addEventListener('input', onSheetSetupChange);
 sheetLenInput.addEventListener('input', onSheetSetupChange);
 artHeightInput.addEventListener('input', onSheetSetupChange);
 gapInput.addEventListener('input', onSheetSetupChange);
+optimizeLayoutsInput.addEventListener('change', onSheetSetupChange);
+useDielineInput.addEventListener('change', onSheetSetupChange);
+dielineAcrossInput.addEventListener('input', onSheetSetupChange);
+dielineAroundInput.addEventListener('input', onSheetSetupChange);
 
 // ---------- Report ----------
 const reportOutput = document.getElementById('reportOutput');
