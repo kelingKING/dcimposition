@@ -92,6 +92,7 @@
   <div class="main-nav" id="mainNav">
     <button class="nav-btn active" data-section="line-types">Dieline line types</button>
     <button class="nav-btn" data-section="label-cutting">Label / sticker cut-to vs cut-through</button>
+    <button class="nav-btn" data-section="cutting-method">Conventional cut vs digicut</button>
     <button class="nav-btn" data-section="layer-buildup">Layer build-up</button>
   </div>
 
@@ -181,6 +182,61 @@
     <div class="note">These are usually two separate spot-colour/layer names in the dieline file so the RIP or cutter can apply different blade depths per pass. Mislabeling one as the other is a common cause of either the liner shattering (over-cut) or the label refusing to peel (under-cut).</div>
   </div>
 
+  </div>
+
+  <div class="section" id="section-cutting-method">
+  <h2>Conventional cut vs digicut</h2>
+  <p class="section-desc">Same dieline shape, two different ways to actually cut it - the choice is mostly driven by run length and how much lead time the job can afford.</p>
+  <div class="card">
+    <table>
+      <thead>
+        <tr><th></th><th>Conventional die-cutting</th><th>Digital cutting (digicut)</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="name">Role of the dieline in the file</td>
+          <td class="desc">Just a reference - it shows where the cut will fall for placement, sign-off, and for the die-maker to build the physical tool from. The actual cutting is done by that separate die, so line style/spot-colour naming on file matters less to the cut itself.</td>
+          <td class="desc">It is the toolpath - the cutter reads that exact vector and the knife or laser follows it directly. No separate tool exists, so the path has to be clean, closed, and correctly named/isolated or the machine cuts it wrong.</td>
+        </tr>
+        <tr>
+          <td class="name">Tooling</td>
+          <td class="desc">Physical steel rule die (or rotary cylinder die) built to the exact dieline shape - blades bent and set into a plywood or steel base, with separate rule for crease/perf.</td>
+          <td class="desc">No physical die - a knife or laser head follows the dieline vector directly from the digital file on a flatbed table (e.g. Zund, Kongsberg, Esko Kappa).</td>
+        </tr>
+        <tr>
+          <td class="name">Lead time</td>
+          <td class="desc">Die-making takes days, longer for complex or multi-up shapes. Any shape change means a new or reworked die.</td>
+          <td class="desc">Effectively none - upload the file and cut. Shape changes are just a file edit.</td>
+        </tr>
+        <tr>
+          <td class="name">Cost structure</td>
+          <td class="desc">High upfront tooling cost, very low cost per unit at volume. Die is reusable indefinitely if stored and maintained.</td>
+          <td class="desc">No tooling cost, but higher cost per unit - table time is the expense, and it scales with run length.</td>
+        </tr>
+        <tr>
+          <td class="name">Best for</td>
+          <td class="desc">Long runs and repeat jobs - commercial packaging, folding cartons, high-volume label converting.</td>
+          <td class="desc">Short runs, prototypes, sign-off proofs, one-offs, and variable or personalised shapes.</td>
+        </tr>
+        <tr>
+          <td class="name">Speed at volume</td>
+          <td class="desc">Fast - a press-mounted die cuts a full sheet or web in one stroke or continuous rotary pass.</td>
+          <td class="desc">Slower per piece - the head traces the outline, so throughput drops as complexity or quantity rises.</td>
+        </tr>
+        <tr>
+          <td class="name">Crease / perf</td>
+          <td class="desc">Built into the same die - matched creasing rule and perforating rule sit alongside the cutting rule in one pass.</td>
+          <td class="desc">Handled with a scoring wheel or matrix tool on the same table, swapped in per pass - fully programmable, no rule-bending required.</td>
+        </tr>
+        <tr>
+          <td class="name">Repeatability</td>
+          <td class="desc">Extremely consistent shape-to-shape once the die is proven in, since every cut comes from the same physical tool.</td>
+          <td class="desc">Consistent too, but tool wear (blade dulling) and material shifting on the table are the main sources of drift to watch.</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="note">Rule of thumb: if the die pays for itself before the job ends, go conventional. If the job is a proof, a prototype, or a short/variable run, digicut usually wins on total cost and turnaround.</div>
+  </div>
   </div>
 
   <div class="section" id="section-layer-buildup">
