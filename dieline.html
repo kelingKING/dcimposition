@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dieline Anatomy Reference - Cut, Crease, Perf, Drill, Glue, Label Cutting</title>
+<style>
+  :root{
+    --ink:#18181a; --sub:#5a5a60; --muted:#8f8f96; --line:#e5e5e8;
+    --bg:#ffffff; --card:#ffffff;
+    --cut:#D85A30; --crease:#0F6E56; --perf:#185FA5; --drill:#5F5E5A; --glue:#BA7517;
+    --teal:#5DCAA5; --teal-d:#04342C; --amber:#FAC775; --amber-d:#412402; --gray:#D3D1C7; --gray-d:#2C2C2A;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; padding:40px 20px 80px; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.6;
+  }
+  .wrap{max-width:920px; margin:0 auto;}
+  h1{font-size:26px; font-weight:600; margin:0 0 6px;}
+  .subtitle{color:var(--sub); font-size:15px; margin:0 0 36px;}
+  h2{font-size:19px; font-weight:600; margin:48px 0 4px; padding-top:8px; border-top:1px solid var(--line);}
+  h2:first-of-type{border-top:none; padding-top:0;}
+  .section-desc{color:var(--sub); font-size:14px; margin:0 0 20px;}
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:28px; margin-bottom:20px; box-shadow:0 1px 2px rgba(0,0,0,0.03);
+  }
+  table{width:100%; border-collapse:collapse; font-size:14px;}
+  th{
+    text-align:left; font-weight:600; color:var(--sub); font-size:12px;
+    text-transform:uppercase; letter-spacing:.03em; padding:0 12px 10px; border-bottom:2px solid var(--line);
+  }
+  td{padding:14px 12px; border-bottom:1px solid var(--line); vertical-align:top;}
+  tr:last-child td{border-bottom:none;}
+  .swatch-cell{width:120px;}
+  .swatch{width:90px; display:block;}
+  .name{font-weight:600; font-size:14px; margin-bottom:2px;}
+  .desc{color:var(--sub); font-size:13.5px;}
+  .note{
+    font-size:13px; color:var(--muted); background:#f7f7f8; border:1px solid var(--line); border-radius:8px;
+    padding:12px 16px; margin-top:18px;
+  }
+  .cross-section{display:flex; gap:36px; flex-wrap:wrap; justify-content:center; margin-top:8px;}
+  .stack{width:260px; text-align:center;}
+  .stack-title{font-weight:600; font-size:15px; margin-bottom:14px;}
+  .stack-layers{position:relative;}
+  .layer{
+    border:1px solid rgba(0,0,0,.12); font-size:12.5px; display:flex;
+    align-items:center; justify-content:center;
+  }
+  .layer.face{ background:var(--teal); color:var(--teal-d); height:56px; border-radius:6px 6px 0 0;}
+  .layer.adh{ background:var(--amber); color:var(--amber-d); height:26px;}
+  .layer.liner{ background:var(--gray); color:var(--gray-d); height:56px; border-radius:0 0 6px 6px;}
+  .cutline{
+    position:absolute; left:50%; top:0; width:0; border-left:3px dashed var(--cut);
+    transform:translateX(-1.5px); z-index:2;
+  }
+  .stack-note{font-size:12.5px; color:var(--sub); margin-top:14px;}
+  footer{margin-top:60px; font-size:12px; color:var(--muted); text-align:center;}
+  .layer-tabs{display:flex; flex-wrap:wrap; gap:8px;}
+  .ltab{
+    font-family:inherit; font-size:13px; padding:8px 14px; border-radius:20px;
+    border:1px solid var(--line); background:#fff; color:var(--sub); cursor:pointer;
+    transition:border-color .15s, color .15s;
+  }
+  .ltab:hover{border-color:var(--ink); color:var(--ink);}
+  .ltab.active{background:var(--ink); color:#fff; border-color:var(--ink);}
+  .viewer{margin:20px 0 8px; text-align:center;}
+  .viewer img{max-width:100%; border:1px solid var(--line); border-radius:8px; display:block; margin:0 auto;}
+
+  .main-nav{display:flex; gap:6px; border-bottom:1px solid var(--line); margin-bottom:36px; flex-wrap:wrap;}
+  .nav-btn{
+    font-family:inherit; font-size:14px; font-weight:500; padding:12px 4px; margin-right:22px;
+    border:none; border-bottom:2px solid transparent; background:none; color:var(--muted); cursor:pointer;
+    transition:color .15s, border-color .15s;
+  }
+  .nav-btn:hover{color:var(--ink);}
+  .nav-btn.active{color:var(--ink); border-bottom-color:var(--ink);}
+  .section{display:none;}
+  .section.active{display:block;}
+  .section h2{margin-top:0; border-top:none; padding-top:0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Dieline anatomy reference</h1>
+  <p class="subtitle">Cut · crease · perf · drill · glue area · label cut-to vs cut-through</p>
+
+  <div class="main-nav" id="mainNav">
+    <button class="nav-btn active" data-section="line-types">Dieline line types</button>
+    <button class="nav-btn" data-section="label-cutting">Label / sticker cut-to vs cut-through</button>
+    <button class="nav-btn" data-section="layer-buildup">Layer build-up</button>
+  </div>
+
+  <div class="section active" id="section-line-types">
+  <h2>Dieline line types</h2>
+  <p class="section-desc">Each line type is typically kept on its own spot-colour / non-printing layer so RIP and cutting software can separate tool paths.</p>
+  <div class="card">
+    <table>
+      <thead>
+        <tr><th>Line style</th><th>Type</th><th>What it means</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="swatch-cell"><svg class="swatch" viewBox="0 0 90 8" height="8"><line x1="0" y1="4" x2="90" y2="4" stroke="var(--cut)" stroke-width="3"/></svg></td>
+          <td class="name">Cut</td>
+          <td class="desc">Full separation through the material. Own spot colour, commonly named <code>CutContour</code> or <code>Dieline</code>, set to overprint so it never knocks out or prints.</td>
+        </tr>
+        <tr>
+          <td class="swatch-cell"><svg class="swatch" viewBox="0 0 90 8" height="8"><line x1="0" y1="4" x2="90" y2="4" stroke="var(--crease)" stroke-width="2" stroke-dasharray="9 5"/></svg></td>
+          <td class="name">Crease / score</td>
+          <td class="desc">No material removed - a rule or matrix impression that lets board fold cleanly along the line. Thicker board often needs a counter-score on the reverse to stop the outer face cracking.</td>
+        </tr>
+        <tr>
+          <td class="swatch-cell"><svg class="swatch" viewBox="0 0 90 8" height="8"><line x1="0" y1="4" x2="90" y2="4" stroke="var(--perf)" stroke-width="2.5" stroke-dasharray="12 3 3 3"/></svg></td>
+          <td class="name">Perforation</td>
+          <td class="desc">Alternating cut and tie (bridge) segments, defined by a cut:tie ratio (e.g. 2mm cut / 1mm tie). Longer ties = harder to tear but stronger; shorter ties = easier tear-off but risk of premature separation in transit.</td>
+        </tr>
+        <tr>
+          <td class="swatch-cell">
+            <svg class="swatch" viewBox="0 0 90 12" height="12">
+              <line x1="0" y1="6" x2="90" y2="6" stroke="var(--drill)" stroke-width="0.75" stroke-dasharray="1 4"/>
+              <circle cx="10" cy="6" r="4.5" fill="none" stroke="var(--drill)" stroke-width="1.5"/>
+              <circle cx="45" cy="6" r="4.5" fill="none" stroke="var(--drill)" stroke-width="1.5"/>
+              <circle cx="80" cy="6" r="4.5" fill="none" stroke="var(--drill)" stroke-width="1.5"/>
+            </svg>
+          </td>
+          <td class="name">Drill / punch</td>
+          <td class="desc">Round holes at specified diameter and X/Y position, for hang tabs, binding, or fitments. Kept as its own layer since it often runs on a different tool/bit than the cutting blade.</td>
+        </tr>
+        <tr>
+          <td class="swatch-cell">
+            <svg class="swatch" viewBox="0 0 90 24" height="24">
+              <defs>
+                <pattern id="hatchdemo" width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+                  <line x1="0" y1="0" x2="0" y2="6" stroke="var(--glue)" stroke-width="1.6"/>
+                </pattern>
+              </defs>
+              <rect x="0" y="0" width="90" height="24" fill="url(#hatchdemo)" opacity="0.55" stroke="var(--glue)" stroke-width="0.75"/>
+            </svg>
+          </td>
+          <td class="name">Glue area</td>
+          <td class="desc">Not a cutting element - a masked zone marking where adhesive is applied, usually on its own non-printing layer. Must be kept clear of ink, varnish, and coatings, since most coatings act as release agents and stop the glue bonding, causing seam failure on the finished carton.</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="note">Convention varies by shop/CAD package, but the pattern is consistent: cut = solid, crease = dashed, perf = dash-with-ties, drill = discrete points, glue = a filled/hatched zone rather than a line.</div>
+  </div>
+
+  </div>
+
+  <div class="section" id="section-label-cutting">
+  <h2>Label / sticker dieline: cut-to vs cut-through</h2>
+  <p class="section-desc">Blade depth is the deciding factor - how deep into the material stack the cut travels.</p>
+  <div class="card">
+    <div class="cross-section">
+      <div class="stack">
+        <div class="stack-title">Kiss-cut (cut-to)</div>
+        <div class="stack-layers">
+          <div class="layer face" style="border-radius:6px 6px 0 0;">Face material</div>
+          <div class="layer adh">Adhesive</div>
+          <div class="layer liner">Liner</div>
+          <div class="cutline" style="height:82px;"></div>
+        </div>
+        <div class="stack-note">Cut stops at the top of the liner - label peels off, liner stays whole as a carrier. What most standalone label/sticker jobs need.</div>
+      </div>
+      <div class="stack">
+        <div class="stack-title">Through-cut</div>
+        <div class="stack-layers">
+          <div class="layer face" style="border-radius:6px 6px 0 0;">Face material</div>
+          <div class="layer adh">Adhesive</div>
+          <div class="layer liner">Liner</div>
+          <div class="cutline" style="height:138px;"></div>
+        </div>
+        <div class="stack-note">Cut goes through every layer including the liner - full separation, no shared carrier. Used for loose singulated labels or shapes that need to drop free.</div>
+      </div>
+    </div>
+    <div class="note">These are usually two separate spot-colour/layer names in the dieline file so the RIP or cutter can apply different blade depths per pass. Mislabeling one as the other is a common cause of either the liner shattering (over-cut) or the label refusing to peel (under-cut).</div>
+  </div>
+
+  </div>
+
+  <div class="section" id="section-layer-buildup">
+  <h2>Layer build-up of a print sign-off file</h2>
+  <p class="section-desc">A production-ready file is a stack of layers, not one flat image. Toggle through what each layer contributes, then see them combined as the composite that goes to plate and to the cutter.</p>
+  <div class="card">
+    <div class="layer-tabs" id="layerTabs">
+      <button class="ltab active" data-layer="artwork">Original artwork</button>
+      <button class="ltab" data-layer="printed">Printed artwork</button>
+      <button class="ltab" data-layer="cut">Cut / dieline</button>
+      <button class="ltab" data-layer="crease">Crease / fold</button>
+      <button class="ltab" data-layer="perf">Perforation</button>
+      <button class="ltab" data-layer="composite">Composite</button>
+    </div>
+
+    <div class="viewer">
+      <img id="layerImg" src="1-original-artwork.jpg" alt="Original artwork">
+    </div>
+
+    <div class="note" id="layerNote">The artwork exactly as supplied by the client or designer - no production marks, no dieline, just the creative.</div>
+    <div class="note" style="margin-top:8px;">To use your own job: replace <code>1-original-artwork.jpg</code> through <code>6-composite.jpg</code> (same folder as this HTML file) with your own exports, keeping the filenames - or edit the <code>src</code> values in the tab data below to point at whatever files you use.</div>
+  </div>
+  </div>
+
+  <footer>Dieline anatomy reference · print production quick reference</footer>
+</div>
+
+<script>
+  // Edit the "src" values below to point at your own exported images.
+  var states = {
+    artwork:  { src:'1-original-artwork.jpg', alt:'Original artwork',
+                note:'The artwork exactly as supplied by the client or designer - no production marks, no dieline, just the creative.' },
+    printed:  { src:'2-printed-artwork.jpg', alt:'Printed artwork',
+                note:'The same artwork as it sits on press, with registration marks added for colour-to-colour and plate alignment. Still no cutting information.' },
+    cut:      { src:'3-cut-dieline.jpg', alt:'Cut / dieline',
+                note:'The cutting path only, isolated on its own spot-colour layer - this is what drives the cutting table or die.' },
+    crease:   { src:'4-crease-fold.jpg', alt:'Crease / fold',
+                note:'Fold lines only, on their own layer - these get scored, not cut, so the carton folds cleanly at assembly.' },
+    perf:     { src:'5-perforation.jpg', alt:'Perforation',
+                note:'Tear-strip perforation, isolated on its own layer so it runs on a different tool pass to the main cut.' },
+    composite:{ src:'6-composite.jpg', alt:'Composite',
+                note:'All layers combined - artwork, cut, crease, and perforation together. This is the full file sent for sign-off and to the die-cutter.' }
+  };
+
+  function showLayer(key){
+    var s = states[key];
+    var img = document.getElementById('layerImg');
+    img.src = s.src;
+    img.alt = s.alt;
+    document.getElementById('layerNote').textContent = s.note;
+    document.querySelectorAll('.ltab').forEach(function(btn){
+      btn.classList.toggle('active', btn.getAttribute('data-layer') === key);
+    });
+  }
+
+  document.querySelectorAll('.ltab').forEach(function(btn){
+    btn.addEventListener('click', function(){ showLayer(btn.getAttribute('data-layer')); });
+  });
+
+  showLayer('artwork');
+
+  document.querySelectorAll('.nav-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var target = btn.getAttribute('data-section');
+      document.querySelectorAll('.nav-btn').forEach(function(b){ b.classList.toggle('active', b === btn); });
+      document.querySelectorAll('.section').forEach(function(sec){
+        sec.classList.toggle('active', sec.id === 'section-' + target);
+      });
+    });
+  });
+</script>
+</body>
+</html>
