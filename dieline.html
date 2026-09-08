@@ -42,6 +42,10 @@
     font-size:13px; color:var(--muted); background:#f7f7f8; border:1px solid var(--line); border-radius:8px;
     padding:12px 16px; margin-top:18px;
   }
+  .note.warn{
+    color:#712b13; background:#faece7; border-color:#f0997b;
+  }
+  .note.warn strong{color:#4a1b0c;}
   .cross-section{display:flex; gap:36px; flex-wrap:wrap; justify-content:center; margin-top:8px;}
   .stack{width:260px; text-align:center;}
   .stack-title{font-weight:600; font-size:15px; margin-bottom:14px;}
@@ -81,6 +85,13 @@
   .section{display:none;}
   .section.active{display:block;}
   .section h2{margin-top:0; border-top:none; padding-top:0;}
+
+  .spec-title{font-size:16px; font-weight:600; margin:0 0 8px;}
+  .spec-desc{font-size:14px; color:var(--sub); margin:0 0 18px; max-width:760px;}
+  .img-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px;}
+  .img-grid figure{margin:0;}
+  .img-grid img{width:100%; display:block; border:1px solid var(--line); border-radius:8px;}
+  .img-grid figcaption{font-size:12.5px; color:var(--muted); margin-top:8px; line-height:1.5;}
 </style>
 </head>
 <body>
@@ -93,6 +104,7 @@
     <button class="nav-btn active" data-section="line-types">Dieline line types</button>
     <button class="nav-btn" data-section="label-cutting">Label / sticker cut-to vs cut-through</button>
     <button class="nav-btn" data-section="cutting-method">Conventional cut vs digicut</button>
+    <button class="nav-btn" data-section="cmykhub-specs">CMYKHub: Cut, Kisscut, Drill</button>
     <button class="nav-btn" data-section="layer-buildup">Layer build-up</button>
   </div>
 
@@ -149,6 +161,7 @@
       </tbody>
     </table>
     <div class="note">Convention varies by shop/CAD package, but the pattern is consistent: cut = solid, crease = dashed, perf = dash-with-ties, drill = discrete points, glue = a filled/hatched zone rather than a line.</div>
+    <div class="note warn"><strong>All dieline elements must be set to overprint</strong> - cut, crease, perforation, and drill alike. If any of these sit as knockout instead of overprint, they'll punch a gap through the artwork underneath wherever they cross it, and on a RIP or platesetter that doesn't recognise the spot colour as non-printing, the line can output as a visible printed mark. Overprint keeps the artwork intact underneath and keeps the dieline purely informational for the press/cutter.</div>
   </div>
 
   </div>
@@ -236,6 +249,57 @@
       </tbody>
     </table>
     <div class="note">Rule of thumb: if the die pays for itself before the job ends, go conventional. If the job is a proof, a prototype, or a short/variable run, digicut usually wins on total cost and turnaround.</div>
+  </div>
+  </div>
+
+  <div class="section" id="section-cmykhub-specs">
+  <h2>CMYKHub: Cut, Kisscut, Drill</h2>
+  <p class="section-desc">The three dieline order types CMYKHub customers can choose from, and what each expects in the artwork.</p>
+
+  <div class="card">
+    <h3 class="spec-title">1. RouterCut to Dieline</h3>
+    <p class="spec-desc">If a customer orders this type of dieline, the artwork is allowed to have more than one dieline type. It can have Cut, Crease, Drill, and Perf all in one artwork - or only contain one or two of them.</p>
+    <div class="img-grid">
+      <figure><img src="7-routercut-1.jpg" alt="RouterCut to Dieline example 1"><figcaption>Example 1</figcaption></figure>
+      <figure><img src="7-routercut-2.jpg" alt="RouterCut to Dieline example 2"><figcaption>Example 2</figcaption></figure>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 class="spec-title">2. Kisscut to Dieline</h3>
+    <p class="spec-desc">This type of dieline is usually used for sticker/label jobs. As we know, kisscut (or "cut-to") requires grip - so if you're working on a kisscut job, ensure the artboard is larger than the dieline size.</p>
+    <div class="img-grid">
+      <figure>
+        <img src="8-kisscut-1.jpg" alt="Kisscut example - dieline equals order size, artboard larger">
+        <figcaption>Order 90x90mm - dieline size 90x90mm, artboard size 96x96mm</figcaption>
+      </figure>
+      <figure>
+        <img src="8-kisscut-2.jpg" alt="Kisscut example - dieline smaller than trimbox">
+        <figcaption>Order 90x90mm - dieline size 84x84mm, trimbox size 90x90mm. Leave as it is.</figcaption>
+      </figure>
+      <figure>
+        <img src="8-kisscut-3.jpg" alt="Kisscut example - imposed artwork already has grip">
+        <figcaption>Imposed artwork - grip is usually already included. Leave as it is.</figcaption>
+      </figure>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 class="spec-title">3. Drill to Dieline</h3>
+    <p class="spec-desc">Drill in CMYKHub does not literally "drill". It does cut, but not the outer object - it cuts the inner object instead.</p>
+    <div class="img-grid">
+      <figure><img src="9-drill-1.jpg" alt="Drill to Dieline example 1"><figcaption>Example 1</figcaption></figure>
+      <figure><img src="9-drill-2.jpg" alt="Drill to Dieline example 2"><figcaption>Example 2</figcaption></figure>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 class="spec-title">Result comparison: setting the object as CUT vs DRILL</h3>
+    <p class="spec-desc">What the same object actually produces depending on which spot colour/layer it's set to.</p>
+    <div class="img-grid">
+      <figure><img src="10-set-as-cut.jpg" alt="Result of setting the object as CUT"><figcaption>What you get if you set as CUT</figcaption></figure>
+      <figure><img src="11-set-as-drill.jpg" alt="Result of setting the object as DRILL"><figcaption>What you get if you set as DRILL</figcaption></figure>
+    </div>
   </div>
   </div>
 
