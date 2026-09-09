@@ -92,6 +92,7 @@
   .img-grid figure{margin:0;}
   .img-grid img{width:100%; display:block; border:1px solid var(--line); border-radius:8px;}
   .img-grid figcaption{font-size:12.5px; color:var(--muted); margin-top:8px; line-height:1.5;}
+  .img-grid.single{grid-template-columns:minmax(0, 420px);}
 </style>
 </head>
 <body>
@@ -104,7 +105,8 @@
     <button class="nav-btn active" data-section="line-types">Dieline line types</button>
     <button class="nav-btn" data-section="label-cutting">Label / sticker cut-to vs cut-through</button>
     <button class="nav-btn" data-section="cutting-method">Conventional cut vs digicut</button>
-    <button class="nav-btn" data-section="cmykhub-specs">CMYKHub: Cut, Kisscut, Drill</button>
+    <button class="nav-btn" data-section="cmykhub-specs">CMYKHub: RouterCut, Kisscut, Drill</button>
+    <button class="nav-btn" data-section="white-ink">White Ink Setup</button>
     <button class="nav-btn" data-section="layer-buildup">Layer build-up</button>
   </div>
 
@@ -253,12 +255,12 @@
   </div>
 
   <div class="section" id="section-cmykhub-specs">
-  <h2>CMYKHub: Cut, Kisscut, Drill</h2>
-  <p class="section-desc">The three dieline order types CMYKHub customers can choose from, and what each expects in the artwork.</p>
+  <h2>CMYKHub: RouterCut, Kisscut, Drill</h2>
+  <p class="section-desc">The three dieline order types CMYKHub customers can choose from, and what each one expects from the artwork.</p>
 
   <div class="card">
     <h3 class="spec-title">1. RouterCut to Dieline</h3>
-    <p class="spec-desc">If a customer orders this type of dieline, the artwork is allowed to have more than one dieline type. It can have Cut, Crease, Drill, and Perf all in one artwork - or only contain one or two of them.</p>
+    <p class="spec-desc">If a customer orders this type of dieline, the artwork is allowed to contain more than one dieline type. It can have Cut, Crease, Drill, and Perf all in one artwork - or only one or two of them.</p>
     <div class="img-grid">
       <figure><img src="7-routercut-1.jpg" alt="RouterCut to Dieline example 1"><figcaption>Example 1</figcaption></figure>
       <figure><img src="7-routercut-2.jpg" alt="RouterCut to Dieline example 2"><figcaption>Example 2</figcaption></figure>
@@ -267,7 +269,7 @@
 
   <div class="card">
     <h3 class="spec-title">2. Kisscut to Dieline</h3>
-    <p class="spec-desc">This type of dieline is usually used for sticker/label jobs. As we know, kisscut (or "cut-to") requires grip - so if you're working on a kisscut job, ensure the artboard is larger than the dieline size.</p>
+    <p class="spec-desc">This type of dieline is usually used for sticker/label jobs. As we know, kisscut (or "cut-to") requires grip - so when working on a kisscut job, make sure the artboard is larger than the dieline size.</p>
     <div class="img-grid">
       <figure>
         <img src="8-kisscut-1.jpg" alt="Kisscut example - dieline equals order size, artboard larger">
@@ -299,6 +301,76 @@
     <div class="img-grid">
       <figure><img src="10-set-as-cut.jpg" alt="Result of setting the object as CUT"><figcaption>What you get if you set as CUT</figcaption></figure>
       <figure><img src="11-set-as-drill.jpg" alt="Result of setting the object as DRILL"><figcaption>What you get if you set as DRILL</figcaption></figure>
+    </div>
+  </div>
+  </div>
+
+  <div class="section" id="section-white-ink">
+  <h2>White Ink Setup</h2>
+
+  <div class="card">
+    <h3 class="spec-title">Sticker / label structure</h3>
+    <div class="img-grid single">
+      <figure><img src="19-sticker-label-structure.jpg" alt="Sticker/label structure diagram"></figure>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 class="spec-title">Surface print</h3>
+    <p class="spec-desc">Surface print is commonly used in almost all printing methods. It produces a right-reading result and is intended to be read from the top of the stock.</p>
+    <div class="img-grid single">
+      <figure><img src="12-surface-print.jpg" alt="Surface print example"></figure>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 class="spec-title">Reverse print</h3>
+    <p class="spec-desc">Reverse print is only used on clear stock, because reading it from the top of the stock produces a wrong-reading result. It's intended to be read from the back of the stock instead - usually used for stickers or labels that stick from the inside rather than the outside of the base.</p>
+    <div class="img-grid single">
+      <figure><img src="13-reverse-print.jpg" alt="Reverse print example"></figure>
+    </div>
+  </div>
+
+  <div class="note warn" style="margin-top:0; margin-bottom:20px;"><strong>In the file, white ink should sit on the top layer, and overprint is a must.</strong> That's the file setup regardless of print type. On press, though, the actual ink lay-down order is the opposite of the file's layer order for reverse print: white ink lays down first for surface print, and last for reverse print.</div>
+
+  <div class="card">
+    <h3 class="spec-title">White ink on clear stock</h3>
+    <p class="spec-desc">
+      White ink is used mostly on clear or metallic substrates.<br>
+      Unlike CMYK ink, white ink has a special characteristic: it has the strongest density, which makes it opaque.<br>
+      On clear stock, white ink is mostly used as a background or white base underneath the CMYK print.<br>
+      CMYK ink without white ink underneath will produce a translucent colour.<br>
+      If the white ink covers all areas of the label, that can indicate the label requires a reverse print.
+    </p>
+    <div class="img-grid">
+      <figure><img src="14-white-ink-clear-1.jpg" alt="White ink on clear stock example 1"></figure>
+      <figure><img src="15-white-ink-clear-2.jpg" alt="White ink on clear stock example 2"></figure>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 class="spec-title">White ink on silver / metallic stock</h3>
+    <p class="spec-desc">
+      Unlike CMY ink, black and white ink have a special characteristic: their density is strongest, making them even more opaque than on clear stock.<br>
+      On silver stock, white ink is mostly used as a background or white base underneath the CMYK print.<br>
+      CMY ink without white ink underneath will produce a translucent metallic colour - some products use this method deliberately to get a metallic colour effect.<br>
+      Since white ink is opaque, some objects may use white ink only (e.g. text).<br>
+      If the white ink covers all areas of the label, that might indicate the label requires an opaque stock, to avoid the container colour affecting the stock colour.
+    </p>
+    <div class="img-grid">
+      <figure><img src="16-white-ink-silver-1.jpg" alt="White ink on silver stock example 1"></figure>
+      <figure><img src="17-white-ink-silver-2.jpg" alt="White ink on silver stock example 2"></figure>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 class="spec-title">Why does white stock still require white ink?</h3>
+    <p class="spec-desc">
+      In some cases, white label stock still requires white ink, because of differences in the standard stock's white colour. Even from the same manufacturer, the white of the stock can vary slightly - sometimes it leans yellowish, blueish, or reddish.<br>
+      To get a standard white colour - especially if the label has a barcode or QR code that's sensitive to its base colour - white ink is needed to establish that standard white as the base.
+    </p>
+    <div class="img-grid single">
+      <figure><img src="18-white-ink-on-white-stock.jpg" alt="White ink on white stock example"></figure>
     </div>
   </div>
   </div>
