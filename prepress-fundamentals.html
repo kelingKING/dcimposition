@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prepress Fundamentals</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F6F3EA;
+    --paper-raised: #FFFFFF;
+    --ink: #211F1B;
+    --ink-soft: #4A463E;
+    --muted: #766F5F;
+    --teal: #1F4E5C;
+    --teal-soft: #E4ECEC;
+    --clay: #B5502F;
+    --clay-soft: #F5E4DC;
+    --line: #DCD5C4;
+    --good: #2E6B3E;
+    --good-soft: #E3EEE2;
+    --bad: #A6392B;
+    --bad-soft: #F6E2DE;
+    --shadow: rgba(33, 31, 27, 0.10);
+    --radius: 3px;
+    --serif: "Fraunces", Georgia, "Times New Roman", serif;
+    --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #1B1917;
+      --paper-raised: #242220;
+      --ink: #ECE7DB;
+      --ink-soft: #C9C2B2;
+      --muted: #948C79;
+      --teal: #6FB3C2;
+      --teal-soft: #223235;
+      --clay: #E08D6C;
+      --clay-soft: #382822;
+      --line: #3A362E;
+      --good: #7FC48C;
+      --good-soft: #223224;
+      --bad: #E08072;
+      --bad-soft: #382422;
+      --shadow: rgba(0, 0, 0, 0.35);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper: #1B1917;
+    --paper-raised: #242220;
+    --ink: #ECE7DB;
+    --ink-soft: #C9C2B2;
+    --muted: #948C79;
+    --teal: #6FB3C2;
+    --teal-soft: #223235;
+    --clay: #E08D6C;
+    --clay-soft: #382822;
+    --line: #3A362E;
+    --good: #7FC48C;
+    --good-soft: #223224;
+    --bad: #E08072;
+    --bad-soft: #382422;
+    --shadow: rgba(0, 0, 0, 0.35);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 28px 20px 80px;
+  }
+
+  /* ---- Header / job-ticket ---- */
+  .ticket {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--paper-raised);
+    padding: 22px 24px;
+    position: relative;
+    margin-bottom: 22px;
+  }
+
+  .ticket-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+    margin-bottom: 10px;
+  }
+
+  .ticket-meta span:last-child {
+    font-variant-numeric: tabular-nums;
+  }
+
+  h1 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(28px, 5vw, 38px);
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
+  }
+
+  .subhead {
+    color: var(--ink-soft);
+    font-size: 15px;
+    margin: 0;
+    max-width: 52ch;
+  }
+
+  /* crop marks */
+  .crop {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    pointer-events: none;
+  }
+  .crop::before, .crop::after {
+    content: "";
+    position: absolute;
+    background: var(--muted);
+    opacity: 0.55;
+  }
+  .crop::before { width: 100%; height: 1px; top: 50%; }
+  .crop::after { height: 100%; width: 1px; left: 50%; }
+  .crop.tl { top: -7px; left: -7px; }
+  .crop.tr { top: -7px; right: -7px; }
+  .crop.bl { bottom: -7px; left: -7px; }
+  .crop.br { bottom: -7px; right: -7px; }
+
+  /* ---- Tabs ---- */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 18px;
+  }
+
+  .tab-btn {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 14.5px;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--line);
+    border-bottom: none;
+    padding: 11px 20px;
+    border-radius: var(--radius) var(--radius) 0 0;
+    cursor: pointer;
+    position: relative;
+    top: 1px;
+  }
+
+  .tab-btn.active {
+    color: var(--ink);
+    background: var(--paper-raised);
+    border-color: var(--line);
+  }
+
+  .tab-btn:focus-visible, button:focus-visible, .opt:focus-visible {
+    outline: 2px solid var(--teal);
+    outline-offset: 2px;
+  }
+
+  .panel {
+    border: 1px solid var(--line);
+    border-radius: 0 var(--radius) var(--radius) var(--radius);
+    background: var(--paper-raised);
+    padding: 30px 26px;
+    position: relative;
+  }
+
+  .panel-body { display: none; }
+  .panel-body.active { display: block; }
+
+  /* ---- Learn: accordion ---- */
+  .intro {
+    font-size: 15.5px;
+    color: var(--ink-soft);
+    margin: 0 0 24px;
+    max-width: 62ch;
+  }
+
+  .topic {
+    border-bottom: 1px solid var(--line);
+  }
+  .topic:first-of-type { border-top: 1px solid var(--line); }
+
+  .topic-head {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: none;
+    border: none;
+    padding: 16px 2px;
+    text-align: left;
+    cursor: pointer;
+    color: var(--ink);
+    font-family: var(--sans);
+  }
+
+  .topic-num {
+    font-family: var(--serif);
+    font-size: 15px;
+    color: var(--teal);
+    min-width: 20px;
+  }
+
+  .topic-title {
+    font-weight: 600;
+    font-size: 16px;
+    flex: 1;
+  }
+
+  .topic-caret {
+    color: var(--muted);
+    transition: transform 0.18s ease;
+    flex-shrink: 0;
+  }
+  .topic.open .topic-caret { transform: rotate(45deg); }
+
+  .topic-content {
+    display: none;
+    padding: 0 2px 20px 34px;
+    color: var(--ink-soft);
+    font-size: 14.5px;
+  }
+  .topic.open .topic-content { display: block; }
+
+  .topic-content ul {
+    margin: 4px 0 0;
+    padding-left: 18px;
+  }
+  .topic-content li { margin-bottom: 8px; }
+  .topic-content li:last-child { margin-bottom: 0; }
+
+  .topic-content strong { color: var(--ink); }
+
+  /* ---- Checklist ---- */
+  .section-label {
+    font-family: var(--serif);
+    font-size: 20px;
+    font-weight: 600;
+    margin: 40px 0 4px;
+  }
+  .section-note {
+    font-size: 13.5px;
+    color: var(--muted);
+    margin: 0 0 16px;
+  }
+
+  .check-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 9px 4px;
+    cursor: pointer;
+    border-radius: var(--radius);
+  }
+  .check-item:hover { background: var(--teal-soft); }
+
+  .check-box {
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid var(--muted);
+    border-radius: 3px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.12s ease, border-color 0.12s ease;
+  }
+  .check-item.checked .check-box {
+    background: var(--teal);
+    border-color: var(--teal);
+  }
+  .check-box svg {
+    width: 12px;
+    height: 12px;
+    opacity: 0;
+    transition: opacity 0.12s ease;
+  }
+  .check-item.checked .check-box svg { opacity: 1; }
+
+  .check-text {
+    font-size: 14.5px;
+    color: var(--ink-soft);
+  }
+  .check-item.checked .check-text {
+    color: var(--muted);
+    text-decoration: line-through;
+    text-decoration-color: var(--line);
+  }
+
+  .progress-line {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 16px 0 6px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .progress-track {
+    flex: 1;
+    height: 5px;
+    background: var(--line);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--teal);
+    width: 0%;
+    transition: width 0.25s ease;
+  }
+
+  /* ---- Reference table ---- */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 14px;
+    font-size: 14px;
+  }
+  th {
+    text-align: left;
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 12.5px;
+    color: var(--muted);
+    padding: 8px 10px;
+    border-bottom: 1.5px solid var(--ink);
+  }
+  td {
+    padding: 10px 10px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+    color: var(--ink-soft);
+  }
+  td:first-child {
+    font-weight: 600;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  /* ---- Quiz ---- */
+  .quiz-progress {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 22px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .quiz-progress .dots {
+    display: flex;
+    gap: 6px;
+  }
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--line);
+  }
+  .dot.done { background: var(--teal); }
+  .dot.current { background: var(--clay); }
+
+  .q-prompt {
+    font-family: var(--serif);
+    font-size: 21px;
+    font-weight: 500;
+    margin: 0 0 20px;
+    line-height: 1.4;
+  }
+
+  .opt {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: var(--paper);
+    border: 1.5px solid var(--line);
+    border-radius: var(--radius);
+    padding: 13px 16px;
+    font-family: var(--sans);
+    font-size: 14.5px;
+    color: var(--ink);
+    cursor: pointer;
+    margin-bottom: 10px;
+    transition: border-color 0.12s ease, background 0.12s ease;
+  }
+  .opt:hover:not(:disabled) {
+    border-color: var(--teal);
+  }
+  .opt:disabled { cursor: default; }
+
+  .opt.correct {
+    background: var(--good-soft);
+    border-color: var(--good);
+    color: var(--good);
+    font-weight: 600;
+  }
+  .opt.incorrect {
+    background: var(--bad-soft);
+    border-color: var(--bad);
+    color: var(--bad);
+    font-weight: 600;
+  }
+
+  .feedback {
+    display: none;
+    margin-top: 16px;
+    padding: 14px 16px;
+    border-radius: var(--radius);
+    font-size: 14px;
+    border-left: 3px solid var(--teal);
+    background: var(--teal-soft);
+    color: var(--ink-soft);
+  }
+  .feedback.show { display: block; }
+  .feedback strong { color: var(--ink); }
+
+  .quiz-nav {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+  }
+
+  .btn {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 14px;
+    padding: 11px 22px;
+    border-radius: var(--radius);
+    border: none;
+    background: var(--ink);
+    color: var(--paper);
+    cursor: pointer;
+  }
+  .btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+  .btn.ghost {
+    background: transparent;
+    border: 1.5px solid var(--line);
+    color: var(--ink);
+  }
+
+  .quiz-result {
+    text-align: center;
+    padding: 20px 0 6px;
+  }
+  .result-score {
+    font-family: var(--serif);
+    font-size: 52px;
+    font-weight: 600;
+    color: var(--teal);
+    margin: 6px 0 4px;
+  }
+  .result-label {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 26px;
+  }
+  .result-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  @media (max-width: 520px) {
+    .panel { padding: 22px 18px; }
+    .ticket { padding: 18px 18px; }
+    .tab-btn { padding: 10px 14px; font-size: 13.5px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="ticket">
+    <span class="crop tl"></span><span class="crop tr"></span>
+    <span class="crop bl"></span><span class="crop br"></span>
+    <div class="ticket-meta">
+      <span>Training material</span>
+      <span>Job No. PP-01</span>
+    </div>
+    <h1>Prepress Fundamentals</h1>
+    <p class="subhead">What to check before a file goes to press - read through it, then test yourself.</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="learn">Learn</button>
+    <button class="tab-btn" data-tab="quiz">Quiz</button>
+  </div>
+
+  <div class="panel">
+
+    <!-- ============ LEARN ============ -->
+    <div class="panel-body active" id="panel-learn">
+      <p class="intro">Prepress is the last check between a design file and a printed piece someone is paying for. A mistake caught here costs a few minutes. A mistake missed here costs a reprint. Work through the eight fundamentals below, then run the checklist before anything leaves your desk.</p>
+
+      <div id="accordion"></div>
+
+      <div class="section-label">Pre-flight checklist</div>
+      <p class="section-note">Tap each item as you confirm it. Nothing is saved when you leave the page - it's here to walk through the habit, not to replace your shop's own sign-off.</p>
+      <div class="progress-line">
+        <span id="check-count">0 / 19</span>
+        <div class="progress-track"><div class="progress-fill" id="check-fill"></div></div>
+      </div>
+      <div id="checklist"></div>
+
+      <div class="section-label">Quick reference</div>
+      <table>
+        <thead><tr><th>Term</th><th>What it means</th></tr></thead>
+        <tbody id="ref-table"></tbody>
+      </table>
+    </div>
+
+    <!-- ============ QUIZ ============ -->
+    <div class="panel-body" id="panel-quiz">
+      <div id="quiz-live"></div>
+      <div id="quiz-result" style="display:none;"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ---------- Data ----------
+  const topics = [
+    {
+      title: "Bleed & Trim",
+      html: `<p>Three terms that get confused constantly:</p>
+        <ul>
+          <li><strong>Bleed</strong> - artwork extended past the trim line (typically 3mm / 0.125") so no white edge appears if the cut shifts slightly.</li>
+          <li><strong>Trim line</strong> - where the piece is actually cut to final size.</li>
+          <li><strong>Safe zone</strong> - keep text and logos a bit inside the trim line so nothing risks getting cut off.</li>
+        </ul>
+        <p>Backgrounds and color blocks that touch the edge extend into bleed. Text and important logos stay inside the safe zone.</p>`
+    },
+    {
+      title: "Resolution",
+      html: `<ul>
+        <li>Print needs <strong>300 PPI</strong> at final output size - not 72 PPI, which is for screens.</li>
+        <li>Check resolution at 100% size in the layout, not after scaling down.</li>
+        <li>Scaling a low-res image up doesn't create real resolution - it just stretches pixels.</li>
+      </ul>`
+    },
+    {
+      title: "Color Mode: CMYK vs RGB",
+      html: `<ul>
+        <li>Screens display in RGB; presses print in CMYK. Convert files to CMYK before sending to print, or colors shift unpredictably.</li>
+        <li><strong>Rich black</strong> (a CMYK mix) is for large fill areas. <strong>Registration black</strong> (100% on every channel) is for printer's marks only - never for text or design elements.</li>
+        <li>Know when a client needs an exact spot color (Pantone) match versus a standard process build.</li>
+      </ul>`
+    },
+    {
+      title: "Fonts",
+      html: `<ul>
+        <li>Outline fonts (convert to curves/paths) before sending files out, or embed/package them properly.</li>
+        <li>Missing fonts mean the printer substitutes something - often ugly, sometimes the job just stalls.</li>
+      </ul>`
+    },
+    {
+      title: "File Formats & Packaging",
+      html: `<ul>
+        <li>Print-ready PDFs (PDF/X-1a or PDF/X-4, depending on the shop) are the standard deliverable.</li>
+        <li>Sending native files instead? Package the job - fonts, links, images - so nothing is missing on the other end.</li>
+      </ul>`
+    },
+    {
+      title: "Image Handling",
+      html: `<ul>
+        <li>Check for RGB images that never got converted to CMYK.</li>
+        <li>Watch for low-res placeholder images that never got swapped for final art.</li>
+        <li>Images with transparency can cause issues in older RIPs - flatten if the shop requires it.</li>
+      </ul>`
+    },
+    {
+      title: "Preflight & Proofing",
+      html: `<ul>
+        <li>Run a preflight check (Acrobat or InDesign's built-in tool) before sending anything out. It flags color mode, resolution, missing fonts/links, and overprint settings.</li>
+        <li>Always review a proof - soft or hard - before greenlighting a full run.</li>
+      </ul>`
+    },
+    {
+      title: "Overprint & Knockout",
+      html: `<ul>
+        <li>Know when black text should overprint vs. knock out, especially over colored backgrounds.</li>
+        <li>Getting it wrong causes misregistration - white halos around text when the press is even slightly out of alignment.</li>
+      </ul>`
+    },
+    {
+      title: "Color Gamut",
+      html: `<ul>
+        <li><strong>Gamut</strong> is the range of colors a device or process can reproduce. RGB screens have a much wider gamut than CMYK print, especially in vivid blues, greens, and neons.</li>
+        <li>A bright electric blue or neon green that looks great on screen often can't be reproduced in CMYK - it will print noticeably duller or shifted.</li>
+        <li>Use soft-proofing / gamut warning tools in Photoshop or Illustrator to preview how a design will actually look once converted to CMYK, before finalizing.</li>
+        <li>If an exact brand color matters (logo blue, brand green), check it against the printer's gamut and use a Pantone/spot color instead of relying on a CMYK build.</li>
+      </ul>`
+    },
+    {
+      title: "Printing Method",
+      html: `<p>The printing method changes color behavior, resolution needs, and file requirements - confirm it with the client or print shop before finalizing files.</p>
+        <p style="margin:14px 0 4px; font-weight:600; color:var(--ink);">Conventional</p>
+        <ul>
+          <li><strong>Offset (litho):</strong> best for large runs, sharp detail, accurate spot colors. Higher setup cost, so it's most economical at volume.</li>
+          <li><strong>Flexography (flexo):</strong> common for packaging and labels; fine detail and small text can be limited by the plate process.</li>
+          <li><strong>Screen printing:</strong> strong for bold spot colors on textiles and promo items; not suited to fine detail or smooth gradients.</li>
+        </ul>
+        <p style="margin:14px 0 4px; font-weight:600; color:var(--ink);">Digital</p>
+        <ul>
+          <li><strong>Wide format:</strong> for banners and signage - viewed from a distance, so resolution rules are different (lower DPI is often fine).</li>
+          <li><strong>DTF (Direct-to-Film):</strong> design is printed onto film, then heat-pressed onto garments. Good for small-run apparel, handles full-color art and gradients well, and needs no screens or plates.</li>
+          <li>Digital methods overall: cost-effective for short runs and fast turnaround, but with slightly more color variability run to run and a narrower gamut than offset.</li>
+        </ul>`
+    },
+    {
+      title: "PMS & Spot Color",
+      html: `<ul>
+        <li><strong>PMS</strong> (Pantone Matching System) is a standardized color library - each Pantone number is a specific pre-mixed ink formula, so the color prints consistently regardless of press or printer.</li>
+        <li>A <strong>spot color</strong> is a single pre-mixed ink printed in one pass, as opposed to a process color built from overlapping CMYK dots.</li>
+        <li>Reach for spot/PMS when: a brand color must match exactly across materials (logo, packaging), the color falls outside CMYK gamut (neons, metallics, some pastels), or a large flat area needs to be perfectly even with no dot pattern visible.</li>
+        <li>Pantone has separate libraries for <strong>Coated (C)</strong> and <strong>Uncoated (U)</strong> stock - the same number can look noticeably different on glossy vs. matte paper, so always specify which one.</li>
+        <li>Spot colors add cost per extra plate/ink, but a job can mix both: e.g., a 5-color job runs CMYK for photography plus one spot plate for a critical brand color.</li>
+        <li>Always hand off the Pantone number itself, not just a screen preview - RGB on a monitor can't be trusted to represent the actual spot ink.</li>
+      </ul>`
+    }
+  ];
+
+  const checklistItems = [
+    "Bleed extends 3mm / 0.125\" past trim on all edges that need it",
+    "All text and key elements sit inside the safe zone",
+    "Trim lines and crop marks are correct and visible",
+    "Images are 300 PPI at final placed size (checked at 100%, not scaled up)",
+    "Document color mode is CMYK, not RGB",
+    "No stray RGB images embedded in the file",
+    "Rich black used for large fills; registration black avoided in design elements",
+    "Spot colors (if required) are correctly assigned, not converted to process",
+    "All fonts outlined, or embedded/packaged with the file",
+    "File exported as print-ready PDF (PDF/X-1a or PDF/X-4, per shop spec)",
+    "Native files packaged (fonts + links) if not sending a PDF",
+    "No missing or low-res placeholder images remain",
+    "Transparency flattened if required by the print shop's RIP",
+    "Preflight check run with zero unresolved errors",
+    "Overprint/knockout settings checked on black text over color",
+    "Proof reviewed and approved before full production run",
+    "On-screen colors soft-proofed against CMYK/print gamut, not judged on screen alone",
+    "Printing method confirmed with the shop before finalizing files",
+    "Spot/PMS colors specified with the correct Coated (C) or Uncoated (U) library"
+  ];
+
+  const refTerms = [
+    ["Bleed", "Artwork extended past the trim line so no white edge shows if cutting shifts."],
+    ["Trim line", "Where the piece is cut to its final size."],
+    ["Safe zone", "Margin inside the trim line where text/logos should stay."],
+    ["CMYK", "Cyan / Magenta / Yellow / Black - the ink model used for print."],
+    ["Rich black", "A CMYK mix used for large black fill areas."],
+    ["Registration black", "100% on all channels - reserved for printer's marks only."],
+    ["Outline fonts", "Converting text to vector paths so no font file is needed."],
+    ["Preflight", "Automated check for color, resolution, fonts, and links before print."],
+    ["Overprint", "Printing one ink directly on top of another instead of knocking it out."],
+    ["Gamut", "The range of colors a device or process can reproduce."],
+    ["Offset printing", "High-volume litho printing; sharp detail, accurate spot colors."],
+    ["Digital printing", "Cost-effective for short runs; faster, slightly more color variability."],
+    ["PMS / Pantone", "A standardized color library where each number is a fixed pre-mixed ink formula."],
+    ["Spot color", "A single pre-mixed ink printed in one pass, instead of built from CMYK dots."]
+  ];
+
+  const quizQuestions = [
+    {
+      prompt: "Why do print files need bleed?",
+      options: ["To make colors print brighter", "So there's no white edge if the cut shifts slightly", "To reduce file size", "To align crop marks"],
+      correct: 1,
+      explanation: "Bleed extends artwork past the trim line (typically 3mm/0.125\") so a slightly off cut doesn't reveal white paper."
+    },
+    {
+      prompt: "What resolution should images be at final print size?",
+      options: ["72 PPI", "150 PPI", "300 PPI", "1080 PPI"],
+      correct: 2,
+      explanation: "300 PPI at final output size is the print standard. 72 PPI is for screens and looks pixelated when printed."
+    },
+    {
+      prompt: "If a placed image is low-resolution, does scaling it up in InDesign or Illustrator fix the problem?",
+      options: ["Yes, scaling adds resolution automatically", "No, it just stretches the existing pixels", "Only if the file is a vector", "Only in Illustrator, not InDesign"],
+      correct: 1,
+      explanation: "Scaling a raster image up doesn't create new pixel data - it stretches what's there, which can look blurry at print size."
+    },
+    {
+      prompt: "Why must files be converted to CMYK before going to print?",
+      options: ["CMYK files are smaller", "Presses print using CMYK inks, and RGB colors don't translate directly", "CMYK is required for font embedding", "It's only needed for black and white printing"],
+      correct: 1,
+      explanation: "Screens display in RGB (light), but presses lay down CMYK ink. Unconverted RGB files shift color unpredictably."
+    },
+    {
+      prompt: "When should registration black be used?",
+      options: ["For all large black fill areas", "For body text", "Only for printer's marks, never in the design", "Whenever a client asks for 'deep black'"],
+      correct: 2,
+      explanation: "Registration black is 100% on every channel and is meant only for alignment marks. Using it in design elements prints muddy."
+    },
+    {
+      prompt: "Before sending native design files (not a PDF) to a printer, what should you do?",
+      options: ["Nothing extra, native files are self-contained", "Package the job so fonts and linked images travel with it", "Convert all text to a raster image", "Delete unused layers only"],
+      correct: 1,
+      explanation: "Native files reference external fonts and linked images. Packaging bundles everything so nothing is missing on the other end."
+    },
+    {
+      prompt: "What does a preflight check catch before a job goes to print?",
+      options: ["Only spelling errors", "Color mode issues, low resolution, missing fonts/links, and overprint settings", "Only file size problems", "Client approval status"],
+      correct: 1,
+      explanation: "Preflight tools scan for the technical issues that most commonly cause print problems."
+    },
+    {
+      prompt: "What can go wrong if black text incorrectly knocks out over a colored background instead of overprinting?",
+      options: ["The text becomes bold automatically", "Misregistration can create white halos around the text", "The file size increases significantly", "The font gets substituted"],
+      correct: 1,
+      explanation: "If the press is even slightly out of alignment, a knocked-out element can leave a visible white gap - a halo - around it."
+    },
+    {
+      prompt: "Why can a neon green look great on screen but print dull and washed out?",
+      options: ["The printer is low on ink", "RGB screens have a wider color gamut than CMYK print can reproduce", "Neon colors always need spot color plates", "The file wasn't outlined"],
+      correct: 1,
+      explanation: "Gamut is the range of colors a device or process can reproduce. RGB screens can show vivid colors, like neons, that fall outside what CMYK inks can physically reproduce."
+    },
+    {
+      prompt: "Which printing method is generally most cost-effective for a short run with a fast turnaround?",
+      options: ["Offset (litho)", "Digital", "Screen printing", "Flexography"],
+      correct: 1,
+      explanation: "Digital printing has lower setup costs and faster turnaround than offset, making it a better fit for short runs, though it has slightly more run-to-run color variability."
+    },
+    {
+      prompt: "Why does a designer specify a Pantone number instead of just sending a CMYK build for a brand logo?",
+      options: ["Pantone numbers are required by law for logos", "A spot/PMS ink guarantees the color prints consistently, unlike a CMYK approximation", "CMYK can't print any shade of blue or green", "Pantone is only for black and white printing"],
+      correct: 1,
+      explanation: "PMS (Pantone Matching System) colors are pre-mixed inks with a fixed formula, so they print the same regardless of press. A CMYK build is an approximation that can shift."
+    },
+    {
+      prompt: "Why does it matter whether a Pantone color is specified as Coated (C) or Uncoated (U)?",
+      options: ["It doesn't matter, the number is the same either way", "The same Pantone number can look noticeably different on glossy vs. matte stock", "Coated colors are always more expensive", "Uncoated colors can't be used for spot printing"],
+      correct: 1,
+      explanation: "Pantone has separate libraries for coated and uncoated paper because ink appears differently on glossy vs. matte stock, even under the same number."
+    }
+  ];
+
+  // ---------- Tabs ----------
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".panel-body").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById("panel-" + btn.dataset.tab).classList.add("active");
+    });
+  });
+
+  // ---------- Accordion ----------
+  const accordion = document.getElementById("accordion");
+  topics.forEach((t, i) => {
+    const div = document.createElement("div");
+    div.className = "topic";
+    div.innerHTML = `
+      <button class="topic-head" aria-expanded="false">
+        <span class="topic-num">${String(i + 1).padStart(2, "0")}</span>
+        <span class="topic-title">${t.title}</span>
+        <span class="topic-caret">+</span>
+      </button>
+      <div class="topic-content">${t.html}</div>
+    `;
+    const head = div.querySelector(".topic-head");
+    head.addEventListener("click", () => {
+      const isOpen = div.classList.toggle("open");
+      head.setAttribute("aria-expanded", isOpen);
+    });
+    accordion.appendChild(div);
+  });
+
+  // ---------- Checklist ----------
+  const checklistEl = document.getElementById("checklist");
+  const checkCountEl = document.getElementById("check-count");
+  const checkFillEl = document.getElementById("check-fill");
+  let checkedCount = 0;
+
+  checklistItems.forEach((text, i) => {
+    const row = document.createElement("div");
+    row.className = "check-item";
+    row.innerHTML = `
+      <span class="check-box">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6.5 12L13 4.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <span class="check-text">${text}</span>
+    `;
+    row.addEventListener("click", () => {
+      const nowChecked = row.classList.toggle("checked");
+      checkedCount += nowChecked ? 1 : -1;
+      updateChecklistProgress();
+    });
+    checklistEl.appendChild(row);
+  });
+
+  function updateChecklistProgress() {
+    checkCountEl.textContent = `${checkedCount} / ${checklistItems.length}`;
+    checkFillEl.style.width = `${(checkedCount / checklistItems.length) * 100}%`;
+  }
+
+  // ---------- Reference table ----------
+  const refBody = document.getElementById("ref-table");
+  refTerms.forEach(([term, def]) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${term}</td><td>${def}</td>`;
+    refBody.appendChild(tr);
+  });
+
+  // ---------- Quiz ----------
+  const quizLive = document.getElementById("quiz-live");
+  const quizResult = document.getElementById("quiz-result");
+  let qIndex = 0;
+  let qScore = 0;
+  let answered = false;
+
+  function renderQuestion() {
+    answered = false;
+    const q = quizQuestions[qIndex];
+
+    const dots = quizQuestions.map((_, i) => {
+      let cls = "dot";
+      if (i < qIndex) cls += " done";
+      if (i === qIndex) cls += " current";
+      return `<span class="${cls}"></span>`;
+    }).join("");
+
+    quizLive.innerHTML = `
+      <div class="quiz-progress">
+        <span>Question ${qIndex + 1} of ${quizQuestions.length}</span>
+        <div class="dots">${dots}</div>
+      </div>
+      <p class="q-prompt">${q.prompt}</p>
+      <div id="opts"></div>
+      <div class="feedback" id="feedback"></div>
+      <div class="quiz-nav">
+        <button class="btn" id="next-btn" disabled>${qIndex === quizQuestions.length - 1 ? "See results" : "Next"}</button>
+      </div>
+    `;
+
+    const optsEl = document.getElementById("opts");
+    q.options.forEach((opt, i) => {
+      const b = document.createElement("button");
+      b.className = "opt";
+      b.textContent = opt;
+      b.addEventListener("click", () => selectOption(i, b));
+      optsEl.appendChild(b);
+    });
+
+    document.getElementById("next-btn").addEventListener("click", () => {
+      qIndex++;
+      if (qIndex < quizQuestions.length) {
+        renderQuestion();
+      } else {
+        renderResult();
+      }
+    });
+  }
+
+  function selectOption(i, btn) {
+    if (answered) return;
+    answered = true;
+    const q = quizQuestions[qIndex];
+    const allOpts = document.querySelectorAll("#opts .opt");
+    allOpts.forEach(o => o.disabled = true);
+
+    if (i === q.correct) {
+      qScore++;
+      btn.classList.add("correct");
+    } else {
+      btn.classList.add("incorrect");
+      allOpts[q.correct].classList.add("correct");
+    }
+
+    const fb = document.getElementById("feedback");
+    fb.classList.add("show");
+    fb.innerHTML = `<strong>${i === q.correct ? "Correct." : "Not quite."}</strong> ${q.explanation}`;
+
+    document.getElementById("next-btn").disabled = false;
+  }
+
+  function renderResult() {
+    quizLive.style.display = "none";
+    quizResult.style.display = "block";
+    const pct = Math.round((qScore / quizQuestions.length) * 100);
+    let label = "Solid grasp of the fundamentals.";
+    if (pct < 50) label = "Worth another pass through the Learn tab.";
+    else if (pct < 90) label = "Good - a couple of spots to review.";
+
+    quizResult.innerHTML = `
+      <div class="quiz-result">
+        <div class="section-note" style="margin:0;">Job complete</div>
+        <div class="result-score">${qScore}/${quizQuestions.length}</div>
+        <div class="result-label">${label}</div>
+        <div class="result-actions">
+          <button class="btn ghost" id="retry-btn">Retake quiz</button>
+        </div>
+      </div>
+    `;
+    document.getElementById("retry-btn").addEventListener("click", () => {
+      qIndex = 0;
+      qScore = 0;
+      quizResult.style.display = "none";
+      quizLive.style.display = "block";
+      renderQuestion();
+    });
+  }
+
+  renderQuestion();
+</script>
+
+</body>
+</html>
