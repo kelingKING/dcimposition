@@ -572,7 +572,7 @@
       <div class="section-label">Pre-flight checklist</div>
       <p class="section-note">Tap each item as you confirm it. Nothing is saved when you leave the page - it's here to walk through the habit, not to replace your printer's own sign-off.</p>
       <div class="progress-line">
-        <span id="check-count">0 / 24</span>
+        <span id="check-count">0 / 25</span>
         <div class="progress-track"><div class="progress-fill" id="check-fill"></div></div>
       </div>
       <div id="checklist"></div>
@@ -622,26 +622,26 @@
         <div class="example"><span class="example-tag">Example</span>A business card background is set exactly to the trim size with no bleed. The guillotine shifts half a millimeter during cutting, and a thin white sliver shows along one edge of every card in the batch.</div>`
     },
     {
-      title: "Resolution",
-      html: `<div class="topic-visual"><img class="img-placeholder-img" src="resolution.jpg" /></div>
+      title: "Line",
+      html: `<div class="topic-visual"><svg viewBox="0 0 300 130" width="300" height="130" xmlns="http://www.w3.org/2000/svg">
+  <g>
+    <rect x="10" y="15" width="130" height="45" fill="#FFFFFF" stroke="#DCE6F0"/>
+    <line x1="25" y1="37" x2="125" y2="37" stroke="#1E2A3A" stroke-width="1.2"/>
+    <text x="75" y="75" text-anchor="middle" class="tv-label" fill="#7C8CA0">POSITIVE ~0.15MM</text>
+  </g>
+  <g transform="translate(160,0)">
+    <rect x="10" y="15" width="130" height="45" fill="#1E2A3A"/>
+    <line x1="25" y1="37" x2="125" y2="37" stroke="#FFFFFF" stroke-width="4"/>
+    <text x="75" y="75" text-anchor="middle" class="tv-label" fill="#0EA5C4">NEGATIVE 0.35MM+</text>
+  </g>
+</svg></div>
+      <p>Thin lines, borders, and strokes have minimum thicknesses too - and the safe minimum depends on whether the line is positive or negative.</p>
       <ul>
-        <li>Print needs <strong>300 PPI</strong> at final output size - not 72 PPI, which is for screens.</li>
-        <li>Check resolution at 100% size in the layout, not after scaling down.</li>
-        <li>Scaling a low-res image up doesn't create real resolution - it just stretches pixels.</li>
-        <li>Vector vs. raster matters here: logos and illustrations built as vector art (Illustrator paths) scale to any size with no quality loss. Photos are raster - a fixed pixel grid - so they always need enough resolution at final size.</li>
+        <li><strong>Positive</strong> (a dark line or shape on a light background): keep strokes at least <strong>0.1-0.2mm</strong>. Thinner than that risks the line breaking up or not printing at all.</li>
+        <li><strong>Negative / reverse</strong> (a light line or shape knocked out of a dark background): needs a noticeably thicker minimum, generally <strong>0.35mm or more</strong>. Ink naturally spreads a little on press (called dot gain), and that spread closes in on thin reversed elements from every side at once.</li>
+        <li>Rule of thumb: any reversed line, border, or thin letterform should be meaningfully thicker than the same element would be in positive - as a starting point, roughly double it.</li>
       </ul>
-      <div class="example"><span class="example-tag">Example</span>A client emails a logo pulled off their own website for a large banner. It's a 300px-wide JPEG meant for a browser. Placed at banner size, it prints as a blurry block of color - the fix is asking for the original vector file, not scaling the JPEG up.</div>`
-    },
-    {
-      title: "Color Mode: CMYK vs RGB",
-      html: `<div class="topic-visual"><img class="img-placeholder-img" src="colour.jpg" /></div>
-      <ul>
-        <li>Screens display in RGB; presses print in CMYK. Convert files to CMYK before sending to print, or colors shift unpredictably.</li>
-        <li><strong>Rich black</strong> (a CMYK mix) is for large fill areas. <strong>Registration black</strong> (100% on every channel) is for printer's marks only - never for text or design elements.</li>
-        <li>Know when a client needs an exact spot color (Pantone) match versus a standard process build.</li>
-        <li>Conversion isn't just a mode switch - different CMYK profiles (e.g. US Web Coated vs. a printer's custom profile) give slightly different results. If a printer provides an ICC profile, convert using that one instead of a generic default.</li>
-      </ul>
-      <div class="example"><span class="example-tag">Example</span>A client's bright royal-blue logo, built and approved in RGB, gets sent to print without conversion. The printer's RIP auto-converts it with a generic profile, and it comes back dull and slightly purple - a mismatch soft-proofing before sending would have caught.</div>`
+      <div class="example"><span class="example-tag">Example</span>A logo has a thin white line detailing knocked out of a solid navy background. It looks crisp on screen, but on the printed proof the ink spread just enough to fill the line in completely - it vanished, while the same line thickness in black on white printed fine.</div>`
     },
     {
       title: "Fonts",
@@ -668,35 +668,49 @@
       </ul>`
     },
     {
-      title: "Line",
+      title: "Raster vs. Vector",
       html: `<div class="topic-visual"><svg viewBox="0 0 300 130" width="300" height="130" xmlns="http://www.w3.org/2000/svg">
   <g>
-    <rect x="10" y="15" width="130" height="45" fill="#FFFFFF" stroke="#DCE6F0"/>
-    <line x1="25" y1="37" x2="125" y2="37" stroke="#1E2A3A" stroke-width="1.2"/>
-    <text x="75" y="75" text-anchor="middle" class="tv-label" fill="#7C8CA0">POSITIVE ~0.15MM</text>
+    <rect x="15" y="15" width="110" height="90" fill="#FFFFFF" stroke="#DCE6F0"/>
+    <g fill="#1E2A3A">
+      <rect x="45" y="25" width="10" height="10"/><rect x="55" y="25" width="10" height="10"/><rect x="65" y="25" width="10" height="10"/>
+      <rect x="35" y="35" width="10" height="10"/><rect x="75" y="35" width="10" height="10"/>
+      <rect x="30" y="45" width="10" height="10"/><rect x="80" y="45" width="10" height="10"/>
+      <rect x="30" y="55" width="10" height="10"/><rect x="80" y="55" width="10" height="10"/>
+      <rect x="35" y="65" width="10" height="10"/><rect x="75" y="65" width="10" height="10"/>
+      <rect x="45" y="75" width="10" height="10"/><rect x="55" y="75" width="10" height="10"/><rect x="65" y="75" width="10" height="10"/>
+    </g>
+    <text x="70" y="118" text-anchor="middle" class="tv-label" fill="#7C8CA0">RASTER (PIXELS)</text>
   </g>
-  <g transform="translate(160,0)">
-    <rect x="10" y="15" width="130" height="45" fill="#1E2A3A"/>
-    <line x1="25" y1="37" x2="125" y2="37" stroke="#FFFFFF" stroke-width="4"/>
-    <text x="75" y="75" text-anchor="middle" class="tv-label" fill="#0EA5C4">NEGATIVE 0.35MM+</text>
+  <g transform="translate(150,0)">
+    <rect x="15" y="15" width="110" height="90" fill="#FFFFFF" stroke="#DCE6F0"/>
+    <circle cx="70" cy="60" r="28" fill="none" stroke="#2E7DD1" stroke-width="2.5"/>
+    <g fill="#0EA5C4">
+      <circle cx="70" cy="32" r="3"/><circle cx="98" cy="60" r="3"/><circle cx="70" cy="88" r="3"/><circle cx="42" cy="60" r="3"/>
+    </g>
+    <text x="70" y="118" text-anchor="middle" class="tv-label" fill="#7C8CA0">VECTOR (PATHS)</text>
   </g>
 </svg></div>
-      <p>Thin lines, borders, and strokes have minimum thicknesses too - and the safe minimum depends on whether the line is positive or negative.</p>
       <ul>
-        <li><strong>Positive</strong> (a dark line or shape on a light background): keep strokes at least <strong>0.1-0.2mm</strong>. Thinner than that risks the line breaking up or not printing at all.</li>
-        <li><strong>Negative / reverse</strong> (a light line or shape knocked out of a dark background): needs a noticeably thicker minimum, generally <strong>0.35mm or more</strong>. Ink naturally spreads a little on press (called dot gain), and that spread closes in on thin reversed elements from every side at once.</li>
-        <li>Rule of thumb: any reversed line, border, or thin letterform should be meaningfully thicker than the same element would be in positive - as a starting point, roughly double it.</li>
+        <li><strong>Raster (bitmap)</strong> images are built from a fixed grid of pixels - like a mosaic made of tiny colored tiles. Every photo is raster. Common formats: JPG, PNG, TIFF, PSD.</li>
+        <li><strong>Vector</strong> images are built from mathematical paths - points, lines, and curves - rather than pixels. Common formats: AI, EPS, SVG. A PDF can contain either or both.</li>
+        <li>Because vector art is math, not pixels, it scales to any size - a business card logo or a building wrap - with no loss of quality. Raster images are locked to the pixel count they were created at; enlarge past that and they blur.</li>
+        <li>Use <strong>vector</strong> for logos, icons, illustrations, and type - anything that needs to resize cleanly or print at very large scale.</li>
+        <li>Use <strong>raster</strong> for photographs and anything with complex, photorealistic color blending, since photos can't practically be represented as vector paths.</li>
+        <li>A common junior mistake is "rasterizing" a vector logo (converting it to pixels) too early in a project, which throws away its ability to scale - always keep an original vector version of any logo on file.</li>
       </ul>
-      <div class="example"><span class="example-tag">Example</span>A logo has a thin white line detailing knocked out of a solid navy background. It looks crisp on screen, but on the printed proof the ink spread just enough to fill the line in completely - it vanished, while the same line thickness in black on white printed fine.</div>`
+      <div class="example"><span class="example-tag">Example</span>A client's vector logo file is opened, rasterized at a small size to speed up a mockup, and that flattened raster version accidentally becomes the one used for a large trade-show banner - printing soft and blurry instead of crisp.</div>`
     },
     {
-      title: "File Formats & Packaging",
-      html: `<ul>
-        <li>Print-ready PDFs (PDF/X-1a or PDF/X-4, depending on the printer) are the standard deliverable.</li>
-        <li>Sending native files instead? Package the job - fonts, links, images - so nothing is missing on the other end.</li>
-        <li>PDF/X-1a flattens transparency and forces CMYK, making it safer for older workflows. PDF/X-4 preserves live transparency and carries spot colors more cleanly - ask the printer which one they prefer.</li>
+      title: "Resolution",
+      html: `<div class="topic-visual"><img class="img-placeholder-img" src="resolution.jpg" /></div>
+      <ul>
+        <li>Print needs <strong>300 PPI</strong> at final output size - not 72 PPI, which is for screens.</li>
+        <li>Check resolution at 100% size in the layout, not after scaling down.</li>
+        <li>Scaling a low-res image up doesn't create real resolution - it just stretches pixels.</li>
+        <li>Vector vs. raster matters here: logos and illustrations built as vector art (Illustrator paths) scale to any size with no quality loss. Photos are raster - a fixed pixel grid - so they always need enough resolution at final size.</li>
       </ul>
-      <div class="example"><span class="example-tag">Example</span>A designer sends only the InDesign document, not the folder of linked images. The printer opens the file and every photo shows a low-res placeholder with a "missing link" warning - the job can't proceed until the assets are re-sent.</div>`
+      <div class="example"><span class="example-tag">Example</span>A client emails a logo pulled off their own website for a large banner. It's a 300px-wide JPEG meant for a browser. Placed at banner size, it prints as a blurry block of color - the fix is asking for the original vector file, not scaling the JPEG up.</div>`
     },
     {
       title: "Image Handling",
@@ -709,25 +723,45 @@
       <div class="example"><span class="example-tag">Example</span>A product photo with a soft drop shadow prints with a hard, visible rectangle around it instead of a smooth fade - the older press RIP didn't handle the transparency and needed it flattened first.</div>`
     },
     {
-      title: "Preflight & Proofing",
-      html: `<div class="topic-visual"><svg viewBox="0 0 300 120" width="300" height="120" xmlns="http://www.w3.org/2000/svg">
-  <rect x="60" y="15" width="120" height="90" fill="#FFFFFF" stroke="#1E2A3A" stroke-width="1.5"/>
-  <g stroke="#7C8CA0" stroke-width="1.2">
-    <line x1="75" y1="35" x2="150" y2="35"/><line x1="75" y1="50" x2="150" y2="50"/>
-    <line x1="75" y1="65" x2="150" y2="65"/><line x1="75" y1="80" x2="150" y2="80"/>
-  </g>
-  <g stroke="#2E7DD1" stroke-width="2.5" fill="none" stroke-linecap="round">
-    <path d="M67 34 l4 4 l6 -8"/><path d="M67 49 l4 4 l6 -8"/><path d="M67 64 l4 4 l6 -8"/>
-  </g>
-  <circle cx="215" cy="70" r="26" fill="none" stroke="#0EA5C4" stroke-width="4"/>
-  <line x1="234" y1="89" x2="255" y2="110" stroke="#0EA5C4" stroke-width="5" stroke-linecap="round"/>
+      title: "Color Mode: CMYK vs RGB",
+      html: `<div class="topic-visual"><img class="img-placeholder-img" src="colour.jpg" /></div>
+      <ul>
+        <li>Screens display in RGB; presses print in CMYK. Convert files to CMYK before sending to print, or colors shift unpredictably.</li>
+        <li><strong>Rich black</strong> (a CMYK mix) is for large fill areas. <strong>Registration black</strong> (100% on every channel) is for printer's marks only - never for text or design elements.</li>
+        <li>Know when a client needs an exact spot color (Pantone) match versus a standard process build.</li>
+        <li>Conversion isn't just a mode switch - different CMYK profiles (e.g. US Web Coated vs. a printer's custom profile) give slightly different results. If a printer provides an ICC profile, convert using that one instead of a generic default.</li>
+      </ul>
+      <div class="example"><span class="example-tag">Example</span>A client's bright royal-blue logo, built and approved in RGB, gets sent to print without conversion. The printer's RIP auto-converts it with a generic profile, and it comes back dull and slightly purple - a mismatch soft-proofing before sending would have caught.</div>`
+    },
+    {
+      title: "Color Gamut",
+      html: `<div class="topic-visual"><img class="img-placeholder-img" src="gamut.jpg" /></div>
+      <ul>
+        <li><strong>Gamut</strong> is the range of colors a device or process can reproduce. RGB screens have a much wider gamut than CMYK print, especially in vivid blues, greens, and neons.</li>
+        <li>A bright electric blue or neon green that looks great on screen often can't be reproduced in CMYK - it will print noticeably duller or shifted.</li>
+        <li>Use soft-proofing / gamut warning tools in Photoshop or Illustrator to preview how a design will actually look once converted to CMYK, before finalizing.</li>
+        <li>If an exact brand color matters (logo blue, brand green), check it against the printer's gamut and use a Pantone/spot color instead of relying on a CMYK build.</li>
+      </ul>
+      <div class="example"><span class="example-tag">Example</span>A client's neon-pink brand color looks vibrant in the RGB mockup they approved. Once converted to CMYK for print, it shifts to a duller magenta-red - flagging this with a gamut warning during design would have let the client see it coming.</div>`
+    },
+    {
+      title: "PMS & Spot Color",
+      html: `<div class="topic-visual"><svg viewBox="0 0 300 130" width="300" height="130" xmlns="http://www.w3.org/2000/svg">
+  <rect x="30" y="20" width="100" height="70" fill="#2f5f8f"/>
+  <path d="M30 20 h100 v25 q-50 15 -100 0 z" fill="#FFFFFF" opacity="0.28"/>
+  <text x="80" y="108" text-anchor="middle" class="tv-label" fill="#7C8CA0">286 C — COATED</text>
+  <rect x="170" y="20" width="100" height="70" fill="#3a6084"/>
+  <text x="220" y="108" text-anchor="middle" class="tv-label" fill="#7C8CA0">286 U — UNCOATED</text>
 </svg></div>
       <ul>
-        <li>Run a preflight check (Acrobat or InDesign's built-in tool) before sending anything out. It flags color mode, resolution, missing fonts/links, and overprint settings.</li>
-        <li>Always review a proof - soft or hard - before greenlighting a full run.</li>
-        <li>A <strong>soft proof</strong> (on-screen simulation) is fast and catches layout or color-shift issues early. A <strong>hard proof</strong> (a physical printed sample) is the only way to truly confirm paper color, finish, and exact ink appearance.</li>
+        <li><strong>PMS</strong> (Pantone Matching System) is a standardized color library - each Pantone number is a specific pre-mixed ink formula, so the color prints consistently regardless of press or printer.</li>
+        <li>A <strong>spot color</strong> is a single pre-mixed ink printed in one pass, as opposed to a process color built from overlapping CMYK dots.</li>
+        <li>Reach for spot/PMS when: a brand color must match exactly across materials (logo, packaging), the color falls outside CMYK gamut (neons, metallics, some pastels), or a large flat area needs to be perfectly even with no dot pattern visible.</li>
+        <li>Pantone has separate libraries for <strong>Coated (C)</strong> and <strong>Uncoated (U)</strong> stock - the same number can look noticeably different on glossy vs. matte paper, so always specify which one.</li>
+        <li>Spot colors add cost per extra plate/ink, but a job can mix both: e.g., a 5-color job runs CMYK for photography plus one spot plate for a critical brand color.</li>
+        <li>Always hand off the Pantone number itself, not just a screen preview - RGB on a monitor can't be trusted to represent the actual spot ink.</li>
       </ul>
-      <div class="example"><span class="example-tag">Example</span>Preflight is skipped to save time on a rush job. The file goes straight to a 2,000-unit run, and only afterward does anyone notice a font substitution that silently changed the body copy's line spacing throughout the piece.</div>`
+      <div class="example"><span class="example-tag">Example</span>A brand's Pantone 286 C is specified for business cards but the file only lists "286" with no C or U. The printer runs it as Uncoated by mistake, and the blue on the coated cards comes out visibly different from the client's other coated brand materials.</div>`
     },
     {
       title: "Overprint & Knockout",
@@ -775,15 +809,16 @@
       <div class="example"><span class="example-tag">Example</span>A package design has a red shape butted directly against a blue shape with no overlap between them. On press, the two plates shift slightly and a thin white line of bare paper appears along the entire seam - trapping a small overlap beforehand would have hidden it.</div>`
     },
     {
-      title: "Color Gamut",
-      html: `<div class="topic-visual"><img class="img-placeholder-img" src="gamut.jpg" /></div>
+      title: "Trapping",
+      html: `<div class="topic-visual"><img class="img-placeholder-img" src="trapping.jpg" /></div>
       <ul>
-        <li><strong>Gamut</strong> is the range of colors a device or process can reproduce. RGB screens have a much wider gamut than CMYK print, especially in vivid blues, greens, and neons.</li>
-        <li>A bright electric blue or neon green that looks great on screen often can't be reproduced in CMYK - it will print noticeably duller or shifted.</li>
-        <li>Use soft-proofing / gamut warning tools in Photoshop or Illustrator to preview how a design will actually look once converted to CMYK, before finalizing.</li>
-        <li>If an exact brand color matters (logo blue, brand green), check it against the printer's gamut and use a Pantone/spot color instead of relying on a CMYK build.</li>
+        <li><strong>Trapping</strong> is the prepress fix for misregistration: a small, deliberate overlap added where two colors meet, so a slight shift on press doesn't reveal a gap of bare paper between them.</li>
+        <li>The general rule is that the lighter color spreads slightly under the edge of the darker color - since a sliver of a light color showing is far less noticeable than a sliver of white paper or a visible dark gap.</li>
+        <li>Trap amounts are small on purpose - typically a fraction of a millimeter. Just enough to cover normal press movement, not so much that it visibly changes the shape or thickness of the artwork.</li>
+        <li>Design software and prepress RIPs can apply trapping automatically, but it's worth understanding manually for spot-color work, packaging, and die-cut jobs where colors sit directly next to each other.</li>
+        <li>Not everything needs trapping: black text is usually handled with overprint instead (see the Overprint & Knockout topic), and trapping photographic images or elements that already overlap can cause visible, unwanted color shifts along the edge.</li>
       </ul>
-      <div class="example"><span class="example-tag">Example</span>A client's neon-pink brand color looks vibrant in the RGB mockup they approved. Once converted to CMYK for print, it shifts to a duller magenta-red - flagging this with a gamut warning during design would have let the client see it coming.</div>`
+      <div class="example"><span class="example-tag">Example</span>A packaging job has a yellow star sitting directly on a purple background with no trap applied. On press the plates shift slightly, and a thin white gap appears around the star's points - a small trap would have let the yellow spread just enough to hide it.</div>`
     },
     {
       title: "Printing Method",
@@ -805,58 +840,47 @@
         <div class="example"><span class="example-tag">Example</span>A job for 5,000 postcards is produced digitally because that's the studio's default. Offset would have cost less per unit at that volume - a quick check with the printer before committing would have saved the client money.</div>`
     },
     {
-      title: "PMS & Spot Color",
-      html: `<div class="topic-visual"><svg viewBox="0 0 300 130" width="300" height="130" xmlns="http://www.w3.org/2000/svg">
-  <rect x="30" y="20" width="100" height="70" fill="#2f5f8f"/>
-  <path d="M30 20 h100 v25 q-50 15 -100 0 z" fill="#FFFFFF" opacity="0.28"/>
-  <text x="80" y="108" text-anchor="middle" class="tv-label" fill="#7C8CA0">286 C — COATED</text>
-  <rect x="170" y="20" width="100" height="70" fill="#3a6084"/>
-  <text x="220" y="108" text-anchor="middle" class="tv-label" fill="#7C8CA0">286 U — UNCOATED</text>
-</svg></div>
-      <ul>
-        <li><strong>PMS</strong> (Pantone Matching System) is a standardized color library - each Pantone number is a specific pre-mixed ink formula, so the color prints consistently regardless of press or printer.</li>
-        <li>A <strong>spot color</strong> is a single pre-mixed ink printed in one pass, as opposed to a process color built from overlapping CMYK dots.</li>
-        <li>Reach for spot/PMS when: a brand color must match exactly across materials (logo, packaging), the color falls outside CMYK gamut (neons, metallics, some pastels), or a large flat area needs to be perfectly even with no dot pattern visible.</li>
-        <li>Pantone has separate libraries for <strong>Coated (C)</strong> and <strong>Uncoated (U)</strong> stock - the same number can look noticeably different on glossy vs. matte paper, so always specify which one.</li>
-        <li>Spot colors add cost per extra plate/ink, but a job can mix both: e.g., a 5-color job runs CMYK for photography plus one spot plate for a critical brand color.</li>
-        <li>Always hand off the Pantone number itself, not just a screen preview - RGB on a monitor can't be trusted to represent the actual spot ink.</li>
+      title: "File Formats & Packaging",
+      html: `<ul>
+        <li>Print-ready PDFs (PDF/X-1a or PDF/X-4, depending on the printer) are the standard deliverable.</li>
+        <li>Sending native files instead? Package the job - fonts, links, images - so nothing is missing on the other end.</li>
+        <li>PDF/X-1a flattens transparency and forces CMYK, making it safer for older workflows. PDF/X-4 preserves live transparency and carries spot colors more cleanly - ask the printer which one they prefer.</li>
       </ul>
-      <div class="example"><span class="example-tag">Example</span>A brand's Pantone 286 C is specified for business cards but the file only lists "286" with no C or U. The printer runs it as Uncoated by mistake, and the blue on the coated cards comes out visibly different from the client's other coated brand materials.</div>`
+      <div class="example"><span class="example-tag">Example</span>A designer sends only the InDesign document, not the folder of linked images. The printer opens the file and every photo shows a low-res placeholder with a "missing link" warning - the job can't proceed until the assets are re-sent.</div>`
     },
     {
-      title: "Raster vs. Vector",
-      html: `<div class="topic-visual"><svg viewBox="0 0 300 130" width="300" height="130" xmlns="http://www.w3.org/2000/svg">
-  <g>
-    <rect x="15" y="15" width="110" height="90" fill="#FFFFFF" stroke="#DCE6F0"/>
-    <g fill="#1E2A3A">
-      <rect x="45" y="25" width="10" height="10"/><rect x="55" y="25" width="10" height="10"/><rect x="65" y="25" width="10" height="10"/>
-      <rect x="35" y="35" width="10" height="10"/><rect x="75" y="35" width="10" height="10"/>
-      <rect x="30" y="45" width="10" height="10"/><rect x="80" y="45" width="10" height="10"/>
-      <rect x="30" y="55" width="10" height="10"/><rect x="80" y="55" width="10" height="10"/>
-      <rect x="35" y="65" width="10" height="10"/><rect x="75" y="65" width="10" height="10"/>
-      <rect x="45" y="75" width="10" height="10"/><rect x="55" y="75" width="10" height="10"/><rect x="65" y="75" width="10" height="10"/>
-    </g>
-    <text x="70" y="118" text-anchor="middle" class="tv-label" fill="#7C8CA0">RASTER (PIXELS)</text>
+      title: "Output Intent",
+      html: `<div class="topic-visual"><img class="img-placeholder-img" src="intent.jpg" /></div>
+      <ul>
+        <li><strong>Output intent</strong> is metadata embedded inside a print-ready PDF that tells the printer's software which color profile the file was prepared for, so the file displays and prints predictably instead of guessing.</li>
+        <li>It's a required part of a properly compliant PDF/X file - without it, the file can fail the printer's own preflight check before the job even starts.</li>
+        <li>Common output intents include profiles like GRACoL or FOGRA (used for offset coated stock in North America and Europe) and SWOP (US web offset), or a printer's own custom profile.</li>
+        <li>Most design software lets you set this during PDF export - in InDesign it's on the "Output" tab of the Export Adobe PDF dialog, under Color > Output Intent Profile.</li>
+        <li>Always ask the printer which output intent/profile they want before exporting, rather than leaving the default in place - the right answer depends on their press and paper stock, not on the design software's assumption.</li>
+      </ul>
+      <div class="example"><span class="example-tag">Example</span>A designer exports a print-ready PDF using the software's default output intent instead of asking the printer. The printer's preflight software flags the file as non-compliant with their workflow, and the file has to be re-exported with the correct profile before the job can proceed - costing a day on a tight schedule.</div>`
+    },
+    {
+      title: "Preflight & Proofing",
+      html: `<div class="topic-visual"><svg viewBox="0 0 300 120" width="300" height="120" xmlns="http://www.w3.org/2000/svg">
+  <rect x="60" y="15" width="120" height="90" fill="#FFFFFF" stroke="#1E2A3A" stroke-width="1.5"/>
+  <g stroke="#7C8CA0" stroke-width="1.2">
+    <line x1="75" y1="35" x2="150" y2="35"/><line x1="75" y1="50" x2="150" y2="50"/>
+    <line x1="75" y1="65" x2="150" y2="65"/><line x1="75" y1="80" x2="150" y2="80"/>
   </g>
-  <g transform="translate(150,0)">
-    <rect x="15" y="15" width="110" height="90" fill="#FFFFFF" stroke="#DCE6F0"/>
-    <circle cx="70" cy="60" r="28" fill="none" stroke="#2E7DD1" stroke-width="2.5"/>
-    <g fill="#0EA5C4">
-      <circle cx="70" cy="32" r="3"/><circle cx="98" cy="60" r="3"/><circle cx="70" cy="88" r="3"/><circle cx="42" cy="60" r="3"/>
-    </g>
-    <text x="70" y="118" text-anchor="middle" class="tv-label" fill="#7C8CA0">VECTOR (PATHS)</text>
+  <g stroke="#2E7DD1" stroke-width="2.5" fill="none" stroke-linecap="round">
+    <path d="M67 34 l4 4 l6 -8"/><path d="M67 49 l4 4 l6 -8"/><path d="M67 64 l4 4 l6 -8"/>
   </g>
+  <circle cx="215" cy="70" r="26" fill="none" stroke="#0EA5C4" stroke-width="4"/>
+  <line x1="234" y1="89" x2="255" y2="110" stroke="#0EA5C4" stroke-width="5" stroke-linecap="round"/>
 </svg></div>
       <ul>
-        <li><strong>Raster (bitmap)</strong> images are built from a fixed grid of pixels - like a mosaic made of tiny colored tiles. Every photo is raster. Common formats: JPG, PNG, TIFF, PSD.</li>
-        <li><strong>Vector</strong> images are built from mathematical paths - points, lines, and curves - rather than pixels. Common formats: AI, EPS, SVG. A PDF can contain either or both.</li>
-        <li>Because vector art is math, not pixels, it scales to any size - a business card logo or a building wrap - with no loss of quality. Raster images are locked to the pixel count they were created at; enlarge past that and they blur.</li>
-        <li>Use <strong>vector</strong> for logos, icons, illustrations, and type - anything that needs to resize cleanly or print at very large scale.</li>
-        <li>Use <strong>raster</strong> for photographs and anything with complex, photorealistic color blending, since photos can't practically be represented as vector paths.</li>
-        <li>A common junior mistake is "rasterizing" a vector logo (converting it to pixels) too early in a project, which throws away its ability to scale - always keep an original vector version of any logo on file.</li>
+        <li>Run a preflight check (Acrobat or InDesign's built-in tool) before sending anything out. It flags color mode, resolution, missing fonts/links, and overprint settings.</li>
+        <li>Always review a proof - soft or hard - before greenlighting a full run.</li>
+        <li>A <strong>soft proof</strong> (on-screen simulation) is fast and catches layout or color-shift issues early. A <strong>hard proof</strong> (a physical printed sample) is the only way to truly confirm paper color, finish, and exact ink appearance.</li>
       </ul>
-      <div class="example"><span class="example-tag">Example</span>A client's vector logo file is opened, rasterized at a small size to speed up a mockup, and that flattened raster version accidentally becomes the one used for a large trade-show banner - printing soft and blurry instead of crisp.</div>`
-    }
+      <div class="example"><span class="example-tag">Example</span>Preflight is skipped to save time on a rush job. The file goes straight to a 2,000-unit run, and only afterward does anyone notice a font substitution that silently changed the body copy's line spacing throughout the piece.</div>`
+    },
   ];
 
   const checklistItems = [
@@ -872,6 +896,7 @@
     "No body text set smaller than 6pt (8pt+ if reversed out of a dark background)",
     "No line, border, or stroke thinner than 0.1-0.2mm positive, or 0.35mm+ if reversed/negative",
     "File exported as print-ready PDF (PDF/X-1a or PDF/X-4, per printer's spec)",
+    "Correct output intent / color profile set on export, confirmed with the printer",
     "Native files packaged (fonts + links) if not sending a PDF",
     "No missing or low-res placeholder images remain",
     "Transparency flattened if required by the printer's RIP",
@@ -890,6 +915,7 @@
     ["Bleed", "Artwork extended past the trim line so no white edge shows if cutting shifts."],
     ["Trim line", "Where the piece is cut to its final size."],
     ["Safe zone", "Margin inside the trim line where text/logos should stay."],
+    ["Output intent", "Metadata in a PDF naming the color profile the file was prepared for."],
     ["Reversed / negative", "Light text or lines knocked out of a dark background - needs thicker minimums."],
     ["Dot gain", "Ink spreading slightly on press, which can fill in thin reversed elements."],
     ["Misregistration", "When ink plates or passes don't align perfectly, causing shifts or gaps."],
@@ -1000,6 +1026,36 @@
       options: ["It isn't a problem, the number alone is always enough", "The same Pantone number can look noticeably different on coated vs. uncoated stock, so the printer might choose the wrong one", "Pantone numbers without a suffix can't be printed at all", "It means the color must be converted to CMYK instead"],
       correct: 1,
       explanation: "Pantone maintains separate Coated (C) and Uncoated (U) libraries because the same ink looks different on glossy vs. matte paper. Leaving off the suffix risks the printer guessing wrong."
+    },
+    {
+      prompt: "Why does a thin white line reversed out of a dark background need to be thicker than the same line would be in black on white?",
+      options: ["Reversed lines are only a design preference, not a technical issue", "Ink spreads slightly on press (dot gain), and that spread can close in on a thin reversed line from every side", "White ink is more expensive so thinner lines save money", "Reversed lines always print at a lower resolution"],
+      correct: 1,
+      explanation: "Dot gain - the natural spread of ink on press - eats into a reversed (negative) line from all sides at once, so it needs a thicker starting point than a positive line to survive the print process."
+    },
+    {
+      prompt: "What is misregistration?",
+      options: ["When a printer uses the wrong paper stock", "When the separate ink plates or passes that build up a print don't line up perfectly", "When a file is missing its registration with the copyright office", "When a font hasn't been registered with the printer"],
+      correct: 1,
+      explanation: "Misregistration happens when the different color plates or passes shift slightly out of alignment on press, causing gaps, doubling, or color fringing."
+    },
+    {
+      prompt: "What does trapping do to help with misregistration?",
+      options: ["It locks the file so it can't be edited further", "It adds a small intentional overlap where two colors meet, hiding a slight shift", "It converts all spot colors to CMYK automatically", "It compresses the file so it uploads faster"],
+      correct: 1,
+      explanation: "Trapping adds a tiny, deliberate overlap between adjoining colors, so if the plates shift slightly on press, no strip of bare white paper is revealed between them."
+    },
+    {
+      prompt: "Which pair correctly matches a file format to its type?",
+      options: ["JPG is vector, AI is raster", "PNG is vector, EPS is raster", "JPG is raster, SVG is vector", "TIFF is vector, PDF is always raster"],
+      correct: 2,
+      explanation: "JPG, PNG, and TIFF are raster (pixel-based) formats. AI, EPS, and SVG are vector (path-based) formats. A PDF can actually contain either or both."
+    },
+    {
+      prompt: "What does the output intent embedded in a print-ready PDF actually do?",
+      options: ["It tells the printer's software which color profile the file was prepared for", "It sets the page size and orientation of the document", "It lists the fonts used in the design", "It schedules the print job's delivery date"],
+      correct: 0,
+      explanation: "Output intent is metadata that names the color profile (like a specific GRACoL, FOGRA, or SWOP standard) the file was built for, so color displays and prints predictably instead of the printer guessing."
     }
   ];
 
