@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DFLOW Prepress Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ── Reset ── */
+*{box-sizing:border-box;margin:0;padding:0}
+
+/* ── Tokens ── */
+:root{
+  --bg:#f0f2f5;--surface:#fff;--border:#e2e6ea;--border2:#d0d5dd;
+  --accent:#3b5bdb;--accent-h:#2f4ac0;--text:#111827;--sub:#374151;
+  --muted:#6b7280;--muted2:#9ca3af;--tag-bg:#eff6ff;
+  --outlook:#0072c6;--outlook-h:#005a9e;
+  --r:10px;--sh:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.05);
+  --ff:'Lato',system-ui,sans-serif;
+}
+
+/* ── Base ── */
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--ff);
+  padding:1.5rem 1rem 3rem;
+  /* Tell Google Sites iframe to grow with content */
+  min-height:100%;
+}
+
+/* ── Width container ── */
+.wrap{max-width:580px;margin:0 auto}
+
+/* ── Timer strip ── */
+.timer-strip{
+  display:none;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  padding:.75rem 1rem;
+  margin-bottom:1rem;
+  align-items:center;
+  justify-content:space-between;
+  box-shadow:var(--sh);
+}
+.timer-strip.show{display:flex}
+.ts-left{font-size:12px;color:var(--muted)}
+.ts-left strong{color:var(--sub);font-weight:700}
+.ts-right{display:flex;align-items:center;gap:8px}
+.t-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+.t-digits{font-size:15px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;min-width:52px;text-align:right}
+.t-digits.warn{color:#d97706}
+.t-digits.danger{color:#dc2626}
+.t-track{width:72px;height:4px;background:var(--border);border-radius:99px;overflow:hidden}
+.t-fill{height:100%;background:var(--accent);border-radius:99px;transition:width 1s linear,background 1s}
+.t-fill.warn{background:#d97706}
+.t-fill.danger{background:#dc2626}
+
+/* ── Start card ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh);padding:1.75rem}
+.eyebrow{font-size:11px;letter-spacing:.12em;color:var(--accent);font-weight:700;text-transform:uppercase;margin-bottom:8px}
+.card-title{font-size:20px;font-weight:700;line-height:1.25;color:var(--text);margin-bottom:6px}
+.card-sub{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:1.5rem}
+
+/* ── Instructions ── */
+.instr-box{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:1rem 1.1rem;margin-bottom:1.5rem}
+.instr-hd{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.instr-list{list-style:none;display:flex;flex-direction:column;gap:8px}
+.instr-list li{display:flex;align-items:flex-start;gap:10px;font-size:14px;color:var(--sub);line-height:1.5}
+.instr-n{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+
+/* ── Name field ── */
+.f-label{font-size:12px;font-weight:700;color:var(--sub);margin-bottom:7px}
+.f-row{display:flex;gap:8px;align-items:center;margin-bottom:1.25rem}
+.f-input{flex:1;height:42px;background:var(--surface);border:1px solid var(--border2);border-radius:7px;padding:0 12px;font-size:14px;color:var(--text);font-family:var(--ff);outline:none;transition:border-color .15s,box-shadow .15s;min-width:0}
+.f-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,91,219,.12)}
+.f-input::placeholder{color:var(--muted2)}
+.f-badge{font-size:11px;font-weight:700;color:var(--accent);background:var(--tag-bg);border:1px solid #c7d7f9;border-radius:5px;padding:5px 10px;white-space:nowrap;display:none}
+
+/* ── Buttons ── */
+.btn-primary{display:block;width:100%;padding:13px;font-size:14px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;transition:background .15s,transform .1s;font-family:var(--ff);box-shadow:0 1px 3px rgba(59,91,219,.25)}
+.btn-primary:hover{background:var(--accent-h)}
+.btn-primary:active{transform:scale(.99)}
+.btn-primary:disabled{background:var(--muted2);box-shadow:none;cursor:not-allowed;transform:none}
+
+/* ── Quiz hero ── */
+.quiz-hero{padding:1.5rem 0 1.25rem;border-bottom:1px solid var(--border);margin-bottom:0}
+.cpill{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--accent);background:var(--tag-bg);border:1px solid #c7d7f9;border-radius:20px;padding:3px 10px;margin-top:8px;font-weight:700}
+
+/* ── Progress ── */
+.prog-row{padding:1.1rem 0 0;display:flex;align-items:center;gap:12px}
+.prog-track{flex:1;height:4px;background:var(--border);border-radius:99px;overflow:hidden}
+.prog-fill{height:100%;background:var(--accent);border-radius:99px;transition:width .3s}
+.prog-lbl{font-size:12px;color:var(--muted);white-space:nowrap}
+.prog-pct{font-size:12px;color:var(--accent);font-weight:700;white-space:nowrap;min-width:30px;text-align:right}
+
+/* ── Section header ── */
+.sec-row{padding:1.5rem 0 .75rem;display:flex;align-items:center;gap:10px}
+.sec-num{font-size:10px;letter-spacing:.1em;color:var(--accent);font-weight:700;background:var(--tag-bg);border:1px solid #c7d7f9;border-radius:4px;padding:2px 7px}
+.sec-line{flex:1;height:1px;background:var(--border)}
+.sec-lbl{font-size:11px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;font-weight:700}
+
+/* ── Question cards ── */
+.q-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.1rem 1.1rem 1rem;margin-bottom:8px;box-shadow:var(--sh);transition:border-color .15s,box-shadow .15s}
+.q-card:not(.locked):hover{border-color:var(--border2)}
+.q-card:not(.locked).active{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,91,219,.08)}
+.q-card.locked{background:#fafafa;pointer-events:none}
+.q-meta{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.q-num{font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--accent);background:var(--tag-bg);border:1px solid #c7d7f9;border-radius:4px;padding:2px 8px}
+.q-text{font-size:14px;color:var(--sub);line-height:1.55;margin-bottom:10px}
+.file-path-box{display:inline-flex;align-items:center;gap:8px;background:var(--tag-bg);border:1px solid #c7d7f9;border-radius:6px;padding:6px 12px;margin-bottom:10px;flex-wrap:wrap}
+.file-path-icon{font-size:14px}
+.file-path-text{font-family:monospace;font-size:12px;color:var(--accent);user-select:all;letter-spacing:.02em}
+.file-path-copy{background:var(--accent);color:#fff;border:none;border-radius:4px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--ff);transition:background .15s;white-space:nowrap}
+.file-path-copy:hover{background:var(--accent-h)}
+.file-path-copy.copied{background:#16a34a}
+textarea{width:100%;min-height:72px;resize:vertical;border:1px solid var(--border2);border-radius:7px;padding:10px 12px;font-size:13px;color:var(--text);background:var(--surface);font-family:var(--ff);line-height:1.6;transition:border-color .15s,box-shadow .15s;outline:none}
+textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,91,219,.12)}
+textarea.answered{border-color:#93aff5;background:#fafbff}
+textarea::placeholder{color:var(--muted2)}
+textarea.locked-ta{background:#f4f5f7;border-color:var(--border);color:var(--sub);resize:none;cursor:default;pointer-events:none}
+.note{font-size:11px;color:var(--muted);margin-top:6px;font-style:italic}
+.divider{border:none;border-top:1px solid var(--border);margin:.5rem 0 0}
+.submit-area{padding:1.5rem 0 0}
+
+/* ── Submitted banner ── */
+.sub-banner{display:none;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:var(--r);padding:1.25rem 1.5rem;margin:1.5rem 0 0;flex-direction:column;gap:14px}
+.sub-banner.show{display:flex}
+.sub-top{display:flex;align-items:flex-start;gap:14px}
+.sub-icon{width:36px;height:36px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sub-icon svg{width:18px;height:18px;stroke:#16a34a;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.sub-title{font-size:14px;font-weight:700;color:#15803d;margin-bottom:4px}
+.sub-meta{font-size:12px;color:#6b7280;line-height:1.7}
+.sub-meta strong{color:var(--sub)}
+.action-row{display:flex;gap:8px;flex-wrap:wrap}
+.dl-btn{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--accent);background:var(--tag-bg);border:1px solid #c7d7f9;border-radius:6px;padding:7px 14px;cursor:pointer;font-family:var(--ff);transition:background .15s}
+.dl-btn:hover{background:#dce8ff}
+.email-btn{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#fff;background:var(--outlook);border:none;border-radius:6px;padding:7px 14px;cursor:pointer;font-family:var(--ff);text-decoration:none;transition:background .15s}
+.email-btn:hover{background:var(--outlook-h)}
+
+/* ── Anti-tab-switch warning banner ── */
+.focus-warning{
+  display:none;position:fixed;top:0;left:0;right:0;z-index:99999;
+  background:#dc2626;color:#fff;padding:.75rem 1.25rem;
+  font-size:13px;font-weight:700;font-family:var(--ff);
+  align-items:center;justify-content:space-between;gap:12px;
+  box-shadow:0 2px 8px rgba(220,38,38,.4);
+}
+.focus-warning.show{display:flex}
+.focus-warning-text{display:flex;align-items:center;gap:8px}
+.fw-badge{background:rgba(255,255,255,.25);border-radius:4px;padding:2px 8px;font-size:11px}
+.fw-dismiss{background:rgba(255,255,255,.2);border:none;color:#fff;font-family:var(--ff);font-weight:700;font-size:12px;padding:4px 12px;border-radius:5px;cursor:pointer}
+.fw-dismiss:hover{background:rgba(255,255,255,.35)}
+
+/* ── Locked-out overlay ── */
+.lockout-overlay{
+  display:none;position:fixed;inset:0;z-index:99998;
+  background:rgba(17,24,39,.92);align-items:center;justify-content:center;padding:1.5rem;
+}
+.lockout-overlay.show{display:flex}
+.lockout-box{background:#fff;border-radius:12px;padding:2rem;max-width:380px;width:100%;text-align:center}
+.lockout-icon{font-size:36px;margin-bottom:12px}
+.lockout-title{font-size:18px;font-weight:700;color:#111827;margin-bottom:8px}
+.lockout-sub{font-size:13px;color:#6b7280;line-height:1.6}
+
+/* ── Fullscreen prompt overlay ── */
+.fs-prompt{
+  display:none;position:fixed;inset:0;z-index:99997;
+  background:rgba(17,24,39,.92);align-items:center;justify-content:center;padding:1.5rem;
+}
+.fs-prompt.show{display:flex}
+.fs-box{background:#fff;border-radius:12px;padding:2rem;max-width:400px;width:100%;text-align:center}
+.fs-icon{font-size:36px;margin-bottom:12px}
+.fs-title{font-size:18px;font-weight:700;color:#111827;margin-bottom:8px}
+.fs-sub{font-size:13px;color:#6b7280;line-height:1.6;margin-bottom:1.5rem}
+.fs-btn{display:block;width:100%;padding:13px;font-size:14px;font-weight:700;background:#3b5bdb;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit;transition:background .15s}
+.fs-btn:hover{background:#2f4ac0}
+
+/* ── Paused overlay — hides questions ── */
+.pause-overlay{
+  display:none;position:fixed;inset:0;z-index:99990;
+  background:#000000;
+  align-items:center;justify-content:center;
+  flex-direction:column;gap:16px;
+  font-family:var(--ff);
+}
+.pause-overlay.show{display:flex}
+.pause-icon{font-size:48px;line-height:1}
+.pause-title{font-size:20px;font-weight:700;color:#fff;letter-spacing:.02em}
+.pause-sub{font-size:14px;color:#94a3b8;text-align:center;max-width:320px;line-height:1.6}
+.pause-restore-btn{
+  margin-top:8px;padding:12px 28px;font-size:14px;font-weight:700;
+  background:#3b5bdb;color:#fff;border:none;border-radius:8px;cursor:pointer;
+  font-family:var(--ff);transition:background .15s;
+}
+.pause-restore-btn:hover{background:#2f4ac0}
+
+/* ── Fullscreen paused input style ── */
+textarea.fs-locked{background:#f4f5f7!important;border-color:var(--border)!important;cursor:not-allowed!important;}
+.q-card.fs-card-locked{opacity:.6;pointer-events:none;}
+
+/* ── Fullscreen warning banner ── */
+.fs-warning{
+  display:none;position:fixed;top:0;left:0;right:0;z-index:99998;
+  background:#7c3aed;color:#fff;padding:.7rem 1.25rem;
+  font-size:13px;font-weight:700;font-family:var(--ff);
+  align-items:center;justify-content:space-between;gap:12px;
+  box-shadow:0 2px 8px rgba(124,58,237,.4);
+}
+.fs-warning.show{display:flex}
+.fs-restore-btn{background:rgba(255,255,255,.2);border:none;color:#fff;font-family:var(--ff);font-weight:700;font-size:12px;padding:5px 14px;border-radius:5px;cursor:pointer;white-space:nowrap}
+.fs-restore-btn:hover{background:rgba(255,255,255,.35)}
+
+/* ── Google Sites iframe auto-height helper ── */
+html,body{height:auto}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- TIMER STRIP -->
+  <div class="timer-strip" id="timer-strip">
+    <div class="ts-left">Started: <strong id="start-stamp">—</strong></div>
+    <div class="ts-right">
+      <span class="t-label">Time left</span>
+      <div class="t-track"><div class="t-fill" id="t-fill" style="width:100%"></div></div>
+      <span class="t-digits" id="t-digits">90:00</span>
+    </div>
+  </div>
+
+  <!-- PAUSE OVERLAY (hides questions when fullscreen exited) -->
+  <div class="pause-overlay" id="pause-overlay">
+    <div class="pause-icon">&#9888;&#65039;</div>
+    <div class="pause-title">You left fullscreen</div>
+    <div class="pause-sub">You have exited fullscreen.<br>Your answers are hidden until you return.<br><strong style="color:#fbbf24">⚠️ The timer is still running!</strong></div>
+    <button class="pause-restore-btn" onclick="enterFullscreen()">&#x26F6; Return to fullscreen</button>
+  </div>
+
+  <!-- FULLSCREEN WARNING BANNER -->
+  <div class="fs-warning" id="fs-warning">
+    <span>&#9888;&#65039; You exited fullscreen &nbsp;|&nbsp; <strong>Timer is still running!</strong> Return now to avoid losing time.</span>
+    <button class="fs-restore-btn" onclick="enterFullscreen()">&#x26F6; Return to fullscreen</button>
+  </div>
+
+  <!-- FOCUS WARNING BANNER -->
+  <div class="focus-warning" id="focus-warning">
+    <div class="focus-warning-text">
+      <span id="fw-msg">&#9888;&#65039; Warning: Do not leave this tab during the quiz.</span>
+      <span class="fw-badge" id="fw-count">Warning 1 of 4</span>
+    </div>
+    <button class="fw-dismiss" onclick="dismissWarning()">Dismiss</button>
+  </div>
+
+  <!-- LOCKOUT OVERLAY -->
+  <div class="lockout-overlay" id="lockout-overlay">
+    <div class="lockout-box">
+      <div class="lockout-icon">&#128274;</div>
+      <div class="lockout-title">Quiz locked</div>
+      <div class="lockout-sub">You have left this tab too many times.<br>Please ask your administrator to unlock the quiz.</div>
+      <div style="margin-top:1.25rem">
+        <input type="password" id="unlock-input" placeholder="Enter administrator password" style="width:100%;height:40px;border:1px solid #d0d5dd;border-radius:7px;padding:0 12px;font-size:14px;font-family:inherit;outline:none;margin-bottom:8px">
+        <div id="unlock-error" style="font-size:12px;color:#dc2626;margin-bottom:8px;display:none">Incorrect password. Please try again.</div>
+        <button onclick="tryUnlock()" style="width:100%;padding:12px;font-size:14px;font-weight:700;background:#3b5bdb;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit">Unlock &rarr;</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FULLSCREEN PROMPT -->
+  <div class="fs-prompt" id="fs-prompt">
+    <div class="fs-box">
+      <div class="fs-icon">&#128065;</div>
+      <div class="fs-title">Fullscreen required</div>
+      <div class="fs-sub">This quiz must be taken in fullscreen mode.<br>Exiting fullscreen will make you <strong>unable</strong> to input your answers while timer keeps running</div>
+      <button class="fs-btn" onclick="enterFullscreen()">Enter fullscreen &amp; start &rarr;</button>
+    </div>
+  </div>
+
+  <!-- START SCREEN -->
+  <div id="start-screen">
+    <div class="card">
+      <div class="eyebrow">Knowledge assessment</div>
+      <div class="card-title">Prepress &amp; CMYKHub<br>qualification quiz</div>
+      <div class="card-sub">Read the instructions below, then enter your name and press Start.</div>
+
+      <div class="instr-box">
+        <div class="instr-hd">Instructions</div>
+        <ul class="instr-list">
+          <li><span class="instr-n">1</span><span>Fill in your <strong>full name</strong> before starting.</span></li>
+          <li><span class="instr-n">2</span><span>Answer all <strong>20 questions</strong> — Section A (General Prepress) and Section B (CMYKHub).</span></li>
+          <li><span class="instr-n">3</span><span>You have <strong>90 minutes</strong>. The timer starts when you press Start.</span></li>
+          <li><span class="instr-n">4</span><span>Do not <strong>leave the tab</strong>. Leave the tab will be count as violation.</span></li>
+          <li><span class="instr-n">5</span><span>You have maximum <strong>4 violations</strong> before the assessment locked.</span></li>
+        </ul>
+      </div>
+
+      <div class="f-label">Your full name</div>
+      <div class="f-row">
+        <input type="text" class="f-input" id="candidate-name" placeholder="e.g. John Smith" autocomplete="off">
+        <span class="f-badge" id="name-badge"></span>
+      </div>
+      <button class="btn-primary" onclick="startQuiz()">Start quiz &rarr;</button>
+    </div>
+  </div>
+
+  <!-- QUIZ SCREEN -->
+  <div id="quiz-screen" style="display:none">
+    <div class="quiz-hero">
+      <div class="eyebrow">Knowledge assessment</div>
+      <div class="card-title">Prepress &amp; CMYKHub<br>qualification quiz</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.6">Answer all 20 questions, then submit for review.</div>
+      <div class="cpill" id="cpill">&#128100; —</div>
+    </div>
+
+    <div class="prog-row">
+      <span class="prog-lbl" id="prog-text">0 / 20</span>
+      <div class="prog-track"><div class="prog-fill" id="prog" style="width:0%"></div></div>
+      <span class="prog-pct" id="prog-pct">0%</span>
+    </div>
+
+    <div class="sec-row"><span class="sec-num">01</span><div class="sec-line"></div><span class="sec-lbl">General Prepress</span></div>
+    <div id="gp-q"></div>
+    <div class="divider"></div>
+    <div class="sec-row"><span class="sec-num">02</span><div class="sec-line"></div><span class="sec-lbl">CMYKHub</span></div>
+    <div id="ck-q"></div>
+
+    <div class="submit-area">
+      <button class="btn-primary" id="submit-btn" onclick="submitAll()">Submit answers for review &rarr;</button>
+    </div>
+
+    <div class="sub-banner" id="sub-banner">
+      <div class="sub-top">
+        <div class="sub-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div>
+          <div class="sub-title">Quiz submitted — answers are now locked</div>
+          <div class="sub-meta" id="sub-meta"></div>
+        </div>
+      </div>
+      <div class="action-row">
+        <button class="dl-btn" id="dl-btn">&#8659; Download locked copy</button>
+        <a class="email-btn" id="email-btn" href="#" onclick="openEmail(event)">
+          <svg style="width:14px;height:14px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 7L2 7"/></svg>
+          Send to Dwi Candra
+        </a>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+
+<script>
+const FILE_CASE_PATH='P:\\Print Services Resources\\JUNIOR PROJECT\\Assessment Q1\\Case File';
+const TOTAL_SECS=90*60;
+const gpQs=[
+  "What is our duty as prepress operator?",
+  "There are 2 kinds of printing method (Conventional and Digital), give an example of conventional and digital.",
+  "How do we know the file is \u201cprint ready\u201d file?",
+  "What is gamut?",
+  "Explain how gamut affects the visual when we do colour conversion?",
+  "Mention the risk if we print RGB file.",
+  "We can check the dimension using Set Page Box in Acrobat. If the trimbox has not set, how do we set the trimbox using Set Page Box?",
+  "When we using Output Preview sometimes the colour may slightly shift. Explain why.",
+  "If we change the simulation profile in Output Preview, the visual colour slightly shifts while the CMYK breakdown remains the same. Explain why.",
+  "What tools can we use to detect problem (e.g. RGB, low resolution, non-embedded font) in Acrobat?"
+];
+const ckQs=[
+  "What is the size option for BC offset 450gsm?",
+  "What is the rule of sizing in BC digital?",
+  "List the minimum standard business card file requirements on CMYKHub.",
+  "What do you do if you find an issue in the supplied file?",
+  "A customer leaves a note: C50 M20 Y5 K20. What should you do?",
+  "Give example situations when you need to hold a job — to the CSR and to the Production Manager.",
+  "List the requirements of an embellishment page.",
+  "A customer orders 1-sided print but supplied files have various orientations. What should you do?",
+  "The supplied artwork contains text near the trim edge (only 1.5mm from trim edge). In these circumstances, what option do you have?",
+  "Access the supplied file, report the issues found."
+];
+
+const answers={};
+const total=gpQs.length+ckQs.length;
+let startTime=null,secsLeft=TOTAL_SECS,timerInt=null,lockedHTML='';
+let meta={name:'',startStr:'',submitStr:'',elapsed:'',filled:0};
+
+/* ── Fullscreen management ── */
+let fullscreenExited=false;
+
+function enterFullscreen(){
+  const el=document.documentElement;
+  if(el.requestFullscreen) el.requestFullscreen();
+  else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+  else if(el.mozRequestFullScreen) el.mozRequestFullScreen();
+  else if(el.msRequestFullscreen) el.msRequestFullscreen();
+  document.getElementById('fs-warning').classList.remove('show');
+  fullscreenExited=false;
+}
+
+function isFullscreen(){
+  return !!(document.fullscreenElement||document.webkitFullscreenElement||document.mozFullScreenElement||document.msFullscreenElement);
+}
+
+/* ── Pause / resume timer ── */
+let timerPaused=false;
+
+function pauseTimer(){
+  if(timerPaused) return;
+  if(timerInt){clearInterval(timerInt);timerInt=null;}
+  // Snapshot how many seconds are left RIGHT NOW
+  secsLeft=Math.max(0,Math.round((timerEndTime-Date.now())/1000));
+  timerPaused=true;
+  updateTimerDisplay(secsLeft);
+}
+
+function resumeTimer(){
+  if(!timerPaused) return;
+  if(timerInt){clearInterval(timerInt);timerInt=null;}
+  // Reconstruct timerEndTime from the saved secsLeft snapshot
+  timerEndTime=Date.now()+(secsLeft*1000);
+  timerPaused=false;
+  updateTimerDisplay(secsLeft);
+  timerInt=setInterval(tick,1000);
+}
+
+/* ── Lock / unlock quiz inputs (without counting as submitted) ── */
+function lockInputs(){
+  document.querySelectorAll('textarea:not(.locked-ta)').forEach(ta=>{
+    ta.readOnly=true;
+    ta.classList.add('fs-locked');
+  });
+  document.querySelectorAll('.q-card:not(.locked)').forEach(c=>c.classList.add('fs-card-locked'));
+  const btn=document.getElementById('submit-btn');
+  if(btn&&!btn.disabled){btn.disabled=true;btn.setAttribute('data-fs-disabled','1');}
+  // Show pause overlay to hide questions
+  document.getElementById('pause-overlay').classList.add('show');
+}
+
+function unlockInputs(){
+  document.querySelectorAll('textarea.fs-locked').forEach(ta=>{
+    ta.readOnly=false;
+    ta.classList.remove('fs-locked');
+  });
+  document.querySelectorAll('.q-card.fs-card-locked').forEach(c=>c.classList.remove('fs-card-locked'));
+  const btn=document.getElementById('submit-btn');
+  if(btn&&btn.getAttribute('data-fs-disabled')){btn.disabled=false;btn.removeAttribute('data-fs-disabled');}
+  // Hide pause overlay to reveal questions
+  document.getElementById('pause-overlay').classList.remove('show');
+}
+
+function onFullscreenChange(){
+  if(!quizActive && !timerPaused) return;
+
+  if(!isFullscreen()){
+    // ── Exited fullscreen: lock inputs but timer keeps running ──
+    fullscreenExited=true;
+    lockInputs();
+    document.getElementById('fs-warning').classList.add('show');
+    triggerViolation();
+  } else {
+    // ── Returned to fullscreen: unlock inputs ──
+    document.getElementById('fs-warning').classList.remove('show');
+    fullscreenExited=false;
+    unlockInputs();
+  }
+}
+
+document.addEventListener('fullscreenchange', onFullscreenChange);
+document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+document.addEventListener('mozfullscreenchange', onFullscreenChange);
+document.addEventListener('MSFullscreenChange', onFullscreenChange);
+
+/* ── Anti-tab-switch & refresh detection ── */
+const MAX_VIOLATIONS=4;   // lock after 4 violations
+let violations=0;
+let quizActive=false;
+let lastViolationTime=0;  // debounce: blur+visibilitychange fire together
+
+function dismissWarning(){
+  document.getElementById('focus-warning').classList.remove('show');
+}
+
+function triggerViolation(){
+  if(!quizActive) return;
+  // Debounce: visibilitychange + blur both fire on tab switch — ignore if within 500ms
+  const now=Date.now();
+  if(now-lastViolationTime<500) return;
+  lastViolationTime=now;
+  // If violation was already triggered by fullscreen exit, skip duplicate
+  if(fullscreenExited){fullscreenExited=false;return;}
+
+  violations++;
+  const badge=document.getElementById('fw-count');
+
+  if(violations>=MAX_VIOLATIONS){
+    // 3rd violation → LOCK
+    document.getElementById('focus-warning').classList.remove('show');
+    document.getElementById('lockout-overlay').classList.add('show');
+    document.querySelectorAll('textarea').forEach(ta=>{ta.readOnly=true;ta.classList.add('locked-ta');});
+    document.querySelectorAll('.q-card').forEach(c=>c.classList.add('locked'));
+    const btn=document.getElementById('submit-btn');
+    if(btn){btn.disabled=true;btn.textContent='Quiz locked';}
+    clearInterval(timerInt);
+    quizActive=false;
+    notify('violation',
+      document.getElementById('candidate-name').value.trim(),
+      {extra:'LOCKED OUT after '+violations+' tab-switch violations'}
+    );
+  } else {
+    // Show warning with remaining attempts
+    const remaining=MAX_VIOLATIONS-violations;
+    const msg=document.getElementById('fw-msg');
+    if(remaining===1){
+      // Final warning before lockout
+      msg.innerHTML='&#128721; Final warning! One more tab switch will lock the quiz and you will need to <strong>start from the beginning</strong>.';
+      badge.textContent='Warning '+violations+' of '+MAX_VIOLATIONS+' — LAST CHANCE';
+      badge.style.background='rgba(255,255,255,.35)';
+    } else {
+      msg.innerHTML='&#9888;&#65039; Warning: Do not leave this tab. If you are locked out, you will need to <strong>start the test from the beginning</strong>.';
+      badge.textContent='Warning '+violations+' of '+MAX_VIOLATIONS+' — '+remaining+' left';
+      badge.style.background='';
+    }
+    document.getElementById('focus-warning').classList.add('show');
+  }
+}
+
+// Use ONLY visibilitychange — but skip if triggered by fullscreen exit (handled separately)
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden && !fullscreenExited) triggerViolation();
+});
+
+/* ── Refresh / navigation lock ── */
+// Block keyboard shortcuts: F5, Ctrl/Cmd+R, Ctrl/Cmd+Shift+R
+document.addEventListener('keydown',(e)=>{
+  if(!quizActive) return;
+  const ctrl=e.ctrlKey||e.metaKey;
+  if(
+    e.key==='F5'||
+    (ctrl&&e.key.toLowerCase()==='r')
+  ){
+    e.preventDefault();
+    e.stopPropagation();
+    showModal('&#128683; Refreshing will reset the quiz and erase all your answers. Please do not refresh during the exam.');
+  }
+},{capture:true});
+
+// Block browser back/forward
+history.pushState(null,'',window.location.href);
+window.addEventListener('popstate',()=>{
+  history.pushState(null,'',window.location.href);
+});
+
+// Native browser "Leave site?" dialog for refresh button / close tab
+window.addEventListener('beforeunload',(e)=>{
+  if(!quizActive) return;
+  e.preventDefault();
+  e.returnValue='';
+  return '';
+});
+
+/* ── Fullscreen management ── */
+function enterFullscreen(){
+  const el=document.documentElement;
+  const req=el.requestFullscreen||el.webkitRequestFullscreen||el.mozRequestFullScreen||el.msRequestFullscreen;
+  if(req){
+    req.call(el).then(()=>{
+      document.getElementById('fs-prompt').classList.remove('show');
+      startTimer();
+    }).catch(()=>{
+      // If fullscreen is blocked (e.g. inside iframe), just proceed anyway
+      document.getElementById('fs-prompt').classList.remove('show');
+      startTimer();
+    });
+  } else {
+    document.getElementById('fs-prompt').classList.remove('show');
+    startTimer();
+  }
+}
+
+function startTimer(){
+  if(timerInt||timerPaused) return;  // already running or paused
+  secsLeft=TOTAL_SECS;
+  timerEndTime=Date.now()+(TOTAL_SECS*1000);
+  timerInt=setInterval(tick,1000);
+  tick(); // immediate first render
+}
+
+function exitFullscreenHandler(){
+  const isFs=document.fullscreenElement||document.webkitFullscreenElement||document.mozFullScreenElement||document.msFullscreenElement;
+  if(!isFs && quizActive){
+    // Exited fullscreen during quiz — count as violation
+    triggerViolation();
+    // Show fullscreen re-entry prompt unless locked
+    if(violations<MAX_VIOLATIONS){
+      const el=document.documentElement;
+      const req=el.requestFullscreen||el.webkitRequestFullscreen||el.mozRequestFullScreen||el.msRequestFullscreen;
+      if(req) req.call(el).catch(()=>{});
+    }
+  }
+}
+
+document.addEventListener('fullscreenchange', exitFullscreenHandler);
+document.addEventListener('webkitfullscreenchange', exitFullscreenHandler);
+document.addEventListener('mozfullscreenchange', exitFullscreenHandler);
+document.addEventListener('MSFullscreenChange', exitFullscreenHandler);
+
+/* ── Copy file path ── */
+function copyPath(btn){
+  const path='P:\\Print Services Resources\\JUNIOR PROJECT\\Assessment Q1\\Case File';
+  navigator.clipboard.writeText(path).catch(()=>{
+    const ta=document.createElement('textarea');
+    ta.value=path;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+  });
+  btn.textContent='✓ Copied!';btn.classList.add('copied');
+  setTimeout(()=>{btn.textContent='\u{1F4CB} Copy path';btn.classList.remove('copied');},2000);
+}
+
+/* ── Helpers ── */
+function fmt(d){return d.toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'})+' '+d.toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+function fmtT(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
+
+/* ── Google Apps Script notifications ── */
+// Paste your Apps Script Web App URL below after deploying DFLOW_Quiz_NotifyScript.gs
+const APPS_SCRIPT_URL='https://script.google.com/macros/s/AKfycbwSD1RSzs1QJGRPdL-Dkyfpt4GrpO5Duu3gTeYJ1FFey09VhcftiGCPs3OGQc7AfyA/exec';
+function notify(event,name,extraParams){
+  if(!APPS_SCRIPT_URL||APPS_SCRIPT_URL==='YOUR_APPS_SCRIPT_URL_HERE')return;
+  const now=fmt(new Date());
+  const params=Object.assign({event:event,name:name||'',time:now},extraParams||{});
+  const qs=new URLSearchParams(params).toString();
+  fetch(APPS_SCRIPT_URL+'?'+qs,{method:'GET',mode:'no-cors'}).catch(()=>{});
+}
+
+/* Auto-resize iframe height for Google Sites */
+function resizeParent(){
+  try{window.parent.postMessage({type:'resize',height:document.body.scrollHeight},'*');}catch(e){}
+}
+window.addEventListener('load',()=>{
+  resizeParent();
+});
+new MutationObserver(resizeParent).observe(document.body,{childList:true,subtree:true,attributes:true});
+
+/* ── Start ── */
+function startQuiz(){
+  const name=document.getElementById('candidate-name').value.trim();
+  if(!name){
+    const el=document.getElementById('candidate-name');
+    el.focus();el.style.borderColor='#dc2626';el.style.boxShadow='0 0 0 3px rgba(220,38,38,.12)';
+    setTimeout(()=>{el.style.borderColor='';el.style.boxShadow='';},2000);
+    return;
+  }
+  const badge=document.getElementById('name-badge');
+  badge.textContent=name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  badge.style.display='inline-block';
+  startTime=new Date();
+  document.getElementById('start-stamp').textContent=fmt(startTime);
+  document.getElementById('cpill').textContent='👤 '+name;
+  document.getElementById('start-screen').style.display='none';
+  document.getElementById('quiz-screen').style.display='block';
+  document.getElementById('timer-strip').classList.add('show');
+  // Show fullscreen prompt before timer starts
+  document.getElementById('fs-prompt').classList.add('show');
+  buildQs(gpQs,'gp','gp-q');
+  buildQs(ckQs,'ck','ck-q');
+  quizActive=true;
+  // Enter fullscreen — timer starts via startTimer() called after fullscreen is granted
+  // If browser blocks fullscreen, start timer directly as fallback
+  const fsReq = document.documentElement.requestFullscreen
+    || document.documentElement.webkitRequestFullscreen
+    || document.documentElement.mozRequestFullScreen
+    || document.documentElement.msRequestFullscreen;
+  if(fsReq){
+    fsReq.call(document.documentElement).then(()=>{
+      startTimer();
+    }).catch(()=>{
+      startTimer(); // fallback if fullscreen denied
+    });
+  } else {
+    startTimer(); // browser doesn't support fullscreen
+  }
+  notify('started',name);
+  resizeParent();
+}
+
+/* ── Timer (wall-clock accurate + pause-safe) ── */
+let timerEndTime=null;   // absolute ms timestamp when timer will reach 0
+
+function updateTimerDisplay(remaining){
+  const dig=document.getElementById('t-digits');
+  const fill=document.getElementById('t-fill');
+  dig.textContent=fmtT(remaining);
+  fill.style.width=((remaining/TOTAL_SECS)*100)+'%';
+  if(remaining<=600){dig.className='t-digits danger';fill.className='t-fill danger';}
+  else if(remaining<=1800){dig.className='t-digits warn';fill.className='t-fill warn';}
+  else{dig.className='t-digits';fill.className='t-fill';}
+}
+
+function tick(){
+  if(!timerEndTime||timerPaused) return;
+  const remaining=Math.max(0,Math.round((timerEndTime-Date.now())/1000));
+  secsLeft=remaining;
+  updateTimerDisplay(remaining);
+  if(remaining<=0){
+    clearInterval(timerInt);timerInt=null;
+    document.getElementById('t-digits').textContent='00:00';
+    document.getElementById('t-fill').style.width='0%';
+    autoSubmit();
+  }
+}
+
+/* ── Copy file path ── */
+function copyPath(btn){
+  const path = btn.parentElement.querySelector('.file-path-text').innerText;
+  navigator.clipboard.writeText(path).then(()=>{
+    btn.textContent = '✔ Copied!';
+    setTimeout(()=>{
+      btn.innerHTML = '&#128203; Copy path';
+    },1500);
+  });
+}
+
+/* ── Build questions ── */
+function buildQs(qs,prefix,cid){
+  const wrap=document.getElementById(cid);
+  qs.forEach((q,i)=>{
+    const id=prefix+'-'+i;
+    const sl=prefix==='gp'?'A':'B';
+    const isFC=prefix==='ck'&&i===9;
+    const card=document.createElement('div');
+    card.className='q-card';
+    card.innerHTML=
+      '<div class="q-meta"><span class="q-num">'+sl+(i+1)+'</span></div>'+
+      '<div class="q-text">'+q+'</div>'+
+      (isFC?'<div class="file-path-box"><span class="file-path-icon">&#128193;</span><code class="file-path-text">P:\\Print Services Resources\\JUNIOR PROJECT\\Assessment Q1\\Case File</code><button class="file-path-copy" onclick="copyPath(this)" title="Copy path">&#128203; Copy path</button></div>':'')+
+      (isFC?'<div class="note">Describe the issues and your preflight fixes below.</div>':'')+
+      '<textarea id="'+id+'" placeholder="Your answer…" style="margin-top:'+(isFC?'8px':'0')+'"></textarea>';
+    wrap.appendChild(card);
+
+    const ta=document.getElementById(id);
+
+    ta.addEventListener('focus',()=>card.classList.add('active'));
+    ta.addEventListener('blur',()=>card.classList.remove('active'));
+
+    ta.addEventListener('input',function(){
+      answers[id]=this.value.trim();
+      this.classList.toggle('answered',this.value.trim().length>0);
+      updateProg();
+      resizeParent();
+    });
+  });
+}
+
+function updateProg(){
+  const filled=Object.values(answers).filter(v=>v.length>0).length;
+  const pct=Math.round(filled/total*100);
+  document.getElementById('prog').style.width=pct+'%';
+  document.getElementById('prog-text').textContent=filled+' / '+total;
+  document.getElementById('prog-pct').textContent=pct+'%';
+}
+
+/* ── Lock page ── */
+function lockPage(){
+  quizActive=false;
+  document.querySelectorAll('textarea').forEach(ta=>{ta.readOnly=true;ta.classList.add('locked-ta');});
+  document.querySelectorAll('.q-card').forEach(c=>c.classList.add('locked'));
+  const btn=document.getElementById('submit-btn');
+  btn.disabled=true;btn.textContent='Submitted';
+  clearInterval(timerInt);
+  document.getElementById('t-digits').style.color='#9ca3af';
+  document.getElementById('t-fill').style.background='#9ca3af';
+  const banner=document.getElementById('sub-banner');
+  banner.classList.add('show');
+  const {name,startStr,submitStr,elapsed,filled}=meta;
+  document.getElementById('sub-meta').innerHTML=
+    '<strong>'+name+'</strong><br>'+
+    'Started: '+startStr+' &nbsp;·&nbsp; '+
+    'Submitted: '+submitStr+' &nbsp;·&nbsp; '+
+    'Time: '+elapsed+' &nbsp;·&nbsp; '+
+    'Answered: '+filled+' / '+total;
+  banner.scrollIntoView({behavior:'smooth',block:'start'});
+  resizeParent();
+}
+
+/* ── Email body ── */
+function buildEmailBody(){
+  const {name,startStr,submitStr,elapsed,filled}=meta;
+  const line='----------------------------------------';
+  let b='DFLOW Prepress & CMYKHub Quiz — Submission\n'+line+'\n';
+  b+='Candidate:  '+name+'\n';
+  b+='Started:    '+startStr+'\n';
+  b+='Submitted:  '+submitStr+'\n';
+  b+='Time taken: '+elapsed+'\n';
+  b+='Answered:   '+filled+' / '+total+'\n'+line+'\n\n';
+  b+='SECTION A — GENERAL PREPRESS\n\n';
+  gpQs.forEach((q,i)=>{b+='A'+(i+1)+'. '+q+'\n'+(answers['gp-'+i]||'(no answer)')+'\n\n';});
+  b+=line+'\n\nSECTION B — CMYKHUB\n\n';
+  ckQs.forEach((q,i)=>{b+='B'+(i+1)+'. '+q+'\n'+(answers['ck-'+i]||'(no answer)')+'\n\n';});
+  return b;
+}
+
+function openEmail(e){
+  e.preventDefault();
+  const subj=encodeURIComponent('Quiz Submission — '+meta.name+' ('+meta.submitStr+')');
+  const body=encodeURIComponent(buildEmailBody());
+  const url='https://outlook.office.com/mail/deeplink/compose?to=dwi%40dflow.com.au&subject='+subj+'&body='+body;
+  window.open(url,'_blank');
+}
+
+/* ── Locked HTML download ── */
+function buildLockedHTML(){
+  const {name,startStr,submitStr,elapsed,filled}=meta;
+  const row=(q,lbl,ans,isFC)=>{
+    const safe=(ans||'').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+    const fc=isFC?'<div style="display:inline-flex;align-items:center;gap:6px;font-size:12px;background:#eff6ff;border:1px solid #c7d7f9;border-radius:6px;padding:5px 12px;margin-bottom:10px;font-weight:700;color:#374151">&#128193; <code style="font-family:monospace;color:#3b5bdb;font-size:12px">P:\\Print Services Resources\\JUNIOR PROJECT\\Assessment Q1\\Case File</code></div><br>':'';
+    return '<div style="background:#fff;border:1px solid #e2e6ea;border-radius:10px;padding:1.1rem;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.06)">'+
+      '<div style="font-size:10px;font-weight:700;color:#3b5bdb;background:#eff6ff;border:1px solid #c7d7f9;border-radius:4px;padding:2px 8px;display:inline-block;margin-bottom:8px">'+lbl+'</div>'+
+      '<div style="font-size:14px;color:#374151;line-height:1.55;margin-bottom:10px">'+q+'</div>'+fc+
+      '<div style="background:#fafbff;border:1px solid #93aff5;border-radius:7px;padding:10px 12px;font-size:13px;color:#111827;line-height:1.6;min-height:44px">'+
+      (safe||'<span style="color:#9ca3af;font-style:italic">No answer provided</span>')+
+      '</div></div>';
+  };
+  const gpRows=gpQs.map((q,i)=>row(q,'A'+(i+1),answers['gp-'+i],false)).join('');
+  const ckRows=ckQs.map((q,i)=>row(q,'B'+(i+1),answers['ck-'+i],i===9)).join('');
+  return '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+
+    '<title>DFLOW Quiz — '+name+'</title>'+
+    '<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet">'+
+    '<style>*{box-sizing:border-box;margin:0;padding:0}body{background:#f0f2f5;color:#111827;font-family:\'Lato\',system-ui,sans-serif;padding-bottom:4rem}'+
+    '.topbar{background:#fff;border-bottom:1px solid #e2e6ea;padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;height:52px;box-shadow:0 1px 3px rgba(0,0,0,.06)}'+
+    '.logo{font-size:15px;font-weight:700;letter-spacing:.05em;color:#111827}.logo span{color:#3b5bdb}'+
+    '.banner{background:#f0fdf4;border-bottom:1px solid #bbf7d0;padding:.85rem 1.5rem;display:flex;align-items:center;gap:10px}'+
+    '.dot{width:8px;height:8px;border-radius:50%;background:#16a34a;flex-shrink:0}'+
+    '.bt{font-size:12px;color:#15803d;font-weight:700}.bs{font-size:12px;color:#6b7280;margin-left:auto}'+
+    '.inner{max-width:580px;margin:0 auto;padding:1.5rem 1.25rem 3rem}'+
+    '.ey{font-size:11px;letter-spacing:.12em;color:#3b5bdb;font-weight:700;text-transform:uppercase;margin-bottom:8px}'+
+    '.ht{font-size:22px;font-weight:700;line-height:1.25;margin-bottom:6px;padding-bottom:1.25rem;border-bottom:1px solid #e2e6ea}'+
+    '.meta{padding:1.25rem 0;border-bottom:1px solid #e2e6ea;display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1rem;margin-bottom:.5rem}'+
+    '.ml{font-size:11px;text-transform:uppercase;color:#6b7280;font-weight:700;margin-bottom:4px}.mv{font-size:13px;color:#111827}'+
+    '.sr{padding:1.5rem 0 .75rem;display:flex;align-items:center;gap:10px}'+
+    '.sn{font-size:10px;color:#3b5bdb;font-weight:700;background:#eff6ff;border:1px solid #c7d7f9;border-radius:4px;padding:2px 7px}'+
+    '.sl{flex:1;height:1px;background:#e2e6ea}'+
+    '.slb{font-size:11px;color:#6b7280;text-transform:uppercase;font-weight:700}'+
+    '.div{border:none;border-top:1px solid #e2e6ea;margin:.5rem 0 0}'+
+    '.footer{padding:1.5rem 0 0;border-top:1px solid #e2e6ea;margin-top:1.5rem;font-size:11px;color:#9ca3af}</style></head><body>'+
+    '<div class="topbar"><div class="logo">D<span>FLOW</span><span style="color:#9ca3af;font-weight:400;font-size:12px;margin-left:8px">/ prepress assessment</span></div>'+
+    '<span style="font-size:12px;color:#16a34a;font-weight:700">&#10003; Submitted</span></div>'+
+    '<div class="banner"><div class="dot"></div><span class="bt">Submitted — read only</span><span class="bs">'+submitStr+'</span></div>'+
+    '<div class="inner">'+
+    '<div class="ey">Knowledge assessment</div><div class="ht">Prepress &amp; CMYKHub qualification quiz</div>'+
+    '<div class="meta">'+
+    '<div><div class="ml">Candidate</div><div class="mv">'+name+'</div></div>'+
+    '<div><div class="ml">Started</div><div class="mv">'+startStr+'</div></div>'+
+    '<div><div class="ml">Submitted</div><div class="mv">'+submitStr+'</div></div>'+
+    '<div><div class="ml">Time taken</div><div class="mv">'+elapsed+'</div></div>'+
+    '<div><div class="ml">Answered</div><div class="mv">'+filled+' / '+total+'</div></div></div>'+
+    '<div class="sr"><span class="sn">01</span><div class="sl"></div><span class="slb">General Prepress</span></div>'+gpRows+
+    '<div class="div"></div>'+
+    '<div class="sr"><span class="sn">02</span><div class="sl"></div><span class="slb">CMYKHub</span></div>'+ckRows+
+    '<div class="footer">DFLOW Pty Ltd — Prepress Assessment — Locked submission for '+name+'</div>'+
+    '</div></body></html>';
+}
+
+function downloadHTML(){
+  const blob=new Blob([lockedHTML],{type:'text/html'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='DFLOW_Quiz_'+meta.name.replace(/\s+/g,'_')+'_'+new Date().toISOString().slice(0,10)+'.html';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+}
+
+/* ── Custom modal (replaces confirm/alert blocked by iframe sandbox) ── */
+function showModal(msg,onConfirm,onCancel){
+  let ov=document.getElementById('quiz-modal-ov');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='quiz-modal-ov';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(17,24,39,.45);display:flex;align-items:center;justify-content:center;z-index:9999;padding:1rem';
+    document.body.appendChild(ov);
+  }
+  ov.innerHTML=
+    '<div style="background:#fff;border-radius:12px;padding:1.75rem;max-width:400px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.18)">'+
+    '<p style="font-size:14px;color:#374151;line-height:1.6;margin-bottom:1.25rem">'+msg+'</p>'+
+    '<div style="display:flex;gap:8px;justify-content:flex-end">'+
+    (onCancel?'<button id="m-cancel" style="padding:8px 18px;font-size:13px;font-weight:700;border:1px solid #d0d5dd;border-radius:7px;background:#fff;color:#374151;cursor:pointer;font-family:inherit">Cancel</button>':'')+
+    '<button id="m-ok" style="padding:8px 18px;font-size:13px;font-weight:700;border:none;border-radius:7px;background:#3b5bdb;color:#fff;cursor:pointer;font-family:inherit">'+
+    (onCancel?'Yes, submit':'OK')+'</button>'+
+    '</div></div>';
+  ov.style.display='flex';
+  ov.querySelector('#m-ok').onclick=()=>{ov.style.display='none';if(onConfirm)onConfirm();};
+  if(onCancel){ov.querySelector('#m-cancel').onclick=()=>{ov.style.display='none';if(onCancel)onCancel();};}
+}
+
+/* ── Download via data URI (works inside sandboxed iframe) ── */
+function downloadHTML(){
+  const b64=btoa(unescape(encodeURIComponent(lockedHTML)));
+  const a=document.createElement('a');
+  a.href='data:text/html;base64,'+b64;
+  a.download='DFLOW_Quiz_'+meta.name.replace(/\s+/g,'_')+'_'+new Date().toISOString().slice(0,10)+'.html';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+
+/* ── Auto-submit on timeout ── */
+let autoSubmitted=false;
+function autoSubmit(){
+  if(autoSubmitted) return;   // guard: only run once
+  autoSubmitted=true;
+  quizActive=false;
+
+  const name=document.getElementById('candidate-name').value.trim()||'Unknown';
+  const filled=Object.values(answers).filter(v=>v.length>0).length;
+  const now=new Date();
+  const startStr=fmt(startTime);
+  const submitStr=fmt(now);
+
+  meta={name,startStr,submitStr,elapsed:'90m 0s (time expired)',filled};
+  lockedHTML=buildLockedHTML();
+  lockPage();
+  downloadHTML();
+  document.getElementById('dl-btn').onclick=downloadHTML;
+
+  // Update banner title and meta to show time-up context
+  const subTitle=document.getElementById('sub-banner').querySelector('.sub-title');
+  if(subTitle) subTitle.innerHTML='&#9200; Time is up — quiz has been auto-submitted';
+  document.getElementById('sub-meta').innerHTML=
+    '<strong>'+name+'</strong><br>'+
+    'Started: '+startStr+' &nbsp;·&nbsp; '+
+    'Submitted: '+submitStr+' &nbsp;·&nbsp; '+
+    'Time: 90 mins (expired) &nbsp;·&nbsp; '+
+    'Answered: '+filled+' / '+total;
+
+  notify('submitted',name,{
+    startStr:startStr,
+    submitStr:submitStr,
+    elapsed:'90m 0s (time expired)',
+    answered:filled+' / '+total,
+    answers:JSON.stringify(answers)
+  });
+}
+
+/* ── Submit ── */
+function submitAll(){
+  const name=document.getElementById('candidate-name').value.trim();
+  const filled=Object.values(answers).filter(v=>v.length>0).length;
+  if(filled===0){
+    showModal('Please answer at least one question before submitting.');
+    return;
+  }
+  showModal(
+    'Are you sure you want to submit? Your answers will be <strong>locked</strong> and cannot be changed.',
+    ()=>{
+      const now=new Date();
+      const startStr=fmt(startTime);
+      const submitStr=fmt(now);
+      const secs=Math.round((now-startTime)/1000);
+      const elapsed=Math.floor(secs/60)+'m '+secs%60+'s';
+      meta={name,startStr,submitStr,elapsed,filled};
+      const violationNote=violations>0?' | Tab violations: '+violations:'';
+      lockedHTML=buildLockedHTML();
+      lockPage();
+      downloadHTML();
+      notify('submitted',name,{
+        startStr:meta.startStr||startStr,
+        submitStr:meta.submitStr||submitStr,
+        elapsed:elapsed,
+        answered:filled+' / '+total+violationNote,
+        answers:JSON.stringify(answers)
+      });
+      document.getElementById('dl-btn').onclick=downloadHTML;
+    },
+    ()=>{}
+  );
+}
+
+/* ── Admin unlock ── */
+function tryUnlock(){
+  const input=document.getElementById('unlock-input');
+  const err=document.getElementById('unlock-error');
+  if(input.value==='Tuq68370'){
+    input.value='';
+    err.style.display='none';
+
+    // Just dismiss the lockout overlay and resume — keep all answers intact
+    document.getElementById('lockout-overlay').classList.remove('show');
+    document.getElementById('focus-warning').classList.remove('show');
+
+    // Re-enable all textareas and cards
+    document.querySelectorAll('textarea.locked-ta').forEach(ta=>{
+      ta.readOnly=false;
+      ta.classList.remove('locked-ta');
+    });
+    document.querySelectorAll('.q-card.locked').forEach(c=>c.classList.remove('locked'));
+
+    // Re-enable submit button
+    const btn=document.getElementById('submit-btn');
+    if(btn){btn.disabled=false;btn.textContent='Submit answers for review →';}
+
+    // Reset violation count so they get fresh warnings
+    violations=0;
+    quizActive=true;
+
+    // Resume timer from where it left off — recalculate absolute end time
+    timerEndTime=Date.now()+(secsLeft*1000);
+    timerInt=setInterval(tick,1000);
+
+  } else {
+    err.style.display='block';
+    input.value='';
+    input.focus();
+  }
+}
+
+/* ── Re-take quiz ── */
+function retakeQuiz(){
+  // Reset all state
+  violations=0;
+  quizActive=false;
+  secsLeft=TOTAL_SECS;
+  clearInterval(timerInt);
+  Object.keys(answers).forEach(k=>delete answers[k]);
+
+  // Hide lockout overlay
+  document.getElementById('lockout-overlay').classList.remove('show');
+  document.getElementById('focus-warning').classList.remove('show');
+
+  // Reset timer display
+  document.getElementById('t-digits').textContent='90:00';
+  document.getElementById('t-digits').className='t-digits';
+  document.getElementById('t-fill').style.width='100%';
+  document.getElementById('t-fill').className='t-fill';
+  document.getElementById('t-fill').style.background='';
+  document.getElementById('timer-strip').classList.remove('show');
+
+  // Clear quiz questions
+  document.getElementById('gp-q').innerHTML='';
+  document.getElementById('ck-q').innerHTML='';
+
+  // Reset progress
+  document.getElementById('prog').style.width='0%';
+  document.getElementById('prog-text').textContent='0 / 20';
+  document.getElementById('prog-pct').textContent='0%';
+
+  // Reset name field
+  document.getElementById('candidate-name').value='';
+  document.getElementById('name-badge').style.display='none';
+
+  // Hide quiz screen, show start screen
+  document.getElementById('quiz-screen').style.display='none';
+  document.getElementById('start-screen').style.display='block';
+
+  // Hide submitted banner if shown
+  document.getElementById('sub-banner').classList.remove('show');
+
+  resizeParent();
+}
+</script>
+</body>
+</html>
