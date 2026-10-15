@@ -276,20 +276,19 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
       <p class="hint">Format satu baris satu job: job | tipe | customer | status | proof_kirim | acc | reminder | catatan, dengan waktu YYYY-MM-DD HH:MM. Impor menambah job baru atau memperbarui job dengan nomor yang sama.</p>
     </section>
     <section class="panel">
-      <h2>Penyimpanan otomatis ke GitHub</h2>
-      <div class="fields">
-        <div class="field"><label for="ghrepo">Repo</label><input id="ghrepo" type="text" autocomplete="off" placeholder="pemilik/nama-repo"></div>
-        <div class="field"><label for="ghbranch">Branch</label><input id="ghbranch" type="text" autocomplete="off" placeholder="main"></div>
-        <div class="field"><label for="ghpath">Path jobs.txt</label><input id="ghpath" type="text" autocomplete="off" placeholder="jobs.txt"></div>
-        <div class="field"><label for="tok">Token GitHub</label><input id="tok" type="password" autocomplete="off"></div>
-      </div>
-      <div class="acts" style="margin-top:14px"><button type="button" class="btn primary" data-dbact="ghconnect">Sambungkan ke GitHub</button></div>
-      <p class="hint">Buat token di GitHub (Settings, Developer settings, Fine-grained tokens): pilih hanya repo ini, izin Contents: Read and write, dan beri masa berlaku. Token hanya disimpan di browser ini, jadi jangan diisi di komputer bersama. Setiap perubahan menjadi satu commit di repo, sehingga riwayat dan cadangan ikut tercatat, dan daftar job diperbarui tiap 30 detik. Tanpa token, halaman hanya menampilkan jobs.txt dan perubahan tersimpan sementara di browser. Jika repo dan situsnya publik, isi jobs.txt bisa dibaca siapa pun.</p>
+      <h2>Database tim</h2>
+      <div class="fields"><div class="field wide"><label for="tok">Kunci tim</label><input id="tok" type="password" autocomplete="off"></div></div>
+      <div class="acts" style="margin-top:14px"><button type="button" class="btn primary" data-dbact="sbconnect">Sambungkan ke database</button></div>
+      <p class="hint">Alamat dan kunci publik database diisi sekali di bagian atas index.html. Kunci tim adalah kata sandi bersama yang ditetapkan saat menyiapkan database, dan hanya disimpan di browser ini. Setelah tersambung, tiap perubahan disimpan otomatis dan daftar job diperbarui tiap 20 detik. Tanpa sambungan, perubahan tersimpan sementara di browser dan tidak terlihat oleh orang lain.</p>
     </section>
   </div>
 </div>
 
 <script>
+/* PENGATURAN DATABASE: isi dua baris ini sekali (lihat supabase-setup.sql).
+   Kunci anon/publishable memang boleh publik; yang menjaga data adalah Kunci tim. */
+var SB_URL = "https://vbfwjeimwcvoqnbrjysp.supabase.co/rest/v1/";   // contoh: "https://abcdefgh.supabase.co"
+var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZiZndqZWltd2N2b3FuYnJqeXNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwMzg2NDUsImV4cCI6MjEwNzYxNDY0NX0.ml7XAGpJwnrFAillvqHsAF_jYi6_5Dy1j7H3T5CvFqE";   // anon key atau publishable key dari Supabase
 (function () {
   var KEY = "checksheet-prepress-v1";
   var DATA = {
@@ -487,9 +486,9 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
   render();
 })();
 
-/* Database job dari jobs.txt, disimpan otomatis sebagai commit ke repo GitHub bila token diisi. Menu Reminder dan Cari job */
+/* Database job di Supabase (cadangan: jobs.txt statis). Menu Reminder dan Cari job */
 (function () {
-  var DKEY = "checksheet-jobs-draft-v1", VKEY = "checksheet-view-v1", TKEY = "checksheet-jobs-token-v1", CKEY = "checksheet-gh-v1";
+  var DKEY = "checksheet-jobs-draft-v1", VKEY = "checksheet-view-v1", TKEY = "checksheet-jobs-token-v1";
   var HEADER = [
     "# Database job prepress. Satu baris = satu job, kolom dipisah tanda |",
     "# job | tipe | customer | status | proof_kirim | acc | reminder | catatan",
@@ -498,7 +497,7 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
   var STATUS = { prog: "Prepress in Progress", proof: "Prepress on Proof", appr: "3 Approved to Print", os: "OS-To Do_AL" };
 
   var cs = null, recs = [], headerLines = HEADER, loadFailed = false, unsaved = false, dirty = false, noticeTimer = null;
-  var serverSave = false, version = null, touched = {}, seq = 0, saving = false, pending = false, saveTimer = null, retries = 0;
+  var serverSave = false, touched = {}, seq = 0, saving = false, pending = false, saveTimer = null, lastSig = "", sbError = "";
   var $ = function (id) { return document.getElementById(id); };
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function pad(n) { return String(n).padStart(2, "0"); }
@@ -518,49 +517,35 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
   function slug(job) { return String(job).trim().toLowerCase().replace(/\s+/g, " "); }
   function getToken() { try { return (localStorage.getItem(TKEY) || "").trim(); } catch (e) { return ""; } }
 
-  /* ---- GitHub ---- */
-  function guessRepo() {
-    var h = location.hostname, p = location.pathname.split("/").filter(Boolean);
-    if (!/\.github\.io$/i.test(h)) return { repo: "", path: "jobs.txt" };
-    var owner = h.split(".")[0], dirs;
-    if (p.length && !/\.html?$/i.test(p[0])) { dirs = p.slice(1); return finish(owner + "/" + p[0], dirs); }
-    return finish(owner + "/" + owner + ".github.io", p);
-    function finish(repo, parts) {
-      if (parts.length && /\.html?$/i.test(parts[parts.length - 1])) parts = parts.slice(0, -1);
-      return { repo: repo, path: (parts.length ? parts.join("/") + "/" : "") + "jobs.txt" };
-    }
+  /* ---- Supabase (REST) ---- */
+  function sbBase() { return String(SB_URL || "").replace(/\/+$/, ""); }
+  function sbReady() { return !!(sbBase() && SB_KEY); }
+  function sbHeaders(extra) {
+    var h = { apikey: SB_KEY, "x-team-key": getToken() };
+    if (/^eyJ/.test(SB_KEY)) h.Authorization = "Bearer " + SB_KEY;
+    return Object.assign(h, extra || {});
   }
-  function loadCfg() {
-    var g = guessRepo(), c = {};
-    try { c = JSON.parse(localStorage.getItem(CKEY) || "{}") || {}; } catch (e) {}
-    return { repo: c.repo || g.repo, branch: c.branch || "main", path: c.path || g.path };
+  function sbMsg(status, j) {
+    var m = (j && (j.message || j.error)) || "";
+    if (status === 401 || status === 403 || (j && j.code === "42501")) return "Kunci tim salah atau belum diisi. Perubahan belum tersimpan.";
+    if (status === 404 || (j && /PGRST20[0-9]/.test(j.code || ""))) return "Tabel jobs tidak ditemukan di database. Jalankan SQL penyiapan di Supabase.";
+    return m || ("Database membalas status " + status + ".");
   }
-  var ghCfg = loadCfg(), ghError = "";
-  function saveCfg() { try { localStorage.setItem(CKEY, JSON.stringify(ghCfg)); } catch (e) {} }
-  function ghReady() { return !!(getToken() && ghCfg.repo && ghCfg.path); }
-  function ghUrl() { return "https://api.github.com/repos/" + ghCfg.repo + "/contents/" + ghCfg.path.split("/").map(encodeURIComponent).join("/"); }
-  function ghHeaders(extra) {
-    return Object.assign({ Authorization: "Bearer " + getToken(), Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }, extra || {});
+  function rowsToRecs(rows) {
+    return rows.map(function (x) {
+      var job = String(x.job || x.id || "");
+      return { id: String(x.id), job: job, tipe: String(x.tipe || ""), cust: String(x.cust || ""), status: String(x.status || ""),
+        proof: String(x.proof || ""), acc: String(x.acc || ""), rem: String(x.rem || ""), note: String(x.note || ""), created: Number(x.created) || 0 };
+    }).sort(function (a, b) { return (a.created - b.created) || (a.job < b.job ? -1 : 1); });
   }
-  function b64decode(str) {
-    var bin = atob(String(str).replace(/\s/g, "")), bytes = new Uint8Array(bin.length);
-    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    return new TextDecoder().decode(bytes);
-  }
-  function b64encode(text) {
-    var bytes = new TextEncoder().encode(text), bin = "";
-    for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-    return btoa(bin);
-  }
-  /* hasil: {txt, version} | {error} | null */
-  async function ghGet() {
+  /* hasil: {rows} | {error} */
+  async function sbRows() {
     try {
-      var r = await fetch(ghUrl() + "?ref=" + encodeURIComponent(ghCfg.branch || "main") + "&t=" + Date.now(), { headers: ghHeaders(), cache: "no-store" });
-      if (r.status === 200) { var j = await r.json(); return { txt: b64decode(j.content || ""), version: j.sha || "" }; }
-      if (r.status === 404) return { txt: "", version: "", missing: true };
-      if (r.status === 401 || r.status === 403) return { error: "Token GitHub ditolak atau tidak punya akses ke repo ini." };
-      return { error: "GitHub membalas status " + r.status + "." };
-    } catch (e) { return null; }
+      var r = await fetch(sbBase() + "/rest/v1/jobs?select=*&order=created.asc&limit=5000", { headers: sbHeaders(), cache: "no-store" });
+      var j = await r.json().catch(function () { return null; });
+      if (r.status === 200 && Array.isArray(j)) return { rows: j };
+      return { error: sbMsg(r.status, j) };
+    } catch (e) { return { error: "Database tidak terjangkau. Periksa SB_URL di index.html dan koneksi internet." }; }
   }
 
   function fromTxt(txt) {
@@ -616,60 +601,41 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
   }
   function touch(id, k) { touched[id] = { k: k, n: ++seq }; }
   function afterChange() {
-    if (serverSave) { setSync("Menyimpan..."); clearTimeout(saveTimer); saveTimer = setTimeout(doSave, 1200); }
+    if (serverSave) { setSync("Menyimpan..."); clearTimeout(saveTimer); saveTimer = setTimeout(doSave, 600); }
     else saveDraft();
     renderAll();
   }
-  function mergeServer(txt) {
-    var mine = {};
-    recs.forEach(function (r) { mine[r.id] = r; });
-    setRecs(txt);
-    var next = recs.reduce(function (m, r) { return Math.max(m, r.created); }, -1) + 1;
-    Object.keys(touched).forEach(function (id) {
-      var t = touched[id];
-      if (t.k === "del") { recs = recs.filter(function (x) { return x.id !== id; }); return; }
-      if (!mine[id]) return;
-      var ex = find(id);
-      if (ex) Object.assign(ex, mine[id], { created: ex.created });
-      else recs.push(Object.assign({}, mine[id], { created: next++ }));
-    });
+  function rowOf(r) {
+    return { id: r.id, job: r.job, tipe: r.tipe, cust: r.cust, status: r.status, proof: r.proof, acc: r.acc, rem: r.rem, note: r.note, created: r.created, updated_at: new Date().toISOString() };
   }
-  function doSave() {
+  async function sbCall(method, path, body, prefer) {
+    var h = sbHeaders({ "Content-Type": "application/json" });
+    if (prefer) h.Prefer = prefer;
+    var r = await fetch(sbBase() + "/rest/v1/" + path, { method: method, headers: h, body: body ? JSON.stringify(body) : undefined });
+    if (r.ok) return null;
+    var j = await r.json().catch(function () { return null; });
+    return sbMsg(r.status, j);
+  }
+  async function doSave() {
     if (saving) { pending = true; return; }
     saving = true; pending = false;
-    var snap = {}; Object.keys(touched).forEach(function (id) { snap[id] = touched[id].n; });
-    var body = { message: "Update jobs.txt dari checksheet", content: b64encode(toTxt(recs)), branch: ghCfg.branch || "main" };
-    if (version) body.sha = version;
-    fetch(ghUrl(), { method: "PUT", headers: ghHeaders({ "Content-Type": "application/json" }), body: JSON.stringify(body) }).then(function (res) {
-      return res.json().catch(function () { return {}; }).then(function (j) { return { status: res.status, j: j }; });
-    }).then(function (o) {
-      saving = false;
-      var msg = (o.j && o.j.message) || "";
-      if (o.status === 200 || o.status === 201) {
-        version = o.j.content && o.j.content.sha; retries = 0;
-        Object.keys(snap).forEach(function (id) { if (touched[id] && touched[id].n === snap[id]) delete touched[id]; });
-        if (pending || pendingCount()) { clearTimeout(saveTimer); saveTimer = setTimeout(doSave, 1200); return; }
-        setSync("Tersimpan ke GitHub pukul " + pad(new Date().getHours()) + ":" + pad(new Date().getMinutes()) + ".");
-      } else if (o.status === 409 || (o.status === 422 && /sha/i.test(msg))) {
-        retries++;
-        if (retries > 3) { setSync("File di GitHub terus berubah oleh orang lain. Coba lagi sebentar lagi.", true); return; }
-        ghGet().then(function (r) {
-          if (!r || r.error) { setSync((r && r.error) || "Tidak bisa membaca versi terbaru dari GitHub.", true); return; }
-          mergeServer(r.txt); version = r.version;
-          notice("Perubahan orang lain digabungkan dengan perubahanmu.");
-          renderAll(); doSave();
-        });
-      } else if (o.status === 401 || o.status === 403) {
-        setSync(/rate limit/i.test(msg) ? "Batas permintaan GitHub tercapai. Tunggu beberapa menit." : "Token GitHub ditolak atau tidak punya izin menulis (Contents: Read and write). Perubahan belum tersimpan.", true);
-      } else if (o.status === 404) {
-        setSync("Repo, branch, atau path tidak ditemukan, atau token tidak punya akses ke repo itu. Perubahan belum tersimpan.", true);
-      } else {
-        setSync(msg || "GitHub menolak penyimpanan.", true);
-      }
-    }).catch(function () {
-      saving = false;
-      setSync("GitHub tidak terjangkau. Perubahan belum tersimpan.", true);
+    var snap = {}; Object.keys(touched).forEach(function (id) { snap[id] = touched[id]; });
+    var sets = [], dels = [];
+    Object.keys(snap).forEach(function (id) {
+      if (snap[id].k === "del") dels.push(id);
+      else { var r = find(id); if (r) sets.push(rowOf(r)); }
     });
+    var err = null;
+    try {
+      if (sets.length) err = await sbCall("POST", "jobs?on_conflict=id", sets, "resolution=merge-duplicates,return=minimal");
+      for (var i = 0; i < dels.length && !err; i++) err = await sbCall("DELETE", "jobs?id=eq." + encodeURIComponent(dels[i]));
+    } catch (e) { err = "Database tidak terjangkau. Perubahan belum tersimpan."; }
+    saving = false;
+    if (err) { setSync(err, true); return; }
+    Object.keys(snap).forEach(function (id) { if (touched[id] && touched[id].n === snap[id].n) delete touched[id]; });
+    if (pending || pendingCount()) { clearTimeout(saveTimer); saveTimer = setTimeout(doSave, 600); return; }
+    lastSig = "";
+    setSync("Tersimpan di database pukul " + pad(new Date().getHours()) + ":" + pad(new Date().getMinutes()) + ".");
   }
 
   function change(r, partial) { Object.assign(r, partial); touch(r.id, "set"); afterChange(); }
@@ -733,7 +699,7 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
   function updateMode() {
     var parts = [];
     if (loadFailed) parts.push("jobs.txt tidak bisa dimuat. Jika halaman dibuka langsung dari komputer, impor jobs.txt lewat menu Database.");
-    if (unsaved && !serverSave) parts.push("Penyimpanan otomatis ke GitHub tidak aktif (isi repo dan token di menu Database). Perubahan baru tersimpan di browser ini. Atau unduh jobs.txt, unggah ke repo untuk menggantikan file lama, lalu muat ulang.");
+    if (unsaved && !serverSave) parts.push("Database belum tersambung (lihat pesan di bawah menu). Perubahan baru tersimpan di browser ini dan belum terlihat oleh orang lain.");
     $("modetxt").textContent = parts.join(" ");
     $("mode").hidden = parts.length === 0;
     $("modedl").hidden = !(unsaved && !serverSave);
@@ -799,45 +765,44 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
   }
 
   /* ---- muat dari server ---- */
-  async function fetchServer() {
-    ghError = "";
-    if (ghReady()) {
-      var g = await ghGet();
-      if (g && !g.error) return { txt: g.txt, version: g.version, auto: true };
-      if (g && g.error) ghError = g.error;
-    }
-    try {
-      var r2 = await fetch("jobs.txt?t=" + Date.now(), { cache: "no-store" });
-      if (r2.ok) return { txt: await r2.text(), version: null, auto: false };
-    } catch (e) {}
-    return null;
-  }
+  function applyRows(rows) { recs = rowsToRecs(rows); lastSig = JSON.stringify(rows); }
   async function loadServer(useDraft) {
-    var res = await fetchServer();
-    if (res && res.auto) {
-      serverSave = true; version = res.version; loadFailed = false; unsaved = false;
-      touched = {}; setRecs(res.txt);
-      try { localStorage.removeItem(DKEY); } catch (e) {}
-      setSync("Terhubung ke GitHub (" + ghCfg.repo + "). Setiap perubahan disimpan otomatis sebagai commit.");
-    } else {
-      serverSave = false; setSync(ghError, !!ghError);
-      var txt = res ? res.txt : null, draft = null;
-      if (useDraft) { try { draft = localStorage.getItem(DKEY); } catch (e) {} }
-      loadFailed = txt === null;
-      if (draft !== null && (txt === null || norm(draft) !== norm(txt))) { setRecs(draft); unsaved = true; }
+    sbError = "";
+    if (sbReady()) {
+      if (!getToken()) sbError = "Isi Kunci tim di menu Database untuk membaca dan menyimpan data.";
       else {
-        setRecs(txt === null ? "" : txt); unsaved = false;
-        try { localStorage.removeItem(DKEY); } catch (e) {}
+        var r = await sbRows();
+        if (r.rows) {
+          serverSave = true; loadFailed = false; unsaved = false; touched = {};
+          applyRows(r.rows);
+          try { localStorage.removeItem(DKEY); } catch (e) {}
+          setSync("Terhubung ke database. Perubahan disimpan otomatis." + (r.rows.length ? "" : " Daftar masih kosong. Jika seharusnya ada data, periksa Kunci tim."));
+          dirty = false; renderAll();
+          return;
+        }
+        sbError = r.error;
       }
+    } else sbError = "Alamat database belum diisi: isi SB_URL dan SB_KEY di bagian atas index.html.";
+    serverSave = false; setSync(sbError, true);
+    var txt = null, draft = null;
+    try { var r2 = await fetch("jobs.txt?t=" + Date.now(), { cache: "no-store" }); if (r2.ok) txt = await r2.text(); } catch (e) {}
+    if (useDraft) { try { draft = localStorage.getItem(DKEY); } catch (e) {} }
+    loadFailed = txt === null;
+    if (draft !== null && (txt === null || norm(draft) !== norm(txt))) { setRecs(draft); unsaved = true; }
+    else {
+      setRecs(txt === null ? "" : txt); unsaved = false;
+      try { localStorage.removeItem(DKEY); } catch (e) {}
     }
     dirty = false;
     renderAll();
   }
   function poll() {
     if (!serverSave || saving || pendingCount() || dirty || document.hidden) return;
-    fetchServer().then(function (res) {
-      if (!res || !res.auto || res.version === version || saving || pendingCount()) return;
-      version = res.version; setRecs(res.txt); renderAll();
+    sbRows().then(function (r) {
+      if (!r.rows || saving || pendingCount()) return;
+      var sig = JSON.stringify(r.rows);
+      if (sig === lastSig) return;
+      applyRows(r.rows); renderAll();
     });
   }
 
@@ -911,16 +876,16 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
         dirty = false; $("dbtxt").value = toTxt(recs); notice("Teks dimuat ulang dari data di halaman.");
       } else if (a === "download") {
         download();
-      } else if (a === "ghconnect") {
-        if (!getToken() || !ghCfg.repo) { notice("Isi repo dan token GitHub dulu."); return; }
+      } else if (a === "sbconnect") {
+        if (!getToken()) { notice("Isi Kunci tim dulu."); return; }
         if (unsaved && !serverSave && b.getAttribute("data-armed") !== "1") {
           b.setAttribute("data-armed", "1"); b.classList.add("danger"); b.textContent = "Draft di browser akan dibuang. Klik lagi";
           return;
         }
-        b.removeAttribute("data-armed"); b.classList.remove("danger"); b.textContent = "Sambungkan ke GitHub";
+        b.removeAttribute("data-armed"); b.classList.remove("danger"); b.textContent = "Sambungkan ke database";
         try { localStorage.removeItem(DKEY); } catch (e) {}
         touched = {}; clearTimeout(saveTimer);
-        loadServer(false).then(function () { if (serverSave) notice("Tersambung ke GitHub."); });
+        loadServer(false).then(function () { if (serverSave) notice("Tersambung ke database."); });
       } else if (a === "reload") {
         var risky = (unsaved && !serverSave) || pendingCount() > 0;
         if (risky && b.getAttribute("data-armed") !== "1") {
@@ -930,7 +895,7 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
         }
         try { localStorage.removeItem(DKEY); } catch (e) {}
         touched = {}; clearTimeout(saveTimer);
-        loadServer(false).then(function () { notice("Dimuat ulang dari sumber data."); });
+        loadServer(false).then(function () { notice("Dimuat ulang dari database."); });
         var all2 = document.querySelectorAll('[data-dbact="reload"]');
         for (var j = 0; j < all2.length; j++) { all2[j].removeAttribute("data-armed"); all2[j].classList.remove("danger"); all2[j].textContent = "Muat ulang dari server"; }
       } else if (a === "copy") {
@@ -942,11 +907,7 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
   });
   $("dbtxt").addEventListener("input", function () { dirty = true; });
   $("tok").value = getToken();
-  $("ghrepo").value = ghCfg.repo; $("ghbranch").value = ghCfg.branch; $("ghpath").value = ghCfg.path;
   $("tok").addEventListener("input", function () { try { localStorage.setItem(TKEY, $("tok").value.trim()); } catch (e) {} });
-  [["ghrepo", "repo"], ["ghbranch", "branch"], ["ghpath", "path"]].forEach(function (p) {
-    $(p[0]).addEventListener("input", function () { ghCfg[p[1]] = $(p[0]).value.trim(); saveCfg(); });
-  });
   ["q", "ftipe", "fstat"].forEach(function (id) { $(id).addEventListener("input", renderAll); $(id).addEventListener("change", renderAll); });
   $("dbfile").addEventListener("change", function (e) {
     var f = e.target.files && e.target.files[0];
@@ -973,7 +934,7 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
   document.dispatchEvent(new Event("checksheet-request"));
   loadServer(true);
   setInterval(renderAll, 60000);
-  setInterval(poll, 30000);
+  setInterval(poll, 20000);
 })();
 </script>
 </body>
