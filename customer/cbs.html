@@ -130,6 +130,9 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
 .card.due { border-color: var(--m); }
 .chead { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .job { font: 500 15px var(--font-mono); overflow-wrap: anywhere; }
+button.job { background: none; border: 0; padding: 0; margin: 0; color: inherit; cursor: pointer; text-align: left; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+button.job:hover { text-decoration-thickness: 2px; }
+button.job:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; border-radius: 3px; }
 .pill { font: 500 11px/18px var(--font-mono); text-transform: uppercase; letter-spacing: .06em; padding: 0 8px; border-radius: 9px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
 .pill.due { color: var(--m); border-color: var(--m); }
 .pill.wait { color: var(--accent); border-color: var(--accent); }
@@ -244,6 +247,7 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
             <option value="proof">Prepress on Proof</option>
             <option value="appr">3 Approved to Print</option>
             <option value="os">OS-To Do_AL</option>
+            <option value="done">Selesai</option>
           </select></div>
       </div>
     </section>
@@ -287,13 +291,14 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
 <script>
 /* PENGATURAN DATABASE: isi dua baris ini sekali (lihat supabase-setup.sql).
    Kunci anon/publishable memang boleh publik; yang menjaga data adalah Kunci tim. */
-var SB_URL = "https://vbfwjeimwcvoqnbrjysp.supabase.co";   // contoh: "https://abcdefgh.supabase.co"
-var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZiZndqZWltd2N2b3FuYnJqeXNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwMzg2NDUsImV4cCI6MjEwNzYxNDY0NX0.ml7XAGpJwnrFAillvqHsAF_jYi6_5Dy1j7H3T5CvFqE";   // anon key atau publishable key dari Supabase
+var SB_URL = "https://vbfwjeimwcvoqnbrjysp.supabase.co";
+var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZiZndqZWltd2N2b3FuYnJqeXNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwMzg2NDUsImV4cCI6MjEwNzYxNDY0NX0.ml7XAGpJwnrFAillvqHsAF_jYi6_5Dy1j7H3T5CvFqE";
 (function () {
   var KEY = "checksheet-prepress-v1";
   var DATA = {
     packaging: {
       label: "Packaging",
+      proofId: "m7",
       main: [
         { id: "m1", t: "Ambil jobsheet di Accura" },
         { id: "m2", t: "Start job ke <b>Prepress in Progress</b> di Accura" },
@@ -325,6 +330,7 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
     },
     commercial: {
       label: "Commercial",
+      proofId: "m5",
       main: [
         { id: "m1", t: "Ambil jobsheet di Accura" },
         { id: "m2", t: "Start job ke <b>Prepress in Progress</b> di Accura, lalu ambil file dari link folder di jobsheet" },
@@ -368,10 +374,10 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
       state.tab = raw.tab === "commercial" ? "commercial" : "packaging";
       ["packaging", "commercial"].forEach(function (k) {
         if (raw.jobs[k]) {
+          /* Refresh halaman mengosongkan checksheet (job tersimpan di database dan dibuka lagi lewat daftar job).
+             Hanya tab terakhir dan nama operator yang diingat. */
           var b = blank(), j = raw.jobs[k];
-          b.checks = j.checks || {};
-          b.acc = j.acc === "sudah" ? "sudah" : "belum";
-          b.f = Object.assign(b.f, j.f || {});
+          b.f.op = (j.f && j.f.op) || "";
           state.jobs[k] = b;
         }
       });
@@ -418,12 +424,47 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
     }
   }
 
+  /* Checklist per job disimpan di database sebagai teks: acc~tanggal~operator~id,id,id */
+  function encode(tab) {
+    var j = state.jobs[tab];
+    var ids = Object.keys(j.checks).filter(function (k) { return j.checks[k]; }).sort();
+    var op = String(j.f.op || "").replace(/[|~\r\n]+/g, " ").trim();
+    return j.acc + "~" + String(j.f.date || "") + "~" + op + "~" + ids.join(",");
+  }
+  function decode(str) {
+    var p = String(str || "").split("~");
+    if (p.length < 4) return null;
+    var checks = {};
+    p.slice(3).join("~").split(",").forEach(function (id) { if (id) checks[id] = true; });
+    return { acc: p[0] === "sudah" ? "sudah" : "belum", date: p[1], op: p[2], checks: checks };
+  }
+  window.checksheetApi = {
+    peek: function (tab) {
+      var t = DATA[tab] ? tab : state.tab, j = state.jobs[t];
+      return { job: j.f.job, hasWork: Object.keys(j.checks).some(function (k) { return j.checks[k]; }), chk: encode(t) };
+    },
+    clear: function () {
+      var t = state.tab, b = blank();
+      b.f.op = state.jobs[t].f.op;
+      state.jobs[t] = b; confirming = false; save(); render();
+    },
+    load: function (d) {
+      var tab = DATA[d.tab] ? d.tab : state.tab, b = blank(), p = decode(d.chk);
+      if (p) { b.acc = p.acc; b.checks = p.checks; if (p.date) b.f.date = p.date; b.f.op = p.op; }
+      else { b.acc = d.approved ? "sudah" : "belum"; }
+      if (!b.f.op) b.f.op = d.op || "";
+      b.f.job = d.job || ""; b.f.cust = d.cust || "";
+      state.tab = tab; state.jobs[tab] = b; confirming = false; save(); render();
+    }
+  };
+
   function emit() {
     var d = DATA[state.tab], job = state.jobs[state.tab];
     var mainDone = d.main.every(function (it) { return job.checks[it.id]; });
     var accDone = job.acc === "sudah" && d.sudah.every(function (it) { return job.checks[it.id]; });
     document.dispatchEvent(new CustomEvent("checksheet-state", { detail: {
-      label: d.label, mainDone: mainDone, accDone: accDone, osJob: !!job.checks.s3a,
+      label: d.label, tab: state.tab, chk: encode(state.tab), hasWork: Object.keys(job.checks).some(function (k) { return job.checks[k]; }),
+      proofSent: !!job.checks[d.proofId], accSel: job.acc === "sudah" && d.sudah.some(function (it) { return job.checks[it.id] || (it.subs || []).some(function (x) { return job.checks[x.id]; }); }), mainDone: mainDone, accDone: accDone, osJob: !!job.checks.s3a,
       job: job.f.job, cust: job.f.cust, op: job.f.op
     } }));
   }
@@ -491,10 +532,10 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
   var DKEY = "checksheet-jobs-draft-v1", VKEY = "checksheet-view-v1", TKEY = "checksheet-jobs-token-v1";
   var HEADER = [
     "# Database job prepress. Satu baris = satu job, kolom dipisah tanda |",
-    "# job | tipe | customer | status | proof_kirim | acc | reminder | catatan",
+    "# job | tipe | customer | status | proof_kirim | acc | reminder | catatan | checklist",
     "# Waktu: YYYY-MM-DD HH:MM (waktu lokal). Baris berawalan # diabaikan."
   ];
-  var STATUS = { prog: "Prepress in Progress", proof: "Prepress on Proof", appr: "3 Approved to Print", os: "OS-To Do_AL" };
+  var STATUS = { prog: "Prepress in Progress", proof: "Prepress on Proof", appr: "3 Approved to Print", os: "OS-To Do_AL", done: "Selesai" };
 
   var cs = null, recs = [], headerLines = HEADER, loadFailed = false, unsaved = false, dirty = false, noticeTimer = null;
   var serverSave = false, touched = {}, seq = 0, saving = false, pending = false, saveTimer = null, lastSig = "", sbError = "";
@@ -528,6 +569,7 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
   function sbMsg(status, j) {
     var m = (j && (j.message || j.error)) || "";
     if (status === 401 || status === 403 || (j && j.code === "42501")) return "Kunci tim salah atau belum diisi. Perubahan belum tersimpan.";
+    if (j && /chk/.test(m) && /column|schema cache/i.test(m)) return "Kolom chk belum ada di tabel jobs. Jalankan di SQL Editor Supabase: alter table public.jobs add column if not exists chk text not null default '';";
     if (status === 404 || (j && /PGRST20[0-9]/.test(j.code || ""))) return "Tabel jobs tidak ditemukan di database. Jalankan SQL penyiapan di Supabase.";
     return m || ("Database membalas status " + status + ".");
   }
@@ -535,7 +577,7 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
     return rows.map(function (x) {
       var job = String(x.job || x.id || "");
       return { id: String(x.id), job: job, tipe: String(x.tipe || ""), cust: String(x.cust || ""), status: String(x.status || ""),
-        proof: String(x.proof || ""), acc: String(x.acc || ""), rem: String(x.rem || ""), note: String(x.note || ""), created: Number(x.created) || 0 };
+        proof: String(x.proof || ""), acc: String(x.acc || ""), rem: String(x.rem || ""), note: String(x.note || ""), chk: String(x.chk || ""), created: Number(x.created) || 0 };
     }).sort(function (a, b) { return (a.created - b.created) || (a.job < b.job ? -1 : 1); });
   }
   /* hasil: {rows} | {error} */
@@ -555,7 +597,7 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
       if (!tl || tl.charAt(0) === "#") return;
       var p = l.split("|").map(function (x) { return x.trim(); });
       if (!p[0]) return;
-      out.push({ job: p[0], tipe: p[1] || "", cust: p[2] || "", status: p[3] || "", proof: p[4] || "", acc: p[5] || "", rem: p[6] || "", note: p.slice(7).join(" / ") });
+      out.push({ job: p[0], tipe: p[1] || "", cust: p[2] || "", status: p[3] || "", proof: p[4] || "", acc: p[5] || "", rem: p[6] || "", note: p[7] || "", chk: p[8] || "" });
     });
     return out;
   }
@@ -566,7 +608,7 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
     }
     return h.length ? h : HEADER;
   }
-  function lineOf(r) { return [r.job, r.tipe, r.cust, r.status, r.proof, r.acc, r.rem, r.note].map(clean).join("|"); }
+  function lineOf(r) { return [r.job, r.tipe, r.cust, r.status, r.proof, r.acc, r.rem, r.note, r.chk || ""].map(clean).join("|"); }
   function toTxt(list) { return headerLines.join("\n") + "\n" + list.map(lineOf).join("\n") + (list.length ? "\n" : ""); }
   function setRecs(txt) {
     headerLines = headerOf(txt);
@@ -606,7 +648,7 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
     renderAll();
   }
   function rowOf(r) {
-    return { id: r.id, job: r.job, tipe: r.tipe, cust: r.cust, status: r.status, proof: r.proof, acc: r.acc, rem: r.rem, note: r.note, created: r.created, updated_at: new Date().toISOString() };
+    return { id: r.id, job: r.job, tipe: r.tipe, cust: r.cust, status: r.status, proof: r.proof, acc: r.acc, rem: r.rem, note: r.note, chk: r.chk || "", created: r.created, updated_at: new Date().toISOString() };
   }
   async function sbCall(method, path, body, prefer) {
     var h = sbHeaders({ "Content-Type": "application/json" });
@@ -655,7 +697,8 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
   /* ---- tampilan ---- */
   function info(r, now) {
     var s = r.status.toLowerCase(), key;
-    if (s.indexOf("os-to do") > -1) key = "os";
+    if (s.indexOf("selesai") > -1) key = "done";
+    else if (s.indexOf("os-to do") > -1) key = "os";
     else if (r.acc || s.indexOf("approved") > -1) key = "appr";
     else if (s.indexOf("on proof") > -1) key = "proof";
     else if (s.indexOf("in progress") > -1) key = "prog";
@@ -674,6 +717,7 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
     if (o.due) { pc = "due"; pt = "Perlu reminder"; }
     else if (o.key === "proof") { pc = "wait"; pt = "Menunggu ACC"; }
     else if (o.key === "prog") { pc = "prog"; pt = "Dikerjakan"; }
+    else if (o.key === "done") { pc = "done"; pt = "Selesai"; }
     else if (o.key === "os" || o.key === "appr") { pc = "done"; pt = "Disetujui"; }
     else { pc = "prog"; pt = "Status kosong"; }
     var meta = [["Customer", r.cust], ["Status", r.status], ["Proof terkirim", r.proof], ["Reminder terakhir", r.rem], ["ACC", r.acc], ["Catatan", r.note]]
@@ -691,8 +735,12 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
       '<button type="button" class="btn' + (o.due ? " primary" : "") + '" data-jact="remind"' + d + ">Reminder terkirim</button>" +
       '<button type="button" class="btn" data-jact="acc"' + d + ">Sudah ACC</button>" +
       '<button type="button" class="btn" data-jact="accos"' + d + ">ACC (OS job)</button>";
+    acts += '<button type="button" class="btn" data-jact="open"' + d + ">Buka checksheet</button>";
+    acts += o.key === "done"
+      ? '<button type="button" class="btn" data-jact="reopen"' + d + ">Buka kembali (aktifkan)</button>"
+      : '<button type="button" class="btn" data-jact="finish"' + d + ">Selesai</button>";
     acts += '<button type="button" class="btn" data-jact="del"' + d + ">Hapus</button>";
-    return '<article class="card' + (o.due ? " due" : "") + '"><div class="chead"><span class="job">' + esc(r.job || "(tanpa nomor)") + '</span><span class="pill">' + esc(r.tipe || "-") + '</span><span class="pill ' + pc + '">' + pt + "</span></div>" +
+    return '<article class="card' + (o.due ? " due" : "") + '"><div class="chead"><button type="button" class="job" data-jact="open"' + d + ' title="Buka checksheet job ini">' + esc(r.job || "(tanpa nomor)") + '</button><span class="pill">' + esc(r.tipe || "-") + '</span><span class="pill ' + pc + '">' + pt + "</span></div>" +
       timing + (meta ? '<dl class="meta">' + meta + "</dl>" : "") + '<div class="acts">' + acts + "</div></article>";
   }
 
@@ -714,17 +762,33 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
       msg = "Isi Job No di bagian atas supaya job bisa ditambahkan ke database.";
       btn = '<button type="button" class="btn" disabled>Tambahkan ke database</button>';
     } else if (ex) {
-      var inf = info(ex, new Date());
-      if (inf.key === "proof" && cs.accDone) {
-        msg = "Job " + esc(job) + " berstatus Prepress on Proof dan semua langkah Sudah ACC sudah dicentang.";
-        btn = '<button type="button" class="btn primary" data-dbact="accfromcheck">Tandai ACC di database</button>';
-      } else msg = "Job " + esc(job) + " sudah ada di database dengan status " + esc(ex.status || "kosong") + ".";
-    } else if (!cs.mainDone) {
-      msg = "Centang semua langkah di Proses utama, lalu job bisa ditambahkan ke database.";
-      btn = '<button type="button" class="btn" disabled>Tambahkan ke database</button>';
+      var inf = info(ex, new Date()), bs = [];
+      msg = "Job " + esc(job) + " sudah ada di database dengan status " + esc(ex.status || "kosong") + ".";
+      if (cs.accSel && inf.key !== "done") {
+        msg += " Ada langkah Sudah ACC yang tercentang (tidak harus lengkap).";
+        bs.push('<button type="button" class="btn primary" data-dbact="finishchk">Simpan checklist dan selesai</button>');
+      }
+      if (inf.key === "proof" && cs.accSel) bs.push('<button type="button" class="btn" data-dbact="accfromcheck">Tandai ACC saja (belum selesai)</button>');
+      var needProof = inf.key === "prog" && cs.proofSent;
+      if ((ex.chk || "") === cs.chk && !needProof) msg += " Checklist sama dengan yang tersimpan.";
+      else {
+        if (ex.chk || cs.hasWork) {
+          msg += (ex.chk || "") === cs.chk ? "" : " Checklist di halaman ini berbeda dari yang tersimpan di database.";
+          if (needProof) msg += " Langkah kirim proof tercentang, jadi menyimpan akan mengubah status ke Prepress on Proof dan memulai hitungan reminder 24 jam.";
+          bs.push('<button type="button" class="btn' + (bs.length ? "" : " primary") + '" data-dbact="savechk">Simpan checklist ke database</button>');
+        }
+        if (ex.chk) bs.push('<button type="button" class="btn" data-dbact="loadchk">Muat checklist dari database</button>');
+      }
+      btn = bs.join("");
     } else {
-      msg = "Proses utama selesai. Tambahkan job " + esc(job) + " ke database sebagai Prepress on Proof, supaya hitungan reminder 24 jam berjalan.";
-      btn = '<button type="button" class="btn primary" data-dbact="addfromcheck">Tambahkan ke database</button>';
+      msg = "Checklist tidak harus lengkap. " + (cs.proofSent
+        ? "Langkah kirim proof tercentang, jadi job " + esc(job) + " ditambahkan sebagai Prepress on Proof dan hitungan reminder 24 jam mulai dari sekarang."
+        : "Langkah kirim proof belum tercentang, jadi job " + esc(job) + " ditambahkan sebagai Prepress in Progress.");
+      btn = '<button type="button" class="btn' + (cs.accSel ? "" : " primary") + '" data-dbact="addfromcheck">Tambahkan ke database</button>';
+      if (cs.accSel) {
+        msg += " Ada langkah Sudah ACC yang tercentang, jadi job juga bisa langsung ditambahkan sebagai Selesai.";
+        btn = '<button type="button" class="btn primary" data-dbact="addfinish">Tambahkan dan selesai</button>' + btn;
+      }
     }
     el.innerHTML = '<p class="dbmsg">' + msg + '</p><div class="acts">' + btn + "</div>";
   }
@@ -751,13 +815,15 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
     var q = $("q").value.toLowerCase().split(/\s+/).filter(Boolean), ft = $("ftipe").value.toLowerCase(), fs = $("fstat").value;
     var res = items.filter(function (o) {
       var r = o.r;
+      if (o.key === "done" && !q.length && fs !== "done") return false;
       if (ft && r.tipe.toLowerCase() !== ft) return false;
       if (fs === "due") { if (!o.due) return false; }
       else if (fs && o.key !== fs) return false;
       var hay = [r.job, r.tipe, r.cust, r.status, r.note, r.proof, r.acc].join(" ").toLowerCase();
       return q.every(function (t) { return hay.indexOf(t) > -1; });
     }).reverse();
-    $("scount").textContent = res.length + " dari " + items.length + " job";
+    var hid = q.length || fs === "done" ? 0 : items.filter(function (o) { return o.key === "done"; }).length;
+    $("scount").textContent = res.length + " dari " + (items.length - hid) + " job" + (hid ? " (" + hid + " job selesai muncul kalau dicari)" : "");
     $("sres").innerHTML = res.length ? res.map(cardHtml).join("") : '<div class="empty">' + (none ? "Belum ada job di database." : "Tidak ada job yang cocok.") + "</div>";
 
     var ta = $("dbtxt");
@@ -806,6 +872,17 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
     });
   }
 
+  function clearCheck() { if (window.checksheetApi) window.checksheetApi.clear(); }
+
+  function openJob(r) {
+    var inf = info(r, new Date()), op = "";
+    var m = /Operator:\s*(.*)$/.exec(r.note || ""); if (m) op = m[1].trim();
+    window.checksheetApi.load({ tab: String(r.tipe || "").toLowerCase(), job: r.job, cust: r.cust, op: op, chk: r.chk, approved: inf.key === "appr" || inf.key === "os" });
+    showView("check");
+    try { window.scrollTo(0, 0); } catch (e) {}
+    notice("Checksheet job " + r.job + " dibuka. Centang langkah lalu simpan lewat panel Database job.");
+  }
+
   function download() {
     var blob = new Blob([toTxt(recs)], { type: "text/plain;charset=utf-8" });
     var url = URL.createObjectURL(blob), a = document.createElement("a");
@@ -835,11 +912,27 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
         else { b.setAttribute("data-armed", "1"); b.classList.add("danger"); b.textContent = "Klik lagi untuk hapus"; }
         return;
       }
+      if (act === "open") {
+        var tabk = String(r.tipe || "").toLowerCase(), api = window.checksheetApi;
+        if (!api) return;
+        var pk = api.peek(tabk), pr = pk.job ? find(slug(pk.job)) : null;
+        var saved = pr && (pr.chk || "") === pk.chk, risky = (pk.hasWork || pk.job) && !saved && pk.chk !== (r.chk || "");
+        if (risky && b.getAttribute("data-armed") !== "1") {
+          b.setAttribute("data-armed", "1"); b.classList.add("danger");
+          if (!b.classList.contains("job")) b.textContent = "Checksheet yang sedang diisi akan diganti. Klik lagi";
+          else notice("Checksheet yang sedang diisi belum disimpan dan akan diganti. Klik lagi untuk lanjut.");
+          return;
+        }
+        openJob(r);
+        return;
+      }
       var ch = null;
       if (act === "sent") ch = { status: STATUS.proof, proof: stamp, rem: "" };
       else if (act === "remind") ch = { rem: stamp };
       else if (act === "acc") ch = { status: STATUS.appr, acc: stamp };
       else if (act === "accos") ch = { status: STATUS.os, acc: stamp };
+      else if (act === "finish") ch = { status: STATUS.done };
+      else if (act === "reopen") ch = { status: r.acc ? STATUS.appr : (r.proof ? STATUS.proof : STATUS.prog) };
       if (ch) change(r, ch);
       return;
     }
@@ -858,15 +951,46 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
         if (!jb) return;
         if (a === "addfromcheck") {
           if (find(slug(jb))) { notice("Job " + jb + " sudah ada di database."); return; }
-          var nr = { job: jb, tipe: cs.label, cust: clean(cs.cust), status: STATUS.proof, proof: fmt(new Date()), acc: "", rem: "", note: cs.op ? "Operator: " + clean(cs.op) : "" };
+          var inProg = !cs.proofSent;
+          var nr = { job: jb, tipe: cs.label, cust: clean(cs.cust), status: inProg ? STATUS.prog : STATUS.proof, proof: inProg ? "" : fmt(new Date()), acc: "", rem: "", note: cs.op ? "Operator: " + clean(cs.op) : "", chk: cs.chk };
           upsert([nr]);
-          notice("Job " + jb + " ditambahkan ke database.");
+          clearCheck();
+          notice("Job " + jb + " ditambahkan ke database. Checksheet dikosongkan; buka lagi lewat daftar job.");
         } else {
           var ex2 = find(slug(jb));
           if (!ex2) return;
-          change(ex2, { status: cs.osJob ? STATUS.os : STATUS.appr, acc: fmt(new Date()) });
-          notice("Job " + jb + " ditandai ACC.");
+          change(ex2, { status: cs.osJob ? STATUS.os : STATUS.appr, acc: fmt(new Date()), chk: cs.chk });
+          clearCheck();
+          notice("Job " + jb + " ditandai ACC. Checksheet dikosongkan; buka lagi lewat daftar job.");
         }
+      } else if (a === "finishchk" || a === "addfinish") {
+        if (!cs) return;
+        var jf = clean(cs.job);
+        if (!jf) return;
+        var stampf = fmt(new Date());
+        if (a === "addfinish") {
+          if (find(slug(jf))) { notice("Job " + jf + " sudah ada di database."); return; }
+          upsert([{ job: jf, tipe: cs.label, cust: clean(cs.cust), status: STATUS.done, proof: "", acc: stampf, rem: "", note: cs.op ? "Operator: " + clean(cs.op) : "", chk: cs.chk }]);
+        } else {
+          var exf = find(slug(jf));
+          if (!exf) return;
+          var upf = { chk: cs.chk, status: STATUS.done };
+          if (!exf.acc) upf.acc = stampf;
+          change(exf, upf);
+        }
+        clearCheck();
+        notice("Job " + jf + " selesai dan checklist disimpan. Job muncul lagi lewat menu Cari job. Checksheet dikosongkan.");
+      } else if (a === "savechk" || a === "loadchk") {
+        if (!cs) return;
+        var ex3 = find(slug(clean(cs.job)));
+        if (!ex3) return;
+        if (a === "savechk") {
+          var up = { chk: cs.chk }, was = info(ex3, new Date()).key;
+          if (cs.proofSent && was === "prog") { up.status = STATUS.proof; up.proof = fmt(new Date()); up.rem = ""; }
+          change(ex3, up); clearCheck();
+          notice("Checklist job " + ex3.job + " disimpan ke database" + (up.status ? " dan status menjadi Prepress on Proof" : "") + ". Checksheet dikosongkan; buka lagi lewat daftar job.");
+        }
+        else if (window.checksheetApi) { openJob(ex3); notice("Checklist job " + ex3.job + " dimuat dari database."); }
       } else if (a === "apply") {
         var list = fromTxt($("dbtxt").value);
         if (!list.length) { notice("Tidak ada baris job yang valid di teks."); return; }
@@ -922,7 +1046,12 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
     e.target.value = "";
   });
   window.addEventListener("beforeunload", function (e) {
-    if (serverSave && (pendingCount() || saving)) { e.preventDefault(); e.returnValue = ""; }
+    var api = window.checksheetApi, openWork = false;
+    if (api) ["packaging", "commercial"].forEach(function (t) {
+      var pk = api.peek(t), pr = pk.job ? find(slug(pk.job)) : null;
+      if ((pk.hasWork || pk.job) && !(pr && (pr.chk || "") === pk.chk)) openWork = true;
+    });
+    if ((serverSave && (pendingCount() || saving)) || openWork) { e.preventDefault(); e.returnValue = ""; }
   });
   document.addEventListener("visibilitychange", function () { if (!document.hidden) poll(); });
 
