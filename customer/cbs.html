@@ -828,8 +828,7 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
       else timing = '<div class="timing">Sisa ' + fmtH(o.remain) + " sebelum perlu reminder</div>";
     }
     var d = ' data-id="' + esc(r.id) + '"', acts = "";
-    if (o.key === "prog") acts += '<button type="button" class="btn primary" data-jact="sent"' + d + ">Proof terkirim</button>";
-    else if (o.key === "proof") acts +=
+    if (o.key === "proof") acts +=
       '<button type="button" class="btn' + (o.due ? " primary" : "") + '" data-jact="remind"' + d + ">Reminder terkirim</button>" +
       '<button type="button" class="btn" data-jact="acc"' + d + ">Sudah ACC</button>" +
       '<button type="button" class="btn" data-jact="accos"' + d + ">ACC (OS job)</button>";
@@ -1060,8 +1059,7 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
         return;
       }
       var ch = null;
-      if (act === "sent") ch = { status: STATUS.proof, proof: stamp, rem: "" };
-      else if (act === "remind") ch = { rem: stamp };
+      if (act === "remind") ch = { rem: stamp };
       else if (act === "acc") ch = { status: STATUS.appr, acc: stamp };
       else if (act === "accos") ch = { status: STATUS.os, acc: stamp };
       else if (act === "finish") ch = { status: STATUS.done };
