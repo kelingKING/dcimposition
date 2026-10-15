@@ -273,8 +273,18 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
         <button type="button" class="btn" data-dbact="reset">Muat ulang teks</button>
         <button type="button" class="btn" data-dbact="reload">Muat ulang dari server</button>
       </div>
-      <div class="field" style="margin-top:14px"><label for="tok">Kunci simpan (jika diminta server)</label><input id="tok" type="password" autocomplete="off"></div>
-      <p class="hint">Jika save.php terpasang di folder yang sama, perubahan disimpan otomatis ke jobs.txt di server dan daftar job diperbarui tiap 30 detik. Tanpa save.php, perubahan tersimpan sementara di browser: unduh jobs.txt lalu unggah untuk menggantikan file di server. Format satu baris satu job: job | tipe | customer | status | proof_kirim | acc | reminder | catatan, dengan waktu YYYY-MM-DD HH:MM.</p>
+      <p class="hint">Format satu baris satu job: job | tipe | customer | status | proof_kirim | acc | reminder | catatan, dengan waktu YYYY-MM-DD HH:MM. Impor menambah job baru atau memperbarui job dengan nomor yang sama.</p>
+    </section>
+    <section class="panel">
+      <h2>Penyimpanan otomatis ke GitHub</h2>
+      <div class="fields">
+        <div class="field"><label for="ghrepo">Repo</label><input id="ghrepo" type="text" autocomplete="off" placeholder="pemilik/nama-repo"></div>
+        <div class="field"><label for="ghbranch">Branch</label><input id="ghbranch" type="text" autocomplete="off" placeholder="main"></div>
+        <div class="field"><label for="ghpath">Path jobs.txt</label><input id="ghpath" type="text" autocomplete="off" placeholder="jobs.txt"></div>
+        <div class="field"><label for="tok">Token GitHub</label><input id="tok" type="password" autocomplete="off"></div>
+      </div>
+      <div class="acts" style="margin-top:14px"><button type="button" class="btn primary" data-dbact="ghconnect">Sambungkan ke GitHub</button></div>
+      <p class="hint">Buat token di GitHub (Settings, Developer settings, Fine-grained tokens): pilih hanya repo ini, izin Contents: Read and write, dan beri masa berlaku. Token hanya disimpan di browser ini, jadi jangan diisi di komputer bersama. Setiap perubahan menjadi satu commit di repo, sehingga riwayat dan cadangan ikut tercatat, dan daftar job diperbarui tiap 30 detik. Tanpa token, halaman hanya menampilkan jobs.txt dan perubahan tersimpan sementara di browser. Jika repo dan situsnya publik, isi jobs.txt bisa dibaca siapa pun.</p>
     </section>
   </div>
 </div>
@@ -477,9 +487,9 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
   render();
 })();
 
-/* Database job dari jobs.txt, disimpan otomatis lewat save.php bila tersedia. Menu Reminder dan Cari job */
+/* Database job dari jobs.txt, disimpan otomatis sebagai commit ke repo GitHub bila token diisi. Menu Reminder dan Cari job */
 (function () {
-  var DKEY = "checksheet-jobs-draft-v1", VKEY = "checksheet-view-v1", TKEY = "checksheet-jobs-token-v1";
+  var DKEY = "checksheet-jobs-draft-v1", VKEY = "checksheet-view-v1", TKEY = "checksheet-jobs-token-v1", CKEY = "checksheet-gh-v1";
   var HEADER = [
     "# Database job prepress. Satu baris = satu job, kolom dipisah tanda |",
     "# job | tipe | customer | status | proof_kirim | acc | reminder | catatan",
@@ -506,7 +516,52 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
     return Math.floor(h) + " jam";
   }
   function slug(job) { return String(job).trim().toLowerCase().replace(/\s+/g, " "); }
-  function getToken() { try { return localStorage.getItem(TKEY) || ""; } catch (e) { return ""; } }
+  function getToken() { try { return (localStorage.getItem(TKEY) || "").trim(); } catch (e) { return ""; } }
+
+  /* ---- GitHub ---- */
+  function guessRepo() {
+    var h = location.hostname, p = location.pathname.split("/").filter(Boolean);
+    if (!/\.github\.io$/i.test(h)) return { repo: "", path: "jobs.txt" };
+    var owner = h.split(".")[0], dirs;
+    if (p.length && !/\.html?$/i.test(p[0])) { dirs = p.slice(1); return finish(owner + "/" + p[0], dirs); }
+    return finish(owner + "/" + owner + ".github.io", p);
+    function finish(repo, parts) {
+      if (parts.length && /\.html?$/i.test(parts[parts.length - 1])) parts = parts.slice(0, -1);
+      return { repo: repo, path: (parts.length ? parts.join("/") + "/" : "") + "jobs.txt" };
+    }
+  }
+  function loadCfg() {
+    var g = guessRepo(), c = {};
+    try { c = JSON.parse(localStorage.getItem(CKEY) || "{}") || {}; } catch (e) {}
+    return { repo: c.repo || g.repo, branch: c.branch || "main", path: c.path || g.path };
+  }
+  var ghCfg = loadCfg(), ghError = "";
+  function saveCfg() { try { localStorage.setItem(CKEY, JSON.stringify(ghCfg)); } catch (e) {} }
+  function ghReady() { return !!(getToken() && ghCfg.repo && ghCfg.path); }
+  function ghUrl() { return "https://api.github.com/repos/" + ghCfg.repo + "/contents/" + ghCfg.path.split("/").map(encodeURIComponent).join("/"); }
+  function ghHeaders(extra) {
+    return Object.assign({ Authorization: "Bearer " + getToken(), Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }, extra || {});
+  }
+  function b64decode(str) {
+    var bin = atob(String(str).replace(/\s/g, "")), bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
+  }
+  function b64encode(text) {
+    var bytes = new TextEncoder().encode(text), bin = "";
+    for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin);
+  }
+  /* hasil: {txt, version} | {error} | null */
+  async function ghGet() {
+    try {
+      var r = await fetch(ghUrl() + "?ref=" + encodeURIComponent(ghCfg.branch || "main") + "&t=" + Date.now(), { headers: ghHeaders(), cache: "no-store" });
+      if (r.status === 200) { var j = await r.json(); return { txt: b64decode(j.content || ""), version: j.sha || "" }; }
+      if (r.status === 404) return { txt: "", version: "", missing: true };
+      if (r.status === 401 || r.status === 403) return { error: "Token GitHub ditolak atau tidak punya akses ke repo ini." };
+      return { error: "GitHub membalas status " + r.status + "." };
+    } catch (e) { return null; }
+  }
 
   function fromTxt(txt) {
     var out = [];
@@ -561,7 +616,7 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
   }
   function touch(id, k) { touched[id] = { k: k, n: ++seq }; }
   function afterChange() {
-    if (serverSave) { setSync("Menyimpan..."); clearTimeout(saveTimer); saveTimer = setTimeout(doSave, 400); }
+    if (serverSave) { setSync("Menyimpan..."); clearTimeout(saveTimer); saveTimer = setTimeout(doSave, 1200); }
     else saveDraft();
     renderAll();
   }
@@ -583,35 +638,37 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
     if (saving) { pending = true; return; }
     saving = true; pending = false;
     var snap = {}; Object.keys(touched).forEach(function (id) { snap[id] = touched[id].n; });
-    fetch("save.php", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Requested-With": "jobs-page", "X-Token": getToken() },
-      body: JSON.stringify({ text: toTxt(recs), base: version })
-    }).then(function (res) {
+    var body = { message: "Update jobs.txt dari checksheet", content: b64encode(toTxt(recs)), branch: ghCfg.branch || "main" };
+    if (version) body.sha = version;
+    fetch(ghUrl(), { method: "PUT", headers: ghHeaders({ "Content-Type": "application/json" }), body: JSON.stringify(body) }).then(function (res) {
       return res.json().catch(function () { return {}; }).then(function (j) { return { status: res.status, j: j }; });
     }).then(function (o) {
       saving = false;
-      if (o.status === 200 && o.j.version) {
-        version = o.j.version; retries = 0;
+      var msg = (o.j && o.j.message) || "";
+      if (o.status === 200 || o.status === 201) {
+        version = o.j.content && o.j.content.sha; retries = 0;
         Object.keys(snap).forEach(function (id) { if (touched[id] && touched[id].n === snap[id]) delete touched[id]; });
-        if (pending || pendingCount()) { doSave(); return; }
-        setSync("Tersimpan di server pukul " + pad(new Date().getHours()) + ":" + pad(new Date().getMinutes()) + ".");
-      } else if (o.status === 409 && typeof o.j.text === "string") {
+        if (pending || pendingCount()) { clearTimeout(saveTimer); saveTimer = setTimeout(doSave, 1200); return; }
+        setSync("Tersimpan ke GitHub pukul " + pad(new Date().getHours()) + ":" + pad(new Date().getMinutes()) + ".");
+      } else if (o.status === 409 || (o.status === 422 && /sha/i.test(msg))) {
         retries++;
-        if (retries > 3) { setSync("File di server terus berubah oleh orang lain. Coba lagi sebentar lagi.", true); return; }
-        mergeServer(o.j.text); version = o.j.version;
-        notice("Perubahan orang lain digabungkan dengan perubahanmu.");
-        renderAll(); doSave();
-      } else if (o.status === 403) {
-        setSync("Kunci simpan salah atau belum diisi. Isi di menu Database, perubahan belum tersimpan.", true);
-      } else if (o.status === 400 || o.status === 413 || o.status === 500) {
-        setSync((o.j && o.j.error) || "Server menolak penyimpanan.", true);
+        if (retries > 3) { setSync("File di GitHub terus berubah oleh orang lain. Coba lagi sebentar lagi.", true); return; }
+        ghGet().then(function (r) {
+          if (!r || r.error) { setSync((r && r.error) || "Tidak bisa membaca versi terbaru dari GitHub.", true); return; }
+          mergeServer(r.txt); version = r.version;
+          notice("Perubahan orang lain digabungkan dengan perubahanmu.");
+          renderAll(); doSave();
+        });
+      } else if (o.status === 401 || o.status === 403) {
+        setSync(/rate limit/i.test(msg) ? "Batas permintaan GitHub tercapai. Tunggu beberapa menit." : "Token GitHub ditolak atau tidak punya izin menulis (Contents: Read and write). Perubahan belum tersimpan.", true);
+      } else if (o.status === 404) {
+        setSync("Repo, branch, atau path tidak ditemukan, atau token tidak punya akses ke repo itu. Perubahan belum tersimpan.", true);
       } else {
-        serverSave = false; saveDraft(); setSync("Penyimpanan otomatis tidak tersedia di server ini.", true); renderAll();
+        setSync(msg || "GitHub menolak penyimpanan.", true);
       }
     }).catch(function () {
       saving = false;
-      setSync("Server tidak terjangkau. Perubahan belum tersimpan, coba ubah lagi atau unduh jobs.txt.", true);
+      setSync("GitHub tidak terjangkau. Perubahan belum tersimpan.", true);
     });
   }
 
@@ -675,8 +732,8 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
 
   function updateMode() {
     var parts = [];
-    if (loadFailed) parts.push("jobs.txt tidak bisa dimuat dari server. Jika halaman dibuka langsung dari komputer, impor jobs.txt lewat menu Database.");
-    if (unsaved && !serverSave) parts.push("Penyimpanan otomatis ke server tidak aktif. Perubahan baru tersimpan di browser ini. Unduh jobs.txt, unggah untuk menggantikan file lama, lalu muat ulang dari server.");
+    if (loadFailed) parts.push("jobs.txt tidak bisa dimuat. Jika halaman dibuka langsung dari komputer, impor jobs.txt lewat menu Database.");
+    if (unsaved && !serverSave) parts.push("Penyimpanan otomatis ke GitHub tidak aktif (isi repo dan token di menu Database). Perubahan baru tersimpan di browser ini. Atau unduh jobs.txt, unggah ke repo untuk menggantikan file lama, lalu muat ulang.");
     $("modetxt").textContent = parts.join(" ");
     $("mode").hidden = parts.length === 0;
     $("modedl").hidden = !(unsaved && !serverSave);
@@ -743,13 +800,12 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
 
   /* ---- muat dari server ---- */
   async function fetchServer() {
-    try {
-      var r = await fetch("save.php?t=" + Date.now(), { cache: "no-store", headers: { "X-Requested-With": "jobs-page" } });
-      if (r.ok) {
-        var v = r.headers.get("X-Jobs-Version");
-        if (v) return { txt: await r.text(), version: v, auto: true };
-      }
-    } catch (e) {}
+    ghError = "";
+    if (ghReady()) {
+      var g = await ghGet();
+      if (g && !g.error) return { txt: g.txt, version: g.version, auto: true };
+      if (g && g.error) ghError = g.error;
+    }
     try {
       var r2 = await fetch("jobs.txt?t=" + Date.now(), { cache: "no-store" });
       if (r2.ok) return { txt: await r2.text(), version: null, auto: false };
@@ -762,9 +818,9 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
       serverSave = true; version = res.version; loadFailed = false; unsaved = false;
       touched = {}; setRecs(res.txt);
       try { localStorage.removeItem(DKEY); } catch (e) {}
-      setSync("Terhubung ke server. Perubahan disimpan otomatis.");
+      setSync("Terhubung ke GitHub (" + ghCfg.repo + "). Setiap perubahan disimpan otomatis sebagai commit.");
     } else {
-      serverSave = false; setSync("");
+      serverSave = false; setSync(ghError, !!ghError);
       var txt = res ? res.txt : null, draft = null;
       if (useDraft) { try { draft = localStorage.getItem(DKEY); } catch (e) {} }
       loadFailed = txt === null;
@@ -855,6 +911,16 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
         dirty = false; $("dbtxt").value = toTxt(recs); notice("Teks dimuat ulang dari data di halaman.");
       } else if (a === "download") {
         download();
+      } else if (a === "ghconnect") {
+        if (!getToken() || !ghCfg.repo) { notice("Isi repo dan token GitHub dulu."); return; }
+        if (unsaved && !serverSave && b.getAttribute("data-armed") !== "1") {
+          b.setAttribute("data-armed", "1"); b.classList.add("danger"); b.textContent = "Draft di browser akan dibuang. Klik lagi";
+          return;
+        }
+        b.removeAttribute("data-armed"); b.classList.remove("danger"); b.textContent = "Sambungkan ke GitHub";
+        try { localStorage.removeItem(DKEY); } catch (e) {}
+        touched = {}; clearTimeout(saveTimer);
+        loadServer(false).then(function () { if (serverSave) notice("Tersambung ke GitHub."); });
       } else if (a === "reload") {
         var risky = (unsaved && !serverSave) || pendingCount() > 0;
         if (risky && b.getAttribute("data-armed") !== "1") {
@@ -864,7 +930,7 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
         }
         try { localStorage.removeItem(DKEY); } catch (e) {}
         touched = {}; clearTimeout(saveTimer);
-        loadServer(false).then(function () { notice("Dimuat ulang dari server."); });
+        loadServer(false).then(function () { notice("Dimuat ulang dari sumber data."); });
         var all2 = document.querySelectorAll('[data-dbact="reload"]');
         for (var j = 0; j < all2.length; j++) { all2[j].removeAttribute("data-armed"); all2[j].classList.remove("danger"); all2[j].textContent = "Muat ulang dari server"; }
       } else if (a === "copy") {
@@ -876,9 +942,10 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
   });
   $("dbtxt").addEventListener("input", function () { dirty = true; });
   $("tok").value = getToken();
-  $("tok").addEventListener("input", function () {
-    try { localStorage.setItem(TKEY, $("tok").value); } catch (e) {}
-    if (serverSave && pendingCount()) afterChange();
+  $("ghrepo").value = ghCfg.repo; $("ghbranch").value = ghCfg.branch; $("ghpath").value = ghCfg.path;
+  $("tok").addEventListener("input", function () { try { localStorage.setItem(TKEY, $("tok").value.trim()); } catch (e) {} });
+  [["ghrepo", "repo"], ["ghbranch", "branch"], ["ghpath", "path"]].forEach(function (p) {
+    $(p[0]).addEventListener("input", function () { ghCfg[p[1]] = $(p[0]).value.trim(); saveCfg(); });
   });
   ["q", "ftipe", "fstat"].forEach(function (id) { $(id).addEventListener("input", renderAll); $(id).addEventListener("change", renderAll); });
   $("dbfile").addEventListener("change", function (e) {
