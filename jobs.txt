@@ -2,4 +2,8 @@
 # job | tipe | customer | status | proof_kirim | acc | reminder | catatan
 # Waktu: YYYY-MM-DD HH:MM (waktu lokal). Baris berawalan # diabaikan.
 # Status: Prepress in Progress | Prepress on Proof | 3 Approved to Print | OS-To Do_AL
-# Contoh baris: JOB-1234|Packaging|PT Contoh|Prepress on Proof|2026-10-15 09:30|||Epson proof diminta
+DUMMY-001|Packaging|Dummy Customer A|Prepress on Proof|2026-10-13 10:00|||Epson proof diminta
+DUMMY-002|Commercial|Dummy Customer B|Prepress on Proof|2026-10-14 09:30|||Brosur A4
+DUMMY-003|Packaging|Dummy Customer C|Prepress on Proof|2026-10-15 09:00|||Knife baru
+DUMMY-004|Commercial|Dummy Customer D|3 Approved to Print|2026-10-14 11:00|2026-10-14 15:20||Sudah ACC customer
+DUMMY-005|Packaging|Dummy Customer E|Prepress in Progress||||Menunggu file dari customer
