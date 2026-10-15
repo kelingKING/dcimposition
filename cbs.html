@@ -137,6 +137,8 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
 .meta dd { margin: 0; overflow-wrap: anywhere; }
 .timing { font-size: 13px; font-weight: 600; }
 .timing.due { color: var(--m); }
+.dbmsg { margin: 0 0 12px; }
+.btn[disabled] { opacity: .5; cursor: not-allowed; }
 .empty { color: var(--muted); font-size: 14px; padding: 14px 16px; border: 1px dashed var(--line); border-radius: 10px; }
 .switch { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
 .switch h2 { margin: 0; }
@@ -202,6 +204,8 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
     <ol class="steps" id="branch"></ol>
     <p class="note" id="note" hidden></p>
   </section>
+
+  <section class="panel" id="dbadd"><h2>Database job</h2><div id="dbadd-body"></div></section>
 
   <div class="foot">
     <span id="saved">Centang tersimpan di browser ini.</span>
@@ -401,6 +405,16 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
     }
   }
 
+  function emit() {
+    var d = DATA[state.tab], job = state.jobs[state.tab];
+    var mainDone = d.main.every(function (it) { return job.checks[it.id]; });
+    var accDone = job.acc === "sudah" && d.sudah.every(function (it) { return job.checks[it.id]; });
+    document.dispatchEvent(new CustomEvent("checksheet-state", { detail: {
+      label: d.label, mainDone: mainDone, accDone: accDone, osJob: !!job.checks.s3a,
+      job: job.f.job, cust: job.f.cust, op: job.f.op
+    } }));
+  }
+
   function renderResetBox() {
     $("resetbox").innerHTML = confirming
       ? '<span>Kosongkan semua centang tab ini?</span><button type="button" class="danger" data-act="yes">Ya, kosongkan</button><button type="button" data-act="no">Batal</button>'
@@ -422,6 +436,7 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
     for (var i = 0; i < bs.length; i++) bs[i].setAttribute("aria-pressed", String(bs[i].getAttribute("data-acc") === job.acc));
     renderProgress(d, job);
     renderResetBox();
+    emit();
   }
 
   document.addEventListener("change", function (e) {
@@ -433,11 +448,12 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
       var li = el.closest(".row");
       if (li && li.querySelector(":scope > label > input") === el) li.classList.toggle("on", el.checked);
       renderProgress(DATA[state.tab], job);
+      emit();
     }
   });
   document.addEventListener("input", function (e) {
     var k = e.target.getAttribute && e.target.getAttribute("data-f");
-    if (k) { state.jobs[state.tab].f[k] = e.target.value; save(); }
+    if (k) { state.jobs[state.tab].f[k] = e.target.value; save(); if (k === "job" || k === "cust" || k === "op") emit(); }
   });
   document.addEventListener("click", function (e) {
     var b = e.target.closest && e.target.closest("button");
@@ -453,6 +469,7 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
     }
   });
 
+  document.addEventListener("checksheet-request", emit);
   render();
 })();
 
@@ -466,7 +483,7 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
   ];
   var STATUS = { prog: "Prepress in Progress", proof: "Prepress on Proof", appr: "3 Approved to Print", os: "OS-To Do_AL" };
 
-  var recs = [], headerLines = HEADER, loadFailed = false, unsaved = false, dirty = false, noticeTimer = null;
+  var cs = null, recs = [], headerLines = HEADER, loadFailed = false, unsaved = false, dirty = false, noticeTimer = null;
   var $ = function (id) { return document.getElementById(id); };
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function pad(n) { return String(n).padStart(2, "0"); }
@@ -594,8 +611,34 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
     $("modedl").hidden = !unsaved;
   }
 
+  function renderAddPanel() {
+    var el = $("dbadd-body");
+    if (!el) return;
+    if (!cs) { el.innerHTML = ""; return; }
+    var job = clean(cs.job), ex = job ? find(slug(job)) : null, msg, btn = "";
+    if (!job) {
+      msg = "Isi Job No di bagian atas supaya job bisa ditambahkan ke database.";
+      btn = '<button type="button" class="btn" disabled>Tambahkan ke database</button>';
+    } else if (ex) {
+      var inf = info(ex, new Date());
+      if (inf.key === "proof" && cs.accDone) {
+        msg = "Job " + esc(job) + " berstatus Prepress on Proof dan semua langkah Sudah ACC sudah dicentang.";
+        btn = '<button type="button" class="btn primary" data-dbact="accfromcheck">Tandai ACC di database</button>';
+      } else msg = "Job " + esc(job) + " sudah ada di database dengan status " + esc(ex.status || "kosong") + ".";
+    } else if (!cs.mainDone) {
+      msg = "Centang semua langkah di Proses utama, lalu job bisa ditambahkan ke database.";
+      btn = '<button type="button" class="btn" disabled>Tambahkan ke database</button>';
+    } else {
+      msg = "Proses utama selesai. Tambahkan job " + esc(job) + " ke database sebagai Prepress on Proof, supaya hitungan reminder 24 jam berjalan.";
+      btn = '<button type="button" class="btn primary" data-dbact="addfromcheck">Tambahkan ke database</button>';
+    }
+    el.innerHTML = '<p class="dbmsg">' + msg + '</p><div class="acts">' + btn + "</div>";
+  }
+  document.addEventListener("checksheet-state", function (e) { cs = e.detail; renderAddPanel(); });
+
   function renderAll() {
     updateMode();
+    renderAddPanel();
     var now = new Date();
     var items = recs.map(function (r) { return info(r, now); });
     var due = items.filter(function (o) { return o.due; }).sort(function (a, b) { return a.remain - b.remain; });
@@ -696,6 +739,21 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
         if (!list.length) { notice("Tidak ada baris job yang valid di teks."); return; }
         dirty = false;
         notice(upsert(list) + " job diimpor.");
+      } else if (a === "addfromcheck" || a === "accfromcheck") {
+        if (!cs) return;
+        var jb = clean(cs.job);
+        if (!jb) return;
+        if (a === "addfromcheck") {
+          if (find(slug(jb))) { notice("Job " + jb + " sudah ada di database."); return; }
+          var nr = { job: jb, tipe: cs.label, cust: clean(cs.cust), status: STATUS.proof, proof: fmt(new Date()), acc: "", rem: "", note: cs.op ? "Operator: " + clean(cs.op) : "" };
+          upsert([nr]);
+          notice("Job " + jb + " ditambahkan ke database. Unduh jobs.txt untuk menyimpannya di server.");
+        } else {
+          var ex2 = find(slug(jb));
+          if (!ex2) return;
+          change(ex2, { status: cs.osJob ? STATUS.os : STATUS.appr, acc: fmt(new Date()) });
+          notice("Job " + jb + " ditandai ACC. Unduh jobs.txt untuk menyimpannya di server.");
+        }
       } else if (a === "reset") {
         dirty = false; $("dbtxt").value = toTxt(recs); notice("Teks dimuat ulang dari data di halaman.");
       } else if (a === "download") {
@@ -737,6 +795,7 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
   if (["check", "reminder", "search", "db"].indexOf(v0) < 0) v0 = "check";
   renderAll();
   showView(v0);
+  document.dispatchEvent(new Event("checksheet-request"));
   loadServer(true);
   setInterval(renderAll, 60000);
 })();
