@@ -1,0 +1,5 @@
+# Database job prepress. Satu baris = satu job, kolom dipisah tanda |
+# job | tipe | customer | status | proof_kirim | acc | reminder | catatan
+# Waktu: YYYY-MM-DD HH:MM (waktu lokal). Baris berawalan # diabaikan.
+# Status: Prepress in Progress | Prepress on Proof | 3 Approved to Print | OS-To Do_AL
+# Contoh baris: JOB-1234|Packaging|PT Contoh|Prepress on Proof|2026-10-15 09:30|||Epson proof diminta
