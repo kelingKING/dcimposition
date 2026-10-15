@@ -112,12 +112,14 @@ input[type="checkbox"]:checked::after {
 .nav4 button { flex: 1 0 auto; padding: 10px 8px; font-size: 13px; white-space: nowrap; }
 .badge { display: inline-block; min-width: 18px; padding: 0 5px; margin-left: 4px; border-radius: 9px; background: var(--m); color: #fff; font: 600 11px/18px var(--font-mono); text-align: center; }
 .field.wide { grid-column: 1 / -1; }
+.jtitle { font: 500 14px var(--font-body); color: var(--fg); overflow-wrap: anywhere; margin-top: -2px; }
 .field select { font: 500 15px var(--font-body); color: var(--fg); background: var(--surface); border: 0; border-bottom: 1.5px solid var(--line); padding: 6px 0; border-radius: 0; width: 100%; }
 textarea { width: 100%; font: 400 13px/1.6 var(--font-mono); color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px; resize: vertical; white-space: pre; overflow-x: auto; }
 textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 #notice, #sync { margin: 0; }
 #sync { font-size: 12px; }
 #sync.bad { color: var(--m); font-weight: 600; }
+#pdfmsg.bad { color: var(--m); }
 .mode { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border-left: 3px solid var(--m); background: var(--surface); border-radius: 0 8px 8px 0; font-size: 14px; }
 #notice { color: var(--accent); font-weight: 600; }
 .hint { color: var(--muted); font-size: 13px; margin: 10px 0 0; }
@@ -187,6 +189,7 @@ button.job:focus-visible { outline: 2px solid currentColor; outline-offset: 3px;
 
   <section class="panel">
     <div class="fields" id="fields"></div>
+    <div class="acts" style="margin-top:12px"><label class="btn" for="pdfin">Impor jobsheet PDF</label><input id="pdfin" type="file" accept=".pdf,application/pdf" hidden><span class="hint" id="pdfmsg" style="margin:0">Job No, Title job, dan Customer diisi otomatis dari jobsheet.</span></div>
   </section>
 
   <section class="panel progress" aria-live="polite">
@@ -260,6 +263,7 @@ button.job:focus-visible { outline: 2px solid currentColor; outline-offset: 3px;
       <h2>Tambah job baru</h2>
       <div class="fields">
         <div class="field"><label for="nj">Job No</label><input id="nj" type="text" autocomplete="off"></div>
+        <div class="field wide"><label for="ntt">Title job</label><input id="ntt" type="text" autocomplete="off"></div>
         <div class="field"><label for="nt">Tipe</label><select id="nt"><option>Packaging</option><option>Commercial</option></select></div>
         <div class="field"><label for="nc">Customer</label><input id="nc" type="text" autocomplete="off"></div>
         <div class="field wide"><label for="nn">Catatan</label><input id="nn" type="text" autocomplete="off"></div>
@@ -365,7 +369,7 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
     var d = new Date();
     return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
   }
-  function blank() { return { checks: {}, acc: "belum", f: { job: "", cust: "", op: "", date: today() } }; }
+  function blank() { return { checks: {}, acc: "belum", f: { job: "", title: "", cust: "", op: "", date: today() } }; }
 
   var state = { tab: "packaging", jobs: { packaging: blank(), commercial: blank() } };
   try {
@@ -402,10 +406,10 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
   }
 
   function renderFields(job) {
-    var defs = [["job", "Job No"], ["cust", "Customer"], ["op", "Operator"], ["date", "Tanggal"]];
+    var defs = [["job", "Job No"], ["title", "Title job"], ["cust", "Customer"], ["op", "Operator"], ["date", "Tanggal"]];
     $("fields").innerHTML = defs.map(function (d) {
       var type = d[0] === "date" ? "date" : "text";
-      return '<div class="field"><label for="f-' + d[0] + '">' + d[1] + '</label><input id="f-' + d[0] + '" data-f="' + d[0] + '" type="' + type + '" autocomplete="off" value="' + String(job.f[d[0]] || "").replace(/"/g, "&quot;") + '"></div>';
+      return '<div class="field' + (d[0] === "title" ? " wide" : "") + '"><label for="f-' + d[0] + '">' + d[1] + '</label><input id="f-' + d[0] + '" data-f="' + d[0] + '" type="' + type + '" autocomplete="off" value="' + String(job.f[d[0]] || "").replace(/"/g, "&quot;") + '"></div>';
     }).join("");
   }
 
@@ -453,7 +457,7 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
       if (p) { b.acc = p.acc; b.checks = p.checks; if (p.date) b.f.date = p.date; b.f.op = p.op; }
       else { b.acc = d.approved ? "sudah" : "belum"; }
       if (!b.f.op) b.f.op = d.op || "";
-      b.f.job = d.job || ""; b.f.cust = d.cust || "";
+      b.f.job = d.job || ""; b.f.title = d.title || ""; b.f.cust = d.cust || "";
       state.tab = tab; state.jobs[tab] = b; confirming = false; save(); render();
     }
   };
@@ -465,7 +469,7 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
     document.dispatchEvent(new CustomEvent("checksheet-state", { detail: {
       label: d.label, tab: state.tab, chk: encode(state.tab), hasWork: Object.keys(job.checks).some(function (k) { return job.checks[k]; }),
       proofSent: !!job.checks[d.proofId], accSel: job.acc === "sudah" && d.sudah.some(function (it) { return job.checks[it.id] || (it.subs || []).some(function (x) { return job.checks[x.id]; }); }), mainDone: mainDone, accDone: accDone, osJob: !!job.checks.s3a,
-      job: job.f.job, cust: job.f.cust, op: job.f.op
+      job: job.f.job, title: job.f.title, cust: job.f.cust, op: job.f.op
     } }));
   }
 
@@ -507,7 +511,7 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
   });
   document.addEventListener("input", function (e) {
     var k = e.target.getAttribute && e.target.getAttribute("data-f");
-    if (k) { state.jobs[state.tab].f[k] = e.target.value; save(); if (k === "job" || k === "cust" || k === "op") emit(); }
+    if (k) { state.jobs[state.tab].f[k] = e.target.value; save(); if (k === "job" || k === "title" || k === "cust" || k === "op") emit(); }
   });
   document.addEventListener("click", function (e) {
     var b = e.target.closest && e.target.closest("button");
@@ -523,6 +527,90 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
     }
   });
 
+/*PDFPARSE-START*/
+  /* items: [{s: teks, x, y, w}] dari satu halaman PDF. Mengembalikan {job, title, cust} (kosong jika tidak ketemu). */
+  function parseJobsheet(items) {
+    var rows = [];
+    items.forEach(function (it) {
+      if (!String(it.s).trim()) return;
+      var row = null;
+      for (var i = 0; i < rows.length; i++) if (Math.abs(rows[i].y - it.y) < 3) { row = rows[i]; break; }
+      if (!row) { row = { y: it.y, items: [] }; rows.push(row); }
+      row.items.push(it);
+    });
+    rows.sort(function (a, b) { return b.y - a.y; });
+    var lines = rows.map(function (r) {
+      r.items.sort(function (a, b) { return a.x - b.x; });
+      var segs = [], cur = "", end = null;
+      r.items.forEach(function (it) {
+        if (end !== null && it.x - end > 6) { segs.push(cur.trim()); cur = ""; }
+        cur += it.s; end = it.x + it.w;
+      });
+      segs.push(cur.trim());
+      return segs.filter(Boolean);
+    });
+    function valueOf(re) {
+      for (var i = 0; i < lines.length; i++) {
+        for (var j = 0; j < lines[i].length; j++) {
+          var m = re.exec(lines[i][j]);
+          if (m) return (m[1] || "").trim() || (lines[i][j + 1] || "").trim();
+        }
+      }
+      return "";
+    }
+    var job = "";
+    for (var i = 0; i < lines.length && !job; i++) {
+      var m = /JOB\s*SHEET\s*:?\s*(\d[\d\-\/]*)/i.exec(lines[i].join(" "));
+      if (m) job = m[1];
+    }
+    return { job: job, title: valueOf(/^Title\s*:\s*(.*)$/i), cust: valueOf(/^(?:Client|Customer)\s*:\s*(.*)$/i) };
+  }
+/*PDFPARSE-END*/
+
+  var PDF_BASE = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+  function loadPdfJs() {
+    return new Promise(function (res, rej) {
+      if (window.pdfjsLib) return res(window.pdfjsLib);
+      var sc = document.createElement("script");
+      sc.src = PDF_BASE + "pdf.min.js";
+      sc.onload = function () {
+        fetch(PDF_BASE + "pdf.worker.min.js").then(function (r) { if (!r.ok) throw new Error("worker"); return r.text(); }).then(function (t) {
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(new Blob([t], { type: "text/javascript" }));
+          res(window.pdfjsLib);
+        }).catch(rej);
+      };
+      sc.onerror = rej;
+      document.head.appendChild(sc);
+    });
+  }
+  function pdfMsg(t, bad) { var m = $("pdfmsg"); m.textContent = t; m.className = "hint" + (bad ? " bad" : ""); }
+  $("pdfin").addEventListener("change", function (e) {
+    var f = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!f) return;
+    pdfMsg("Membaca " + f.name + "...");
+    var rd = new FileReader();
+    rd.onerror = function () { pdfMsg("File tidak bisa dibaca.", true); };
+    rd.onload = function () {
+      loadPdfJs().then(function (lib) {
+        return lib.getDocument({ data: new Uint8Array(rd.result) }).promise;
+      }).then(function (doc) { return doc.getPage(1); }).then(function (pg) { return pg.getTextContent(); }).then(function (tc) {
+        var items = tc.items.map(function (i) { return { s: i.str, x: i.transform[4], y: i.transform[5], w: i.width }; });
+        var r = parseJobsheet(items);
+        if (!r.job && !r.title && !r.cust) { pdfMsg("Job No, Title, dan Customer tidak ditemukan. PDF ini mungkin hasil scan atau formatnya berbeda.", true); return; }
+        var fl = state.jobs[state.tab].f;
+        if (r.job) fl.job = r.job;
+        if (r.title) fl.title = r.title;
+        if (r.cust) fl.cust = r.cust;
+        save(); render();
+        var miss = [];
+        if (!r.job) miss.push("Job No"); if (!r.title) miss.push("Title job"); if (!r.cust) miss.push("Customer");
+        pdfMsg("Terisi dari " + f.name + (miss.length ? ". Tidak ditemukan, isi manual: " + miss.join(", ") + "." : "."), miss.length > 0);
+      }).catch(function () { pdfMsg("PDF tidak bisa dibaca. Periksa koneksi internet (pembaca PDF dimuat dari cdnjs) atau isi manual.", true); });
+    };
+    rd.readAsArrayBuffer(f);
+  });
+
   document.addEventListener("checksheet-request", emit);
   render();
 })();
@@ -532,7 +620,7 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
   var DKEY = "checksheet-jobs-draft-v1", VKEY = "checksheet-view-v1", TKEY = "checksheet-jobs-token-v1";
   var HEADER = [
     "# Database job prepress. Satu baris = satu job, kolom dipisah tanda |",
-    "# job | tipe | customer | status | proof_kirim | acc | reminder | catatan | checklist",
+    "# job | tipe | customer | status | proof_kirim | acc | reminder | catatan | checklist | title",
     "# Waktu: YYYY-MM-DD HH:MM (waktu lokal). Baris berawalan # diabaikan."
   ];
   var STATUS = { prog: "Prepress in Progress", proof: "Prepress on Proof", appr: "3 Approved to Print", os: "OS-To Do_AL", done: "Selesai" };
@@ -569,7 +657,7 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
   function sbMsg(status, j) {
     var m = (j && (j.message || j.error)) || "";
     if (status === 401 || status === 403 || (j && j.code === "42501")) return "Kunci tim salah atau belum diisi. Perubahan belum tersimpan.";
-    if (j && /chk/.test(m) && /column|schema cache/i.test(m)) return "Kolom chk belum ada di tabel jobs. Jalankan di SQL Editor Supabase: alter table public.jobs add column if not exists chk text not null default '';";
+    if (j && /(chk|title)/.test(m) && /column|schema cache/i.test(m)) return "Kolom baru belum ada di tabel jobs. Jalankan di SQL Editor Supabase: alter table public.jobs add column if not exists chk text not null default ''; alter table public.jobs add column if not exists title text not null default '';";
     if (status === 404 || (j && /PGRST20[0-9]/.test(j.code || ""))) return "Tabel jobs tidak ditemukan di database. Jalankan SQL penyiapan di Supabase.";
     return m || ("Database membalas status " + status + ".");
   }
@@ -577,7 +665,7 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
     return rows.map(function (x) {
       var job = String(x.job || x.id || "");
       return { id: String(x.id), job: job, tipe: String(x.tipe || ""), cust: String(x.cust || ""), status: String(x.status || ""),
-        proof: String(x.proof || ""), acc: String(x.acc || ""), rem: String(x.rem || ""), note: String(x.note || ""), chk: String(x.chk || ""), created: Number(x.created) || 0 };
+        proof: String(x.proof || ""), acc: String(x.acc || ""), rem: String(x.rem || ""), note: String(x.note || ""), chk: String(x.chk || ""), title: String(x.title || ""), created: Number(x.created) || 0 };
     }).sort(function (a, b) { return (a.created - b.created) || (a.job < b.job ? -1 : 1); });
   }
   /* hasil: {rows} | {error} */
@@ -597,7 +685,7 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
       if (!tl || tl.charAt(0) === "#") return;
       var p = l.split("|").map(function (x) { return x.trim(); });
       if (!p[0]) return;
-      out.push({ job: p[0], tipe: p[1] || "", cust: p[2] || "", status: p[3] || "", proof: p[4] || "", acc: p[5] || "", rem: p[6] || "", note: p[7] || "", chk: p[8] || "" });
+      out.push({ job: p[0], tipe: p[1] || "", cust: p[2] || "", status: p[3] || "", proof: p[4] || "", acc: p[5] || "", rem: p[6] || "", note: p[7] || "", chk: p[8] || "", title: p.slice(9).join(" / ") });
     });
     return out;
   }
@@ -608,7 +696,7 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
     }
     return h.length ? h : HEADER;
   }
-  function lineOf(r) { return [r.job, r.tipe, r.cust, r.status, r.proof, r.acc, r.rem, r.note, r.chk || ""].map(clean).join("|"); }
+  function lineOf(r) { return [r.job, r.tipe, r.cust, r.status, r.proof, r.acc, r.rem, r.note, r.chk || "", r.title || ""].map(clean).join("|"); }
   function toTxt(list) { return headerLines.join("\n") + "\n" + list.map(lineOf).join("\n") + (list.length ? "\n" : ""); }
   function setRecs(txt) {
     headerLines = headerOf(txt);
@@ -648,7 +736,7 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
     renderAll();
   }
   function rowOf(r) {
-    return { id: r.id, job: r.job, tipe: r.tipe, cust: r.cust, status: r.status, proof: r.proof, acc: r.acc, rem: r.rem, note: r.note, chk: r.chk || "", created: r.created, updated_at: new Date().toISOString() };
+    return { id: r.id, job: r.job, tipe: r.tipe, cust: r.cust, status: r.status, proof: r.proof, acc: r.acc, rem: r.rem, note: r.note, chk: r.chk || "", title: r.title || "", created: r.created, updated_at: new Date().toISOString() };
   }
   async function sbCall(method, path, body, prefer) {
     var h = sbHeaders({ "Content-Type": "application/json" });
@@ -741,6 +829,7 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
       : '<button type="button" class="btn" data-jact="finish"' + d + ">Selesai</button>";
     acts += '<button type="button" class="btn" data-jact="del"' + d + ">Hapus</button>";
     return '<article class="card' + (o.due ? " due" : "") + '"><div class="chead"><button type="button" class="job" data-jact="open"' + d + ' title="Buka checksheet job ini">' + esc(r.job || "(tanpa nomor)") + '</button><span class="pill">' + esc(r.tipe || "-") + '</span><span class="pill ' + pc + '">' + pt + "</span></div>" +
+      (r.title ? '<div class="jtitle">' + esc(r.title) + "</div>" : "") +
       timing + (meta ? '<dl class="meta">' + meta + "</dl>" : "") + '<div class="acts">' + acts + "</div></article>";
   }
 
@@ -769,11 +858,11 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
         bs.push('<button type="button" class="btn primary" data-dbact="finishchk">Simpan checklist dan selesai</button>');
       }
       if (inf.key === "proof" && cs.accSel) bs.push('<button type="button" class="btn" data-dbact="accfromcheck">Tandai ACC saja (belum selesai)</button>');
-      var needProof = inf.key === "prog" && cs.proofSent;
-      if ((ex.chk || "") === cs.chk && !needProof) msg += " Checklist sama dengan yang tersimpan.";
+      var needProof = inf.key === "prog" && cs.proofSent, ct = clean(cs.title), diffT = !!ct && ct !== (ex.title || "");
+      if ((ex.chk || "") === cs.chk && !needProof && !diffT) msg += " Checklist sama dengan yang tersimpan.";
       else {
-        if (ex.chk || cs.hasWork) {
-          msg += (ex.chk || "") === cs.chk ? "" : " Checklist di halaman ini berbeda dari yang tersimpan di database.";
+        if (ex.chk || cs.hasWork || diffT) {
+          msg += (ex.chk || "") === cs.chk ? (diffT ? " Title job berbeda dari yang tersimpan." : "") : " Checklist di halaman ini berbeda dari yang tersimpan di database.";
           if (needProof) msg += " Langkah kirim proof tercentang, jadi menyimpan akan mengubah status ke Prepress on Proof dan memulai hitungan reminder 24 jam.";
           bs.push('<button type="button" class="btn' + (bs.length ? "" : " primary") + '" data-dbact="savechk">Simpan checklist ke database</button>');
         }
@@ -819,7 +908,7 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
       if (ft && r.tipe.toLowerCase() !== ft) return false;
       if (fs === "due") { if (!o.due) return false; }
       else if (fs && o.key !== fs) return false;
-      var hay = [r.job, r.tipe, r.cust, r.status, r.note, r.proof, r.acc].join(" ").toLowerCase();
+      var hay = [r.job, r.title, r.tipe, r.cust, r.status, r.note, r.proof, r.acc].join(" ").toLowerCase();
       return q.every(function (t) { return hay.indexOf(t) > -1; });
     }).reverse();
     var hid = q.length || fs === "done" ? 0 : items.filter(function (o) { return o.key === "done"; }).length;
@@ -872,12 +961,13 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
     });
   }
 
+  function titleUp() { var t = cs ? clean(cs.title) : ""; return t ? { title: t } : {}; }
   function clearCheck() { if (window.checksheetApi) window.checksheetApi.clear(); }
 
   function openJob(r) {
     var inf = info(r, new Date()), op = "";
     var m = /Operator:\s*(.*)$/.exec(r.note || ""); if (m) op = m[1].trim();
-    window.checksheetApi.load({ tab: String(r.tipe || "").toLowerCase(), job: r.job, cust: r.cust, op: op, chk: r.chk, approved: inf.key === "appr" || inf.key === "os" });
+    window.checksheetApi.load({ tab: String(r.tipe || "").toLowerCase(), job: r.job, title: r.title, cust: r.cust, op: op, chk: r.chk, approved: inf.key === "appr" || inf.key === "os" });
     showView("check");
     try { window.scrollTo(0, 0); } catch (e) {}
     notice("Checksheet job " + r.job + " dibuka. Centang langkah lalu simpan lewat panel Database job.");
@@ -942,8 +1032,8 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
         var job = clean($("nj").value);
         if (!job) { notice("Isi Job No dulu."); return; }
         if (find(slug(job))) { notice("Job " + job + " sudah ada."); return; }
-        var rec = { job: job, tipe: $("nt").value, cust: clean($("nc").value), status: STATUS.prog, proof: "", acc: "", rem: "", note: clean($("nn").value) };
-        $("nj").value = ""; $("nc").value = ""; $("nn").value = "";
+        var rec = { job: job, title: clean($("ntt").value), tipe: $("nt").value, cust: clean($("nc").value), status: STATUS.prog, proof: "", acc: "", rem: "", note: clean($("nn").value) };
+        $("nj").value = ""; $("ntt").value = ""; $("nc").value = ""; $("nn").value = "";
         upsert([rec]); notice("Job " + job + " ditambahkan.");
       } else if (a === "addfromcheck" || a === "accfromcheck") {
         if (!cs) return;
@@ -952,14 +1042,14 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
         if (a === "addfromcheck") {
           if (find(slug(jb))) { notice("Job " + jb + " sudah ada di database."); return; }
           var inProg = !cs.proofSent;
-          var nr = { job: jb, tipe: cs.label, cust: clean(cs.cust), status: inProg ? STATUS.prog : STATUS.proof, proof: inProg ? "" : fmt(new Date()), acc: "", rem: "", note: cs.op ? "Operator: " + clean(cs.op) : "", chk: cs.chk };
+          var nr = { job: jb, tipe: cs.label, cust: clean(cs.cust), status: inProg ? STATUS.prog : STATUS.proof, proof: inProg ? "" : fmt(new Date()), acc: "", rem: "", note: cs.op ? "Operator: " + clean(cs.op) : "", chk: cs.chk, title: clean(cs.title) };
           upsert([nr]);
           clearCheck();
           notice("Job " + jb + " ditambahkan ke database. Checksheet dikosongkan; buka lagi lewat daftar job.");
         } else {
           var ex2 = find(slug(jb));
           if (!ex2) return;
-          change(ex2, { status: cs.osJob ? STATUS.os : STATUS.appr, acc: fmt(new Date()), chk: cs.chk });
+          change(ex2, Object.assign({ status: cs.osJob ? STATUS.os : STATUS.appr, acc: fmt(new Date()), chk: cs.chk }, titleUp()));
           clearCheck();
           notice("Job " + jb + " ditandai ACC. Checksheet dikosongkan; buka lagi lewat daftar job.");
         }
@@ -970,11 +1060,11 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
         var stampf = fmt(new Date());
         if (a === "addfinish") {
           if (find(slug(jf))) { notice("Job " + jf + " sudah ada di database."); return; }
-          upsert([{ job: jf, tipe: cs.label, cust: clean(cs.cust), status: STATUS.done, proof: "", acc: stampf, rem: "", note: cs.op ? "Operator: " + clean(cs.op) : "", chk: cs.chk }]);
+          upsert([{ job: jf, tipe: cs.label, cust: clean(cs.cust), status: STATUS.done, proof: "", acc: stampf, rem: "", note: cs.op ? "Operator: " + clean(cs.op) : "", chk: cs.chk, title: clean(cs.title) }]);
         } else {
           var exf = find(slug(jf));
           if (!exf) return;
-          var upf = { chk: cs.chk, status: STATUS.done };
+          var upf = Object.assign({ chk: cs.chk, status: STATUS.done }, titleUp());
           if (!exf.acc) upf.acc = stampf;
           change(exf, upf);
         }
@@ -985,7 +1075,7 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
         var ex3 = find(slug(clean(cs.job)));
         if (!ex3) return;
         if (a === "savechk") {
-          var up = { chk: cs.chk }, was = info(ex3, new Date()).key;
+          var up = Object.assign({ chk: cs.chk }, titleUp()), was = info(ex3, new Date()).key;
           if (cs.proofSent && was === "prog") { up.status = STATUS.proof; up.proof = fmt(new Date()); up.rem = ""; }
           change(ex3, up); clearCheck();
           notice("Checklist job " + ex3.job + " disimpan ke database" + (up.status ? " dan status menjadi Prepress on Proof" : "") + ". Checksheet dikosongkan; buka lagi lewat daftar job.");
