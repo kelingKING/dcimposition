@@ -120,6 +120,10 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent);
 #sync { font-size: 12px; }
 #sync.bad { color: var(--m); font-weight: 600; }
 #pdfmsg.bad { color: var(--m); }
+.dlg { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
+.dlgcard { background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 12px; padding: 20px; max-width: 460px; width: 100%; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 12px 40px rgba(0,0,0,.3); }
+.dlgcard h2 { margin: 0; font-size: 17px; }
+.dlgcard p { margin: 0; font-size: 14px; line-height: 1.5; }
 .mode { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border-left: 3px solid var(--m); background: var(--surface); border-radius: 0 8px 8px 0; font-size: 14px; }
 #notice { color: var(--accent); font-weight: 600; }
 .hint { color: var(--muted); font-size: 13px; margin: 10px 0 0; }
@@ -497,8 +501,13 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
     emit();
   }
 
+  function announce(job, src) {
+    job = String(job || "").trim();
+    if (job) document.dispatchEvent(new CustomEvent("checksheet-jobentered", { detail: { job: job, src: src } }));
+  }
   document.addEventListener("change", function (e) {
     var el = e.target, job = state.jobs[state.tab];
+    if (el.id === "f-job") announce(el.value, "input");
     if (el.matches && el.matches('input[type="checkbox"][data-id]')) {
       var id = el.getAttribute("data-id");
       if (el.checked) job.checks[id] = true; else delete job.checks[id];
@@ -606,6 +615,7 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
         var miss = [];
         if (!r.job) miss.push("Job No"); if (!r.title) miss.push("Title job"); if (!r.cust) miss.push("Customer");
         pdfMsg("Terisi dari " + f.name + (miss.length ? ". Tidak ditemukan, isi manual: " + miss.join(", ") + "." : "."), miss.length > 0);
+        if (r.job) announce(r.job, "pdf");
       }).catch(function () { pdfMsg("PDF tidak bisa dibaca. Periksa koneksi internet (pembaca PDF dimuat dari cdnjs) atau isi manual.", true); });
     };
     rd.readAsArrayBuffer(f);
@@ -881,7 +891,7 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
     }
     el.innerHTML = '<p class="dbmsg">' + msg + '</p><div class="acts">' + btn + "</div>";
   }
-  document.addEventListener("checksheet-state", function (e) { cs = e.detail; renderAddPanel(); });
+  document.addEventListener("checksheet-state", function (e) { cs = e.detail; if (askedFor && slug(clean(cs.job)) !== askedFor) askedFor = ""; renderAddPanel(); });
 
   function renderAll() {
     updateMode();
@@ -962,11 +972,44 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
   }
 
   function titleUp() { var t = cs ? clean(cs.title) : ""; return t ? { title: t } : {}; }
-  function clearCheck() { if (window.checksheetApi) window.checksheetApi.clear(); }
+  var askedFor = "";
+  function clearCheck() { askedFor = ""; if (window.checksheetApi) window.checksheetApi.clear(); }
+  function closeDlg() { var d = $("dlg"); if (d) d.remove(); document.removeEventListener("keydown", dlgKey); }
+  function dlgKey(e) { if (e.key === "Escape") closeDlg(); }
+  function showDialog(r, hasWork) {
+    closeDlg();
+    var n = r.chk ? String(r.chk.split("~").slice(3).join("~")).split(",").filter(Boolean).length : 0;
+    var d = document.createElement("div");
+    d.id = "dlg"; d.className = "dlg";
+    d.innerHTML = '<div class="dlgcard" role="dialog" aria-modal="true" aria-labelledby="dlgt"><h2 id="dlgt">Job ' + esc(r.job) + ' sudah ada di database</h2>' +
+      "<p>" + (r.title ? esc(r.title) + "<br>" : "") + "Status: " + esc(r.status || "kosong") + (r.cust ? ". Customer: " + esc(r.cust) : "") + ". " +
+      (n ? n + " langkah checklist tersimpan." : "Belum ada checklist tersimpan.") + "</p>" +
+      '<p class="hint" style="margin:0">' + (hasWork ? "Centang yang sedang terisi akan diganti kalau kamu memuat. " : "") + "Mulai baru: checklist di halaman ini dipakai apa adanya dan menggantikan yang tersimpan saat kamu menyimpan.</p>" +
+      '<div class="acts"><button type="button" class="btn primary" data-dlg="load">' + (n ? "Muat checklist yang ada" : "Muat data job ini") + '</button><button type="button" class="btn" data-dlg="new">Mulai baru</button></div></div>';
+    d.addEventListener("click", function (e) {
+      var b = e.target.closest && e.target.closest("button[data-dlg]");
+      if (b && b.getAttribute("data-dlg") === "load") { closeDlg(); openJob(r); notice("Checklist job " + r.job + " dimuat dari database."); }
+      else if (b || e.target === d) closeDlg();
+    });
+    document.addEventListener("keydown", dlgKey);
+    document.body.appendChild(d);
+    var pb = d.querySelector(".primary"); if (pb) pb.focus();
+  }
+  document.addEventListener("checksheet-jobentered", function (e) {
+    var jb = clean(e.detail.job), id = slug(jb), api = window.checksheetApi;
+    if (!jb || id === askedFor || !api || !cs) return;
+    var r = find(id);
+    if (!r) return;
+    var pk = api.peek(cs.tab);
+    if (slug(pk.job) === id && (r.chk || "") === pk.chk) return;
+    askedFor = id;
+    showDialog(r, pk.hasWork);
+  });
 
   function openJob(r) {
     var inf = info(r, new Date()), op = "";
     var m = /Operator:\s*(.*)$/.exec(r.note || ""); if (m) op = m[1].trim();
+    askedFor = slug(r.job);
     window.checksheetApi.load({ tab: String(r.tipe || "").toLowerCase(), job: r.job, title: r.title, cust: r.cust, op: op, chk: r.chk, approved: inf.key === "appr" || inf.key === "os" });
     showView("check");
     try { window.scrollTo(0, 0); } catch (e) {}
