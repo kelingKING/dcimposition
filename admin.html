@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Impose — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f4f6f9; --paper-alt:#eef1f6; --ink:#1a2233; --ink-soft:#68728a;
+    --line:#dde2eb; --line-soft:#e8ebf1; --press:#2953d1; --press-soft:#eaf0ff;
+    --signal:#c0392b; --signal-soft:#fdecea; --ok:#1e7d4f; --ok-soft:#e7f6ee; --white:#ffffff;
+    --mono:'Space Mono', monospace; --sans:'Inter', -apple-system, sans-serif;
+    --shadow-sm:0 1px 2px rgba(20,30,60,.06); --shadow-md:0 4px 16px rgba(20,30,60,.08); --shadow-lg:0 16px 40px rgba(20,30,60,.14);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--paper);color:var(--ink);font-family:var(--sans);min-height:100vh;}
+  [hidden]{display:none !important;}
+
+  /* top bar */
+  .topbar{background:var(--ink);border-bottom:1px solid rgba(255,255,255,.08);}
+  .topbar-inner{max-width:980px;margin:0 auto;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;}
+  .wordmark{font-weight:700;font-size:19px;letter-spacing:-.2px;display:flex;align-items:center;gap:11px;color:var(--white);}
+  .wordmark small{font-weight:600;font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.55);margin-left:4px;}
+  .mark{width:11px;height:11px;border:2.5px solid #5b8cff;border-radius:3px;position:relative;flex:none;}
+  .mark::before,.mark::after{content:'';position:absolute;background:#5b8cff;border-radius:1px;}
+  .mark::before{left:50%;top:-4px;width:2px;height:18px;transform:translateX(-50%);}
+  .mark::after{top:50%;left:-4px;height:2px;width:18px;transform:translateY(-50%);}
+  .top-actions{display:flex;align-items:center;gap:10px;font-size:12.5px;color:rgba(255,255,255,.7);}
+  .top-actions a,.top-actions button{
+    font:inherit;font-weight:600;font-size:12px;color:var(--white);background:rgba(255,255,255,.1);
+    border:1px solid rgba(255,255,255,.18);border-radius:8px;padding:6px 12px;cursor:pointer;text-decoration:none;
+  }
+  .top-actions a:hover,.top-actions button:hover{background:rgba(255,255,255,.18);}
+
+  main{max-width:980px;margin:0 auto;padding:28px 24px 80px;display:flex;flex-direction:column;gap:20px;}
+  .card{background:var(--white);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-sm);padding:22px;}
+  .card h2{margin:0 0 4px;font-size:15px;font-weight:700;}
+  .card .sub{margin:0 0 16px;font-size:12.5px;color:var(--ink-soft);line-height:1.5;}
+
+  /* forms */
+  label{display:block;font-size:11.5px;font-weight:600;letter-spacing:.3px;color:var(--ink-soft);margin:0 0 6px;}
+  input[type=text],input[type=password]{
+    width:100%;padding:10px 12px;font:inherit;font-size:14px;color:var(--ink);background:var(--white);
+    border:1.5px solid var(--line);border-radius:9px;outline:none;
+  }
+  input:focus{border-color:var(--press);box-shadow:0 0 0 3px var(--press-soft);}
+  .mono{font-family:var(--mono);font-size:13px !important;}
+  .add-grid{display:grid;grid-template-columns:1fr 1.4fr auto;gap:12px;align-items:end;}
+  @media (max-width:720px){.add-grid{grid-template-columns:1fr;}}
+  .pw-row{display:flex;gap:8px;}
+  .btn{
+    font:inherit;font-weight:700;font-size:13px;border-radius:9px;padding:10px 16px;cursor:pointer;border:1.5px solid transparent;white-space:nowrap;
+  }
+  .btn-primary{background:var(--press);color:var(--white);}
+  .btn-primary:hover{background:#2147b5;}
+  .btn-ghost{background:var(--white);color:var(--press);border-color:var(--press);}
+  .btn-ghost:hover{background:var(--press-soft);}
+  .btn-plain{background:var(--paper);color:var(--ink-soft);border-color:var(--line);}
+  .btn-plain:hover{color:var(--ink);border-color:var(--ink-soft);}
+  .btn-danger{background:var(--white);color:var(--signal);border-color:var(--signal);}
+  .btn-danger:hover{background:var(--signal-soft);}
+  .btn-danger-solid{background:var(--signal);color:var(--white);}
+  .btn:disabled{background:var(--line);color:var(--ink-soft);border-color:var(--line);cursor:not-allowed;}
+  .btn-sm{font-size:12px;padding:6px 11px;}
+  .msg{margin-top:12px;font-size:12.5px;line-height:1.5;border-radius:9px;padding:10px 12px;}
+  .msg.err{background:var(--signal-soft);color:var(--signal);}
+  .msg.ok{background:var(--ok-soft);color:var(--ok);}
+  .msg .cred{font-family:var(--mono);font-size:12.5px;background:var(--white);border:1px solid var(--line);border-radius:7px;padding:6px 9px;display:inline-block;margin:6px 8px 0 0;color:var(--ink);word-break:break-all;}
+
+  /* table */
+  .table-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;}
+  .table-head h2{margin:0;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th{text-align:left;font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--ink-soft);padding:0 10px 10px;border-bottom:1px solid var(--line);}
+  td{padding:12px 10px;border-bottom:1px solid var(--line-soft);vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  td.user{font-weight:600;}
+  td.muted{color:var(--ink-soft);font-size:12.5px;}
+  td.actions{text-align:right;white-space:nowrap;}
+  td.actions .btn{margin-left:6px;}
+  .badge{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.3px;padding:3px 9px;border-radius:20px;}
+  .badge.active{background:var(--ok-soft);color:var(--ok);}
+  .badge.off{background:var(--signal-soft);color:var(--signal);}
+  .badge.admin{background:var(--press-soft);color:var(--press);margin-left:6px;}
+  .empty{padding:26px 10px;text-align:center;color:var(--ink-soft);font-size:13px;}
+  .table-scroll{overflow-x:auto;}
+
+  /* modal */
+  .modal-back{position:fixed;inset:0;z-index:200;background:rgba(20,27,48,.55);display:flex;align-items:center;justify-content:center;padding:24px;}
+  .modal{background:var(--white);border-radius:14px;box-shadow:var(--shadow-lg);width:100%;max-width:420px;padding:24px;}
+  .modal h3{margin:0 0 6px;font-size:16px;}
+  .modal p{margin:0 0 14px;font-size:13px;color:var(--ink-soft);line-height:1.5;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;}
+
+  /* login gate */
+  .auth-gate{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;padding:24px;overflow-y:auto;
+    background:linear-gradient(160deg,#141b30,#1c2540 60%,#202b4d);}
+  .auth-wrap{width:100%;max-width:380px;}
+  .auth-wrap .wordmark{justify-content:center;margin-bottom:22px;}
+  .auth-card{background:var(--white);border-radius:16px;padding:32px 30px 28px;box-shadow:var(--shadow-lg);}
+  .auth-card h2{margin:0 0 4px;font-size:20px;}
+  .auth-card .sub{margin:0 0 20px;font-size:12.5px;color:var(--ink-soft);}
+  .auth-card input{margin-bottom:14px;}
+  .auth-card .btn{width:100%;}
+  .auth-error{min-height:18px;margin:0 0 8px;font-size:12.5px;color:var(--signal);line-height:1.45;}
+  .auth-checking{margin:6px 0;text-align:center;font-size:13px;color:var(--ink-soft);}
+
+  .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:var(--ink);color:var(--white);font-size:13px;font-weight:600;
+    padding:11px 18px;border-radius:10px;box-shadow:var(--shadow-lg);z-index:400;}
+</style>
+</head>
+<body>
+
+<!-- ============ Login gate (admins only) ============ -->
+<div class="auth-gate" id="authGate">
+  <div class="auth-wrap">
+    <div class="wordmark"><span class="mark"></span>IMPOSE <small>Admin</small></div>
+    <div class="auth-card">
+      <p class="auth-checking" id="authChecking">Checking session…</p>
+      <form id="authForm" hidden autocomplete="on">
+        <h2>Admin sign in</h2>
+        <p class="sub">Administrator accounts only.</p>
+        <label for="authUser">Username</label>
+        <input id="authUser" name="username" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required>
+        <label for="authPass">Password</label>
+        <input id="authPass" name="password" type="password" autocomplete="current-password" required>
+        <div class="auth-error" id="authError" role="alert"></div>
+        <button class="btn btn-primary" type="submit" id="authSubmit">Sign in</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Admin app ============ -->
+<div id="adminApp" hidden>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="wordmark"><span class="mark"></span>IMPOSE <small>Admin</small></div>
+      <div class="top-actions">
+        <span id="whoAmI"></span>
+        <a href="imposition.html" id="backLink">&larr; Back to app</a>
+        <button type="button" id="signOutBtn">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Add a user</h2>
+      <p class="sub">Creates a login for the Impose app. Share the username and password with the person yourself — the password can't be viewed again after this.</p>
+      <form id="addForm" class="add-grid" autocomplete="off">
+        <div>
+          <label for="newUser">Username</label>
+          <input id="newUser" type="text" class="mono" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="e.g. andi" required>
+        </div>
+        <div>
+          <label for="newPass">Password (min 8 characters)</label>
+          <div class="pw-row">
+            <input id="newPass" type="text" class="mono" autocomplete="off" spellcheck="false" required>
+            <button type="button" class="btn btn-plain" id="genPass">Generate</button>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary" id="addBtn">Create user</button>
+      </form>
+      <div id="addMsg" hidden></div>
+    </section>
+
+    <section class="card">
+      <div class="table-head">
+        <h2>Users</h2>
+        <button type="button" class="btn btn-plain btn-sm" id="refreshBtn">Refresh</button>
+      </div>
+      <div id="listMsg" hidden></div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Username</th><th>Status</th><th>Created</th><th>Last sign-in</th><th></th></tr></thead>
+          <tbody id="userRows"><tr><td colspan="5" class="empty">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="modalHost"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+  // Must match the login page in the main app and the Edge Function.
+  var SUPABASE_URL = 'https://bsmmyvslplkcdkgcysdd.supabase.co';
+  var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJzbW15dnNscGxrY2RrZ2N5c2RkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2OTQzODUsImV4cCI6MjEwODI3MDM4NX0.PSVCs5uKz6Nyb5L77_RIZevM4MvTDBcXeV6e0eW3rkE';
+  var USERNAME_DOMAIN = 'impose.app';
+  var FUNCTION_NAME = 'admin-users';
+  // File name of the main app, for the "Back to app" link. Change it if you
+  // rename the main page (e.g. to index.html).
+  var APP_URL = 'imposition.html';
+
+  function $(id){ return document.getElementById(id); }
+  $('backLink').setAttribute('href', APP_URL);
+  function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
+  var gate = $('authGate'), form = $('authForm'), checking = $('authChecking');
+  if (!window.supabase){
+    checking.textContent = 'Could not load the sign-in service. Check your connection and reload the page.';
+    return;
+  }
+  var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
+  });
+
+  var myId = null, shown = false;
+
+  // ---------- helpers ----------
+  function showMsg(el, kind, html){
+    el.className = 'msg ' + kind; el.innerHTML = html; el.hidden = false;
+  }
+  function hideMsg(el){ el.hidden = true; el.innerHTML = ''; }
+  function toast(text){
+    var t = document.createElement('div'); t.className = 'toast'; t.textContent = text;
+    document.body.appendChild(t);
+    setTimeout(function(){ t.remove(); }, 2600);
+  }
+  function fmt(iso){
+    if (!iso) return '—';
+    var d = new Date(iso);
+    return isNaN(d) ? '—' : d.toLocaleString(undefined, { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+  }
+  function genPassword(){
+    // Unambiguous characters only (no 0/O, 1/l/I) so it survives being read out or retyped.
+    var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+    var out = '', buf = new Uint32Array(14);
+    crypto.getRandomValues(buf);
+    for (var i = 0; i < buf.length; i++) out += chars[buf[i] % chars.length];
+    return out;
+  }
+  function copyText(text){
+    if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text).then(function(){ toast('Copied'); });
+    var ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); toast('Copied'); } catch(e){}
+    ta.remove(); return Promise.resolve();
+  }
+
+  // Calls the Edge Function (supabase-js attaches this admin's JWT automatically).
+  async function call(action, payload){
+    var r = await sb.functions.invoke(FUNCTION_NAME, { body: Object.assign({ action: action }, payload || {}) });
+    if (r.error){
+      var msg = r.error.message || 'Request failed';
+      try { var j = await r.error.context.json(); if (j && j.error) msg = j.error; } catch(e){}
+      throw new Error(msg);
+    }
+    if (r.data && r.data.error) throw new Error(r.data.error);
+    return r.data;
+  }
+
+  // ---------- auth ----------
+  async function validate(){
+    var r = await sb.auth.getUser();
+    if (r.error || !r.data || !r.data.user){
+      var e = r.error;
+      if (e && (e.name === 'AuthRetryableFetchError' || e.status === 0)) return { offline: true };
+      return { fail: 'none' };
+    }
+    var q = await sb.from('profiles').select('username,is_admin,is_disabled').eq('id', r.data.user.id).maybeSingle();
+    if (q.error) return { offline: true };
+    if (!q.data) return { fail: 'missing' };
+    if (q.data.is_disabled) return { fail: 'disabled' };
+    if (!q.data.is_admin) return { fail: 'notadmin' };
+    return { ok: true, profile: q.data, id: r.data.user.id };
+  }
+  function showForm(msg){
+    checking.hidden = true; form.hidden = false;
+    $('authError').textContent = msg || '';
+    $('authUser').focus();
+  }
+  function reveal(v){
+    myId = v.id;
+    gate.hidden = true; $('adminApp').hidden = false;
+    $('whoAmI').textContent = v.profile.username;
+    if (!shown){ shown = true; loadUsers(); }
+  }
+  var FAIL_TEXT = {
+    disabled: 'This account has been disabled.',
+    missing: 'This account is not set up correctly.',
+    notadmin: 'This account is not an administrator.'
+  };
+  async function boot(){
+    var v = await validate();
+    if (v.ok) return reveal(v);
+    if (v.offline) return showForm('Can’t reach the server. Check your connection and try again.');
+    if (v.fail !== 'none'){ try { await sb.auth.signOut(); } catch(e){} return showForm(FAIL_TEXT[v.fail]); }
+    showForm('');
+  }
+
+  form.addEventListener('submit', async function(ev){
+    ev.preventDefault();
+    $('authError').textContent = '';
+    var u = $('authUser').value.trim().toLowerCase(), p = $('authPass').value;
+    if (!/^[a-z0-9._-]{3,32}$/.test(u) || !p){ $('authError').textContent = 'Incorrect username or password.'; return; }
+    var btn = $('authSubmit'); btn.disabled = true; btn.textContent = 'Signing in…';
+    try {
+      var r = await sb.auth.signInWithPassword({ email: u + '@' + USERNAME_DOMAIN, password: p });
+      if (r.error){
+        var banned = r.error.code === 'user_banned' || /banned/i.test(r.error.message || '');
+        $('authError').textContent = banned ? 'This account has been disabled.'
+          : r.error.name === 'AuthRetryableFetchError' ? 'Can’t reach the server. Try again.'
+          : 'Incorrect username or password.';
+        return;
+      }
+      var v = await validate();
+      if (v.ok){ $('authPass').value = ''; return reveal(v); }
+      try { await sb.auth.signOut(); } catch(e){}
+      $('authError').textContent = v.offline ? 'Can’t reach the server. Try again.' : FAIL_TEXT[v.fail] || 'Sign-in failed.';
+    } finally { btn.disabled = false; btn.textContent = 'Sign in'; }
+  });
+
+  $('signOutBtn').addEventListener('click', async function(){
+    try { await sb.auth.signOut(); } catch(e){}
+    location.reload();
+  });
+  sb.auth.onAuthStateChange(function(event){ if (event === 'SIGNED_OUT' && shown) location.reload(); });
+
+  // ---------- user list ----------
+  async function loadUsers(){
+    var tbody = $('userRows'), lm = $('listMsg');
+    hideMsg(lm);
+    try {
+      var data = await call('list');
+      var users = data.users || [];
+      if (!users.length){ tbody.innerHTML = '<tr><td colspan="5" class="empty">No users yet.</td></tr>'; return; }
+      tbody.innerHTML = users.map(function(u){
+        var self = u.id === myId;
+        return '<tr data-id="' + esc(u.id) + '" data-name="' + esc(u.username) + '">' +
+          '<td class="user">' + esc(u.username) + (u.is_admin ? '<span class="badge admin">Admin</span>' : '') + (self ? ' <span class="muted" style="font-weight:500;font-size:12px;color:var(--ink-soft)">(you)</span>' : '') + '</td>' +
+          '<td><span class="badge ' + (u.is_disabled ? 'off">Disabled' : 'active">Active') + '</span></td>' +
+          '<td class="muted">' + esc(fmt(u.created_at)) + '</td>' +
+          '<td class="muted">' + esc(fmt(u.last_sign_in_at)) + '</td>' +
+          '<td class="actions">' +
+            '<button class="btn btn-plain btn-sm" data-act="pw">Reset password</button>' +
+            (self ? '' :
+              '<button class="btn btn-plain btn-sm" data-act="toggle" data-disabled="' + (u.is_disabled ? '1' : '0') + '">' + (u.is_disabled ? 'Enable' : 'Disable') + '</button>' +
+              '<button class="btn btn-danger btn-sm" data-act="del">Delete</button>') +
+          '</td></tr>';
+      }).join('');
+    } catch(e){
+      tbody.innerHTML = '<tr><td colspan="5" class="empty">Couldn’t load users.</td></tr>';
+      showMsg(lm, 'err', esc(e.message) + (/not found|404|failed to send/i.test(e.message) ? ' — is the <b>admin-users</b> Edge Function deployed?' : ''));
+    }
+  }
+  $('refreshBtn').addEventListener('click', loadUsers);
+
+  // ---------- add user ----------
+  $('genPass').addEventListener('click', function(){ $('newPass').value = genPassword(); });
+  function credsBox(username, password, lead){
+    return esc(lead) + '<br><span class="cred" id="credText">' + esc(username) + ' / ' + esc(password) + '</span>' +
+      '<button type="button" class="btn btn-plain btn-sm" id="copyCred">Copy</button>';
+  }
+  function wireCopy(username, password){
+    var b = $('copyCred'); if (b) b.addEventListener('click', function(){ copyText('Username: ' + username + '\nPassword: ' + password); });
+  }
+  $('addForm').addEventListener('submit', async function(ev){
+    ev.preventDefault();
+    var username = $('newUser').value.trim().toLowerCase(), password = $('newPass').value;
+    var am = $('addMsg'); hideMsg(am);
+    if (!/^[a-z0-9._-]{3,32}$/.test(username)){ showMsg(am, 'err', 'Username must be 3–32 characters: lowercase letters, digits, . _ -'); return; }
+    if (password.length < 8){ showMsg(am, 'err', 'Password must be at least 8 characters.'); return; }
+    var btn = $('addBtn'); btn.disabled = true; btn.textContent = 'Creating…';
+    try {
+      await call('create', { username: username, password: password });
+      showMsg(am, 'ok', credsBox(username, password, 'User created. Share these with them — the password can’t be shown again:'));
+      wireCopy(username, password);
+      $('newUser').value = ''; $('newPass').value = '';
+      loadUsers();
+    } catch(e){ showMsg(am, 'err', esc(e.message)); }
+    finally { btn.disabled = false; btn.textContent = 'Create user'; }
+  });
+
+  // ---------- row actions ----------
+  function openModal(html){
+    var host = $('modalHost');
+    host.innerHTML = '<div class="modal-back"><div class="modal" role="dialog" aria-modal="true">' + html + '</div></div>';
+    host.querySelector('.modal-back').addEventListener('mousedown', function(e){ if (e.target.classList.contains('modal-back')) closeModal(); });
+    return host.querySelector('.modal');
+  }
+  function closeModal(){ $('modalHost').innerHTML = ''; }
+
+  function resetPasswordModal(id, name){
+    var m = openModal(
+      '<h3>Reset password</h3><p>Set a new password for <b>' + esc(name) + '</b>. They’ll need it next time they sign in.</p>' +
+      '<label for="rpPass">New password (min 8 characters)</label>' +
+      '<div class="pw-row"><input id="rpPass" type="text" class="mono" autocomplete="off" spellcheck="false">' +
+      '<button type="button" class="btn btn-plain" id="rpGen">Generate</button></div>' +
+      '<div id="rpMsg" hidden></div>' +
+      '<div class="modal-actions"><button class="btn btn-plain" id="rpCancel">Cancel</button><button class="btn btn-primary" id="rpSave">Save password</button></div>');
+    var inp = m.querySelector('#rpPass'); inp.value = genPassword(); inp.select();
+    m.querySelector('#rpGen').addEventListener('click', function(){ inp.value = genPassword(); });
+    m.querySelector('#rpCancel').addEventListener('click', closeModal);
+    m.querySelector('#rpSave').addEventListener('click', async function(){
+      var pw = inp.value, msg = m.querySelector('#rpMsg'), btn = this;
+      hideMsg(msg);
+      if (pw.length < 8){ showMsg(msg, 'err', 'Password must be at least 8 characters.'); return; }
+      btn.disabled = true; btn.textContent = 'Saving…';
+      try {
+        await call('set_password', { id: id, password: pw });
+        showMsg(msg, 'ok', credsBox(name, pw, 'Password changed. Share it with them:'));
+        wireCopy(name, pw);
+        btn.hidden = true; m.querySelector('#rpCancel').textContent = 'Close';
+      } catch(e){ showMsg(msg, 'err', esc(e.message)); btn.disabled = false; btn.textContent = 'Save password'; }
+    });
+  }
+
+  function confirmModal(title, text, okLabel, danger, onOk){
+    var m = openModal('<h3>' + esc(title) + '</h3><p>' + text + '</p><div id="cfMsg" hidden></div>' +
+      '<div class="modal-actions"><button class="btn btn-plain" id="cfCancel">Cancel</button>' +
+      '<button class="btn ' + (danger ? 'btn-danger-solid' : 'btn-primary') + '" id="cfOk">' + esc(okLabel) + '</button></div>');
+    m.querySelector('#cfCancel').addEventListener('click', closeModal);
+    m.querySelector('#cfOk').addEventListener('click', async function(){
+      var btn = this; btn.disabled = true;
+      try { await onOk(); closeModal(); }
+      catch(e){ showMsg(m.querySelector('#cfMsg'), 'err', esc(e.message)); btn.disabled = false; }
+    });
+  }
+
+  $('userRows').addEventListener('click', function(ev){
+    var btn = ev.target.closest('button[data-act]'); if (!btn) return;
+    var tr = btn.closest('tr'), id = tr.dataset.id, name = tr.dataset.name, act = btn.dataset.act;
+    if (act === 'pw') return resetPasswordModal(id, name);
+    if (act === 'toggle'){
+      var disabling = btn.dataset.disabled !== '1';
+      return confirmModal(
+        disabling ? 'Disable user' : 'Enable user',
+        disabling ? '<b>' + esc(name) + '</b> will be blocked from signing in. If they’re using the app right now, they’re signed out within a few minutes.'
+                  : '<b>' + esc(name) + '</b> will be able to sign in again.',
+        disabling ? 'Disable' : 'Enable', disabling,
+        async function(){ await call('set_disabled', { id: id, disabled: disabling }); toast(disabling ? 'User disabled' : 'User enabled'); loadUsers(); });
+    }
+    if (act === 'del'){
+      return confirmModal('Delete user', 'Permanently delete <b>' + esc(name) + '</b>? This can’t be undone. (To block someone temporarily, use Disable instead.)',
+        'Delete', true,
+        async function(){ await call('delete', { id: id }); toast('User deleted'); loadUsers(); });
+    }
+  });
+
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeModal(); });
+
+  boot();
+})();
+</script>
+</body>
+</html>
