@@ -358,30 +358,20 @@
   .home-privacy .lock{font-size:12px;}
   #homeFileInput{display:none;}
 
-  /* --- Login gate + session chip --- */
+  /* --- Session check splash + session chip (sign-in itself lives in login.html) --- */
   .auth-gate{
     position:fixed; inset:0; z-index:10000; display:flex; align-items:center; justify-content:center; padding:24px;
     background:linear-gradient(160deg,#141b30,#1c2540 60%,#202b4d); font-family:var(--sans); overflow-y:auto;
   }
   .auth-wrap{width:100%; max-width:380px;}
   .auth-wrap .home-wordmark{margin-bottom:22px; justify-content:center; display:flex;}
-  .auth-card{background:var(--white); border-radius:16px; padding:32px 30px 28px; box-shadow:var(--shadow-lg);}
-  .auth-card h2{margin:0 0 4px; font-size:20px; font-weight:700; letter-spacing:-.2px; color:var(--ink);}
-  .auth-card .sub{margin:0 0 20px; font-size:12.5px; line-height:1.5; color:var(--ink-soft);}
-  .auth-card label{display:block; font-size:11.5px; font-weight:600; letter-spacing:.3px; color:var(--ink-soft); margin:0 0 6px;}
-  .auth-card input{
-    width:100%; padding:11px 12px; font:inherit; font-size:14px; color:var(--ink); background:var(--white);
-    border:1.5px solid var(--line); border-radius:9px; margin-bottom:14px; outline:none;
+  .auth-card{background:var(--white); border-radius:16px; padding:32px 30px 28px; box-shadow:var(--shadow-lg); text-align:center;}
+  .auth-checking{margin:6px 0; font-size:13px; line-height:1.5; color:var(--ink-soft);}
+  .auth-retry{
+    margin-top:14px; padding:10px 20px; border:none; border-radius:10px; background:var(--press); color:var(--white);
+    font:inherit; font-weight:700; font-size:13px; cursor:pointer;
   }
-  .auth-card input:focus{border-color:var(--press); box-shadow:0 0 0 3px var(--press-soft);}
-  .auth-card button[type=submit]{
-    width:100%; padding:12px; margin-top:4px; border:none; border-radius:10px; background:var(--press); color:var(--white);
-    font:inherit; font-weight:700; font-size:13.5px; cursor:pointer; transition:background .15s;
-  }
-  .auth-card button[type=submit]:hover{background:#2147b5;}
-  .auth-card button[type=submit]:disabled{background:var(--line); color:var(--ink-soft); cursor:not-allowed;}
-  .auth-error{min-height:18px; margin:0 0 8px; font-size:12.5px; line-height:1.45; color:var(--signal);}
-  .auth-checking{margin:6px 0; text-align:center; font-size:13px; color:var(--ink-soft);}
+  .auth-retry:hover{background:#2147b5;}
   .session-chip{
     position:fixed; top:14px; right:130px; z-index:999; display:none; align-items:center; gap:8px;
     font-family:var(--sans); font-size:11.5px; font-weight:600; color:var(--ink);
@@ -403,16 +393,7 @@
     <div class="home-wordmark"><span class="mark"></span>IMPOSE</div>
     <div class="auth-card">
       <p class="auth-checking" id="authChecking">Checking session…</p>
-      <form id="authForm" style="display:none;" autocomplete="on">
-        <h2>Sign in</h2>
-        <p class="sub">Use the username and password from your administrator.</p>
-        <label for="authUser">Username</label>
-        <input id="authUser" name="username" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required>
-        <label for="authPass">Password</label>
-        <input id="authPass" name="password" type="password" autocomplete="current-password" required>
-        <div class="auth-error" id="authError" role="alert"></div>
-        <button type="submit" id="authSubmit">Sign in</button>
-      </form>
+      <button type="button" class="auth-retry" id="authRetry" style="display:none;">Try again</button>
     </div>
   </div>
 </div>
@@ -762,34 +743,39 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
-// ---- Sign-in gate (Supabase Auth) ----------------------------------------
-// People type a USERNAME; Supabase Auth wants an email, so the username is
-// mapped to a hidden address <username>@USERNAME_DOMAIN. Nothing is emailed.
-// The anon key below is meant to be public — it can only do what Row Level
+// ---- Session guard (Supabase Auth) ---------------------------------------
+// Sign-in happens on login.html. This page only checks that the visitor has
+// a valid, non-disabled account and otherwise sends them there; after signing
+// in they come straight back here (login.html?next=<this file>).
+// The anon key below is public by design — it can only do what Row Level
 // Security allows (a signed-in user reading their own profile row).
-// NOTE: this gate runs in the browser, so it controls who is shown the app;
-// it can't hide the HTML itself from someone who saves the file.
+// NOTE: this runs in the browser, so it controls who is shown the app; it
+// can't hide the HTML itself from someone who saves the file.
 (function(){
   var SUPABASE_URL = 'https://bsmmyvslplkcdkgcysdd.supabase.co';
   var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJzbW15dnNscGxrY2RrZ2N5c2RkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2OTQzODUsImV4cCI6MjEwODI3MDM4NX0.PSVCs5uKz6Nyb5L77_RIZevM4MvTDBcXeV6e0eW3rkE';
-  var USERNAME_DOMAIN = 'impose.app';
+  var LOGIN_PAGE = 'login.html';
   var RECHECK_MS = 5 * 60 * 1000;
 
   function $id(i){ return document.getElementById(i); }
-  var gate = $id('authGate'), form = $id('authForm'), checking = $id('authChecking');
-  var errEl = $id('authError'), submitBtn = $id('authSubmit');
-  var chip = $id('sessionChip');
+  var gate = $id('authGate'), checking = $id('authChecking'), retry = $id('authRetry'), chip = $id('sessionChip');
 
-  function setError(msg){ errEl.textContent = msg || ''; }
-  function showForm(msg){
-    checking.style.display = 'none';
-    form.style.display = '';
-    setError(msg);
-    $id('authUser').focus();
+  // Name of THIS file, so the login page can send people back to it even if
+  // the file is renamed.
+  var here = (location.pathname.split('/').pop() || 'imposition.html');
+  function toLogin(reason){
+    var q = '?next=' + encodeURIComponent(here) + (reason ? '&reason=' + encodeURIComponent(reason) : '');
+    location.replace(LOGIN_PAGE + q);
+  }
+
+  retry.addEventListener('click', function(){ location.reload(); });
+  function showProblem(msg){
+    checking.textContent = msg;
+    retry.style.display = '';
   }
 
   if (!window.supabase){
-    checking.textContent = 'Could not load the sign-in service. Check your connection and reload the page.';
+    showProblem('Could not load the sign-in service. Check your connection and try again.');
     return;
   }
   var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -816,6 +802,13 @@
     return { ok: true, profile: q.data };
   }
 
+  var leaving = false;     // set while we're already redirecting, so the sign-out event below doesn't redirect twice
+  async function kickOut(fail){
+    leaving = true;
+    try { await sb.auth.signOut(); } catch(e){}
+    toLogin(fail === 'disabled' || fail === 'missing' ? fail : '');
+  }
+
   function reveal(profile){
     gate.style.display = 'none';
     $id('sessionName').textContent = profile.username;
@@ -828,8 +821,7 @@
       timer = setInterval(async function(){
         var v = await validate();
         if (v.offline || v.ok) return;           // never kick someone out just because they went offline
-        try { await sb.auth.signOut(); } catch(e){}
-        location.reload();
+        kickOut(v.fail);
       }, RECHECK_MS);
     }
   }
@@ -837,44 +829,19 @@
   async function boot(){
     var v = await validate();
     if (v.ok) return reveal(v.profile);
-    if (v.offline) return showForm('Can’t reach the sign-in server. Check your connection and try again.');
-    if (v.fail === 'disabled'){ try { await sb.auth.signOut(); } catch(e){} return showForm('This account has been disabled.'); }
-    if (v.fail === 'missing'){ try { await sb.auth.signOut(); } catch(e){} return showForm('This account no longer exists.'); }
-    showForm('');
+    if (v.offline) return showProblem('Can’t reach the sign-in server. Check your connection and try again.');
+    kickOut(v.fail);
   }
 
-  form.addEventListener('submit', async function(ev){
-    ev.preventDefault();
-    setError('');
-    var u = $id('authUser').value.trim().toLowerCase();
-    var p = $id('authPass').value;
-    if (!/^[a-z0-9._-]{3,32}$/.test(u) || !p){ setError('Incorrect username or password.'); return; }
-    submitBtn.disabled = true; submitBtn.textContent = 'Signing in…';
-    try{
-      var r = await sb.auth.signInWithPassword({ email: u + '@' + USERNAME_DOMAIN, password: p });
-      if (r.error){
-        var banned = r.error.code === 'user_banned' || /banned/i.test(r.error.message || '');
-        var net = r.error.name === 'AuthRetryableFetchError';
-        setError(banned ? 'This account has been disabled.' : net ? 'Can’t reach the sign-in server. Try again.' : 'Incorrect username or password.');
-        return;
-      }
-      var v = await validate();
-      if (v.ok){ $id('authPass').value = ''; return reveal(v.profile); }
-      try { await sb.auth.signOut(); } catch(e){}
-      setError(v.fail === 'disabled' ? 'This account has been disabled.' : v.offline ? 'Can’t reach the sign-in server. Try again.' : 'This account is not set up correctly. Ask your administrator.');
-    } finally {
-      submitBtn.disabled = false; submitBtn.textContent = 'Sign in';
-    }
-  });
-
   $id('signOutBtn').addEventListener('click', async function(){
+    leaving = true;
     try { await sb.auth.signOut(); } catch(e){}
-    location.reload();     // also clears any loaded artwork from memory
+    toLogin('');           // leaving the page also clears any loaded artwork from memory
   });
 
-  // Signed out in another tab → drop back to the login screen here too.
+  // Signed out in another tab → go to the login page here too.
   sb.auth.onAuthStateChange(function(event){
-    if (event === 'SIGNED_OUT' && revealed) location.reload();
+    if (event === 'SIGNED_OUT' && revealed && !leaving) toLogin('');
   });
 
   boot();
