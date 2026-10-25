@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign in — Impose</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f4f6f9; --ink:#1a2233; --ink-soft:#68728a; --line:#dde2eb;
+    --press:#2953d1; --press-soft:#eaf0ff; --signal:#c0392b; --white:#ffffff;
+    --sans:'Inter', -apple-system, sans-serif;
+    --shadow-lg:0 16px 40px rgba(20,30,60,.14);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
+    font-family:var(--sans); color:var(--ink);
+    background:linear-gradient(160deg,#141b30,#1c2540 60%,#202b4d);
+  }
+  .wrap{width:100%; max-width:380px;}
+  .wordmark{
+    display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:22px;
+    font-weight:700; font-size:13px; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,.65);
+  }
+  .mark{width:11px;height:11px;border:2.5px solid #5b8cff;border-radius:3px;position:relative;flex:none;}
+  .mark::before,.mark::after{content:'';position:absolute;background:#5b8cff;border-radius:1px;}
+  .mark::before{left:50%;top:-4px;width:2px;height:18px;transform:translateX(-50%);}
+  .mark::after{top:50%;left:-4px;height:2px;width:18px;transform:translateY(-50%);}
+  .card{background:var(--white); border-radius:16px; padding:32px 30px 28px; box-shadow:var(--shadow-lg);}
+  .card h1{margin:0 0 4px; font-size:20px; font-weight:700; letter-spacing:-.2px;}
+  .sub{margin:0 0 20px; font-size:12.5px; line-height:1.5; color:var(--ink-soft);}
+  label{display:block; font-size:11.5px; font-weight:600; letter-spacing:.3px; color:var(--ink-soft); margin:0 0 6px;}
+  input{
+    width:100%; padding:11px 12px; font:inherit; font-size:14px; color:var(--ink); background:var(--white);
+    border:1.5px solid var(--line); border-radius:9px; margin-bottom:14px; outline:none;
+  }
+  input:focus{border-color:var(--press); box-shadow:0 0 0 3px var(--press-soft);}
+  button{
+    width:100%; padding:12px; margin-top:4px; border:none; border-radius:10px; background:var(--press); color:var(--white);
+    font:inherit; font-weight:700; font-size:13.5px; cursor:pointer; transition:background .15s;
+  }
+  button:hover{background:#2147b5;}
+  button:disabled{background:var(--line); color:var(--ink-soft); cursor:not-allowed;}
+  .error{min-height:18px; margin:0 0 8px; font-size:12.5px; line-height:1.45; color:var(--signal);}
+  .checking{margin:6px 0; text-align:center; font-size:13px; color:var(--ink-soft);}
+  [hidden]{display:none !important;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="wordmark"><span class="mark"></span>IMPOSE</div>
+  <div class="card">
+    <p class="checking" id="checking">Checking session…</p>
+    <form id="form" hidden autocomplete="on">
+      <h1>Sign in</h1>
+      <p class="sub">Use the username and password from your administrator.</p>
+      <label for="user">Username</label>
+      <input id="user" name="username" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required>
+      <label for="pass">Password</label>
+      <input id="pass" name="password" type="password" autocomplete="current-password" required>
+      <div class="error" id="error" role="alert"></div>
+      <button type="submit" id="submit">Sign in</button>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+// Standalone sign-in page. People type a USERNAME; Supabase Auth wants an
+// email, so it is mapped to a hidden address <username>@USERNAME_DOMAIN
+// (nothing is ever emailed). The anon key is public by design — it can only
+// do what Row Level Security allows. Never put the service_role key here.
+// After signing in, the visitor is sent back to the page they came from
+// (?next=...), which for now is only ever a .html file in this same folder.
+(function(){
+  var SUPABASE_URL = 'https://bsmmyvslplkcdkgcysdd.supabase.co';
+  var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJzbW15dnNscGxrY2RrZ2N5c2RkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2OTQzODUsImV4cCI6MjEwODI3MDM4NX0.PSVCs5uKz6Nyb5L77_RIZevM4MvTDBcXeV6e0eW3rkE';
+  var USERNAME_DOMAIN = 'impose.app';
+  var DEFAULT_NEXT = 'imposition.html';
+
+  function $(id){ return document.getElementById(id); }
+  var checking = $('checking'), form = $('form'), errEl = $('error'), btn = $('submit');
+
+  // Only a plain file name in this folder is accepted ("imposition.html"),
+  // so this page can never be used to bounce someone to another site.
+  var params = new URLSearchParams(location.search);
+  var next = params.get('next') || '';
+  if (!/^[A-Za-z0-9._-]+\.html$/.test(next) || next.toLowerCase() === 'login.html') next = DEFAULT_NEXT;
+  var reason = params.get('reason') || '';
+
+  var REASON_TEXT = {
+    disabled: 'This account has been disabled.',
+    missing: 'This account no longer exists.'
+  };
+
+  function setError(m){ errEl.textContent = m || ''; }
+  function showForm(msg){
+    checking.hidden = true; form.hidden = false;
+    setError(msg);
+    $('user').focus();
+  }
+  function go(){ location.replace(next); }
+
+  if (!window.supabase){
+    checking.textContent = 'Could not load the sign-in service. Check your connection and reload the page.';
+    return;
+  }
+  var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
+  });
+
+  // Verifies the session with the SERVER and then the profile row, so a
+  // deleted or disabled account is caught.
+  async function validate(){
+    var r = await sb.auth.getUser();
+    if (r.error || !r.data || !r.data.user){
+      var e = r.error;
+      if (e && (e.name === 'AuthRetryableFetchError' || e.status === 0)) return { offline: true };
+      return { fail: 'none' };
+    }
+    var q = await sb.from('profiles').select('username,is_admin,is_disabled').eq('id', r.data.user.id).maybeSingle();
+    if (q.error) return { offline: true };
+    if (!q.data) return { fail: 'missing' };
+    if (q.data.is_disabled) return { fail: 'disabled' };
+    return { ok: true, profile: q.data };
+  }
+
+  async function boot(){
+    // Sent here with a reason (disabled / removed account): show it and stay
+    // put — redirecting back would just bounce between the two pages.
+    if (reason){
+      try { await sb.auth.signOut(); } catch(e){}
+      return showForm(REASON_TEXT[reason] || '');
+    }
+    var v = await validate();
+    if (v.ok) return go();                       // already signed in
+    if (v.offline) return showForm('Can’t reach the sign-in server. Check your connection and try again.');
+    if (v.fail === 'disabled' || v.fail === 'missing'){
+      try { await sb.auth.signOut(); } catch(e){}
+      return showForm(REASON_TEXT[v.fail]);
+    }
+    showForm('');
+  }
+
+  form.addEventListener('submit', async function(ev){
+    ev.preventDefault();
+    setError('');
+    var u = $('user').value.trim().toLowerCase();
+    var p = $('pass').value;
+    if (!/^[a-z0-9._-]{3,32}$/.test(u) || !p){ setError('Incorrect username or password.'); return; }
+    btn.disabled = true; btn.textContent = 'Signing in…';
+    try {
+      var r = await sb.auth.signInWithPassword({ email: u + '@' + USERNAME_DOMAIN, password: p });
+      if (r.error){
+        var banned = r.error.code === 'user_banned' || /banned/i.test(r.error.message || '');
+        var net = r.error.name === 'AuthRetryableFetchError';
+        setError(banned ? 'This account has been disabled.'
+               : net ? 'Can’t reach the sign-in server. Try again.'
+               : 'Incorrect username or password.');
+        return;
+      }
+      var v = await validate();
+      if (v.ok){ $('pass').value = ''; return go(); }
+      try { await sb.auth.signOut(); } catch(e){}
+      setError(v.fail === 'disabled' ? REASON_TEXT.disabled
+             : v.offline ? 'Can’t reach the sign-in server. Try again.'
+             : 'This account is not set up correctly. Ask your administrator.');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Sign in';
+    }
+  });
+
+  boot();
+})();
+</script>
+</body>
+</html>
