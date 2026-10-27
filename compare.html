@@ -6,7 +6,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
 <style>
@@ -85,6 +84,18 @@
   .toolbar{ display:flex; align-items:center; justify-content:space-between; gap:14px;
     background:var(--bg-panel); border:1px solid rgba(255,255,255,0.08); border-radius:10px;
     padding:10px 14px; margin-bottom:16px; flex-wrap:wrap; }
+  /* Compare / Viewer switch (header) */
+  .viewswitch{ display:flex; gap:4px; background:var(--bg-deep); border-radius:8px; padding:3px; margin-left:auto; margin-right:16px; }
+  .vs-btn{ font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.03em; padding:6px 14px; border:none; border-radius:6px;
+    background:transparent; color:var(--ink-muted); cursor:pointer; }
+  .vs-btn.active{ background:var(--teal); color:#06201C; font-weight:600; }
+  .vs-btn:not(.active):hover{ color:var(--ink); }
+  /* Viewer mode: one file, no comparison controls */
+  .view-viewer .cmp-only, .view-viewer #scanNote, .view-viewer #sizeModeNote{ display:none !important; }
+  .view-viewer .uploads{ grid-template-columns:1fr; }
+  .stage.loading{ opacity:.55; transition:opacity .15s; }
+  .viewer-holder{ position:relative; box-shadow:0 12px 40px rgba(0,0,0,0.45); flex:none; background:#fff; }
+  .viewer-holder canvas{ display:block; }
   .modes{ display:flex; gap:4px; background:var(--bg-deep); border-radius:8px; padding:3px; }
   .mode-btn{ font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.03em;
     padding:7px 12px; border-radius:6px; border:none; background:transparent; color:var(--ink-muted);
@@ -109,6 +120,11 @@
     border-radius:6px; padding:5px 8px; font-family:'JetBrains Mono',monospace; font-size:11px; cursor:pointer; }
   .align-picker select:hover{ border-color:var(--teal); }
 
+  .op-toggle{ display:flex; align-items:center; gap:7px; font-family:'JetBrains Mono',monospace; font-size:11px;
+    color:var(--ink-muted); cursor:pointer; user-select:none; text-transform:uppercase; letter-spacing:.04em; }
+  .op-toggle input{ accent-color:var(--teal); width:14px; height:14px; cursor:pointer; margin:0; }
+  .op-toggle:hover{ color:var(--ink); }
+
   .run-btn{ font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:13px;
     background:var(--teal); color:#06201C; border:none; border-radius:7px; padding:9px 18px;
     cursor:pointer; letter-spacing:.01em; transition:filter .15s; }
@@ -119,6 +135,30 @@
   .run-btn.ghost:disabled{ color:var(--ink-faint); border-color:rgba(255,255,255,0.1); background:transparent; }
 
   /* ---------- Stage ---------- */
+  /* Output preview floats over the artwork: drag it by its header, hide it
+     with the toolbar checkbox or its close button. */
+  #outputPreviewPanel{ position:fixed; z-index:40; width:320px; margin-top:0;
+    max-height:calc(100vh - 24px); overflow-y:auto; box-shadow:0 14px 44px rgba(0,0,0,0.55); border-radius:10px; }
+  #outputPreviewPanel.op-hidden{ display:none !important; }
+  #outputPreviewPanel .struct-section{ padding:0 14px 14px; border-color:rgba(255,255,255,0.14); }
+  .op-head{ display:flex; align-items:center; gap:8px; margin:0 -14px 12px; padding:11px 10px 11px 14px; cursor:grab;
+    border-bottom:1px solid rgba(255,255,255,0.07); user-select:none; touch-action:none;
+    position:sticky; top:0; background:var(--bg-panel); z-index:1; border-radius:10px 10px 0 0; }
+  .op-head.dragging{ cursor:grabbing; }
+  .op-head .struct-title{ margin:0; flex:1; }
+  .op-grip{ color:var(--ink-faint); font-size:12px; letter-spacing:-2px; line-height:1; }
+  .op-close{ background:none; border:none; color:var(--ink-faint); font-size:18px; line-height:1; cursor:pointer; padding:2px 6px; border-radius:4px; }
+  .op-close:hover{ color:var(--ink); background:rgba(255,255,255,0.08); }
+  .op-help{ margin-top:12px; padding-top:10px; border-top:1px dashed rgba(255,255,255,0.1); }
+  .op-help summary{ font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--ink-faint); cursor:pointer; user-select:none; }
+  .op-help summary:hover{ color:var(--teal); }
+  .op-help .struct-note{ border-top:none; padding-top:0; margin-top:8px; }
+  @media (max-width:1000px){
+    /* no room to float: sit below the artwork instead */
+    #outputPreviewPanel{ position:static; width:auto; max-height:none; overflow:visible; margin-top:16px; box-shadow:none; }
+    .op-head{ cursor:default; position:static; }
+    .op-grip{ display:none; }
+  }
   .stage-wrap{ position:relative; }
   .stage{ position:relative; background:var(--bg-panel); border:1px solid rgba(255,255,255,0.08);
     border-radius:12px; overflow:hidden; min-height:420px; display:flex; align-items:center; justify-content:center; }
@@ -271,8 +311,8 @@
   .channel-row-wrap:last-child{ border-bottom:none; }
   .channel-row-wrap .channel-row{ border-bottom:none; }
   .channel-row.expanded{ background:rgba(45,212,191,0.06); }
-  .ch-name[data-role="expand"]{ cursor:pointer; }
-  .ch-name[data-role="expand"]:hover{ color:var(--teal); }
+  .ch-name[data-role="toggle"]{ cursor:pointer; user-select:none; }
+  .ch-name[data-role="toggle"]:hover{ color:var(--teal); }
   .ch-expand-arrow{ font-size:10px; color:var(--ink-faint); cursor:pointer; flex:none; width:12px; text-align:center; }
   .channel-row.expanded .ch-expand-arrow{ color:var(--teal); }
 
@@ -317,8 +357,12 @@
       </div>
       <div>
         <h1>Redline</h1>
-        <div class="tag">PDF Visual Compare</div>
+        <div class="tag" id="tagline">PDF Visual Compare</div>
       </div>
+    </div>
+    <div class="viewswitch" id="viewSwitch" role="tablist" aria-label="Mode">
+      <button class="vs-btn active" data-view="compare" type="button">Compare</button>
+      <button class="vs-btn" data-view="viewer" type="button">Viewer</button>
     </div>
     <div class="status">
       <span class="dot" id="statusDot"></span><span id="statusText">Awaiting two files</span>
@@ -329,18 +373,18 @@
     <div class="dropzone" id="dzA">
       <div class="dz-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 19h16"/></svg></div>
       <div class="dz-meta">
-        <div class="dz-label">File A · Original</div>
+        <div class="dz-label" id="labelA">File A · Original</div>
         <div class="dz-name" id="nameA">Drop or click — PDF, JPG, or PNG</div>
         <div class="dz-sub" id="subA">—</div>
       </div>
       <input type="file" id="inputA" accept="application/pdf,image/jpeg,image/png">
     </div>
 
-    <button class="swap-btn" id="swapBtn" title="Swap A/B">
+    <button class="swap-btn cmp-only" id="swapBtn" title="Swap A/B">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
     </button>
 
-    <div class="dropzone" id="dzB">
+    <div class="dropzone cmp-only" id="dzB">
       <div class="dz-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 19h16"/></svg></div>
       <div class="dz-meta">
         <div class="dz-label">File B · Revised</div>
@@ -352,7 +396,7 @@
   </div>
 
   <div class="toolbar">
-    <div class="modes">
+    <div class="modes cmp-only">
       <button class="mode-btn active" data-mode="sbs">Side by side</button>
       <button class="mode-btn" data-mode="swipe">Swipe</button>
       <button class="mode-btn" data-mode="diff">Difference</button>
@@ -368,7 +412,7 @@
       <button id="zoomIn">+</button>
     </div>
     <div class="align-picker">
-      <label for="alignSelect">Align by</label>
+      <label for="alignSelect" id="alignLabel">Align by</label>
       <select id="alignSelect">
         <option value="trim" selected>TrimBox</option>
         <option value="bleed">BleedBox</option>
@@ -377,19 +421,23 @@
         <option value="dieline">Dieline (spot color)</option>
       </select>
     </div>
-    <div class="align-picker">
+    <div class="align-picker cmp-only">
       <label for="sizeModeSelect">If sizes differ</label>
       <select id="sizeModeSelect">
         <option value="fit" selected>Scale to fit</option>
         <option value="original">Keep original size (center)</option>
       </select>
     </div>
-    <button class="run-btn" id="runBtn" disabled>Compare pages</button>
+    <label class="op-toggle" title="Show or hide the floating Output preview panel"><input type="checkbox" id="opPanelToggle" checked><span>Output preview</span></label>
+    <label class="op-toggle" title="Approximates overprint: objects set to overprint are multiplied over the ink beneath them"><input type="checkbox" id="overprintToggle"><span>Overprint preview</span></label>
+    <button class="run-btn cmp-only" id="runBtn" disabled>Compare pages</button>
   </div>
 
-  <div class="scan-note" id="scanNote" style="display:none;"></div>
-  <div class="scan-note" id="sizeModeNote" style="display:none;"></div>
+  <div class="scan-note cmp-only" id="scanNote" style="display:none;"></div>
+  <div class="scan-note cmp-only" id="sizeModeNote" style="display:none;"></div>
+  <div class="scan-note" id="overprintNote" style="display:none;"></div>
 
+  <div class="work-row">
   <div class="stage-wrap">
     <div class="stage" id="stage">
       <div class="empty-state" id="emptyState">
@@ -398,21 +446,29 @@
       </div>
     </div>
   </div>
+  <div class="structural" id="outputPreviewPanel" style="display:none;">
+    <div class="struct-section">
+      <div class="op-head" id="opHead"><span class="op-grip" aria-hidden="true">⋮⋮</span><div class="struct-title">Output preview <span class="n" id="channelPageNum"></span></div><button class="op-close" id="opClose" type="button" title="Hide Output preview" aria-label="Hide Output preview">×</button></div>
+      <div class="channel-list" id="channelList"></div>
+      <details class="op-help"><summary>How this works</summary><div class="struct-note">Lists every ink on the page: the Cyan / Magenta / Yellow / Black plates (from CMYK, ICC-CMYK and gray fills and strokes), RGB content, and every spot colorant — including ones inside groups, patterns and image colour spaces. Uncheck an ink to hide it on the artwork preview: the file is rewritten with that ink zeroed in every colour operator (Form XObjects included) and re-rendered, so overprint, blends and transparency still composite correctly. Placed images are classified by their own colour space — a Separation/DeviceN image counts as its spot ink, never as CMYK — and are hidden or isolated as a whole. <em>Limits:</em> CMYK images (DeviceCMYK, ICC-CMYK, Indexed) are separated per plate, per pixel; a spot or multi-colorant DeviceN image is all-or-nothing and only disappears when all its inks are hidden; shading gradients can't be separated.</div></details>
+    </div>
+  </div>
+  </div>
 
-  <div class="statsbar" id="statsbar" style="display:none;">
+  <div class="statsbar cmp-only" id="statsbar" style="display:none;">
     <div class="stat"><div class="stat-label">Pages A / B</div><div class="stat-value teal" id="statPages">—</div></div>
     <div class="stat"><div class="stat-label">Pixels changed</div><div class="stat-value amber" id="statChanged">—</div></div>
     <div class="stat"><div class="stat-label">Added content</div><div class="stat-value mint" id="statAdded">—</div></div>
     <div class="stat"><div class="stat-label">Removed content</div><div class="stat-value crimson" id="statRemoved">—</div></div>
   </div>
 
-  <div class="legend" id="legend" style="display:none;">
+  <div class="legend cmp-only" id="legend" style="display:none;">
     <span><span class="swatch" style="background:#3ECF8E"></span> Added in B</span>
     <span><span class="swatch" style="background:#E2504F"></span> Removed from A</span>
     <span><span class="swatch" style="background:#F2A93B"></span> Shifted, modified, or color/hue shift</span>
   </div>
 
-  <div class="structural" id="structuralPanel" style="display:none;">
+  <div class="structural cmp-only" id="structuralPanel" style="display:none;">
     <div class="struct-section">
       <div class="struct-title">Page boxes <span class="n" id="boxPageNum"></span></div>
       <table class="box-table" id="boxTable">
@@ -423,15 +479,7 @@
     </div>
   </div>
 
-  <div class="structural" id="outputPreviewPanel" style="display:none;">
-    <div class="struct-section">
-      <div class="struct-title">Output preview <span class="n" id="channelPageNum"></span></div>
-      <div class="channel-list" id="channelList"></div>
-      <div class="struct-note">Lists every channel actually used on the page — CMYK process plates and spot colors alike, including CMYK content inside placed raster images. Uncheck a channel to knock it out of the artwork above (best-effort: paints its own paths white, so it can't reconstruct other ink genuinely overprinted beneath it). Click a channel's name to isolate and diff it directly against the same channel in the other file. Note: for vector content this is exact; for a CMYK <em>image</em> we can only detect its position/size, not its individual pixels, so it shows as a flat gray placeholder — real per-pixel photo content isn't compared at that level.</div>
-    </div>
-  </div>
-
-  <div class="report" id="reportPanel" style="display:none;">
+  <div class="report cmp-only" id="reportPanel" style="display:none;">
     <div class="report-head">
       <div>
         <div class="report-title">Pages that differ</div>
@@ -441,16 +489,259 @@
     <div class="report-list" id="reportList"></div>
   </div>
 
-  <footer>Runs entirely in your browser — no file is uploaded anywhere. · Redline doesn't simulate overprint — for overprint-accurate comparisons, flatten with overprint simulation in Acrobat/your RIP first, then compare those outputs here. · Redline</footer>
+  <footer>Runs entirely in your browser — no file is uploaded anywhere. Rendered with PDFium (WebAssembly). · Overprint preview is a Multiply approximation — for RIP-accurate overprint, flatten with overprint simulation in Acrobat/your RIP first, then compare those outputs here. · Redline</footer>
 </div>
 
 <script>
-pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+// ---------------------------------------------------------------
+// PDFium (WebAssembly) renderer. Rendering used to go through pdf.js; the
+// rest of this file (alignment, knockout, diffing, stage) talks to a tiny
+// pdf.js-shaped interface — doc.numPages, doc.getPage(n),
+// page.getViewport({scale, offsetX, offsetY}) and
+// page.render({canvasContext, viewport}).promise — so this adapter wraps
+// @hyzyla/pdfium behind that same interface instead of touching any of it.
+// The JPG/PNG adapter below uses the identical shape.
+//
+// Offsets matter: aligned renders shift the page by a (usually
+// fractional) pixel offset so TrimBox/BleedBox/etc. lands exactly on the
+// canvas origin. PDFium's FPDF_RenderPageBitmapWithMatrix takes a float
+// matrix plus a clip rect, so the shift stays sub-pixel exact and both
+// files are rasterized once, straight onto the final pixel grid.
+// ---------------------------------------------------------------
+const PDFIUM_MODULE_URL = 'https://cdn.jsdelivr.net/npm/@hyzyla/pdfium@3.0.0/dist/index.esm.cdn.js';
+let pdfiumLibPromise = null;
+function getPdfiumLibrary(){
+  if(!pdfiumLibPromise){
+    pdfiumLibPromise = import(PDFIUM_MODULE_URL)
+      .then(m => m.PDFiumLibrary.init({ disableCDNWarning:true }))
+      .catch(err => { pdfiumLibPromise = null; throw err; });
+  }
+  return pdfiumLibPromise;
+}
+
+const FPDF_ANNOT = 0x01;
+const FPDF_REVERSE_BYTE_ORDER = 0x10; // BGRA bitmap -> RGBA bytes
+const FPDFBITMAP_BGRA = 4;
+
+// Rasterizes one loaded PDFium page into a W x H RGBA canvas context.
+// scale/offX/offY follow the pdf.js viewport convention: output pixel =
+// page point * scale + offset, origin top-left.
+function renderPdfiumPageToContext(mod, pageIdx, pageWpt, pageHpt, ctx, scale, offX, offY){
+  const W = ctx.canvas.width, H = ctx.canvas.height;
+  const size = W * H * 4;
+  const ptr = mod.wasmExports.malloc(size);
+  if(!ptr) throw new Error('PDFium: could not allocate bitmap');
+  let bmp = null, structPtr = 0;
+  try{
+    bmp = mod._FPDFBitmap_CreateEx(W, H, FPDFBITMAP_BGRA, ptr, W * 4);
+    mod._FPDFBitmap_FillRect(bmp, 0, 0, W, H, 0xFFFFFFFF);
+    const flags = FPDF_ANNOT | FPDF_REVERSE_BYTE_ORDER; // no LCD text: colour fringes would pollute the diff
+
+    if(typeof mod._FPDF_RenderPageBitmapWithMatrix === 'function'){
+      // The 1x display matrix PDFium applies underneath is exact (float page
+      // size), so scale/offset can be passed straight through.
+      structPtr = mod.wasmExports.malloc(40); // FS_MATRIX (6 floats) + FS_RECTF (4 floats)
+      const dv = new DataView(mod.HEAPU8.buffer);
+      const vals = [scale, 0, 0, scale, offX, offY, 0, 0, W, H];
+      vals.forEach((v,i) => dv.setFloat32(structPtr + i*4, v, true));
+      mod._FPDF_RenderPageBitmapWithMatrix(bmp, pageIdx, structPtr, structPtr + 24, flags);
+    } else {
+      // integer-only fallback
+      mod._FPDF_RenderPageBitmap(bmp, pageIdx, Math.round(offX), Math.round(offY),
+        Math.round(pageWpt*scale), Math.round(pageHpt*scale), 0, flags);
+    }
+    const px = new Uint8ClampedArray(mod.HEAPU8.slice(ptr, ptr + size));
+    ctx.putImageData(new ImageData(px, W, H), 0, 0);
+  } finally {
+    if(bmp !== null) mod._FPDFBitmap_Destroy(bmp);
+    if(structPtr) mod.wasmExports.free(structPtr);
+    mod.wasmExports.free(ptr);
+  }
+}
+
+function makePdfiumDoc(lib, doc){
+  const mod = lib.module;
+  const api = {
+    numPages: doc.getPageCount(),
+    async getPage(n){
+      // Pages are opened only for the moment they're needed, so a long
+      // document never holds hundreds of PDFium pages in memory.
+      const probe = doc.getPage(n-1);
+      let w, h;
+      try{
+        const sz = probe.getOriginalSize();
+        w = sz.originalWidth; h = sz.originalHeight;
+      } finally { probe.close(); }
+      return {
+        getViewport(opts){
+          opts = opts || {};
+          const scale = opts.scale !== undefined ? opts.scale : 1;
+          return { width: w*scale, height: h*scale, scale, offsetX: opts.offsetX || 0, offsetY: opts.offsetY || 0 };
+        },
+        render({canvasContext, viewport}){
+          const promise = (async () => {
+            const pg = doc.getPage(n-1);
+            try{
+              renderPdfiumPageToContext(mod, pg.pageIdx, w, h, canvasContext,
+                viewport.scale, viewport.offsetX, viewport.offsetY);
+            } finally { pg.close(); }
+          })();
+          return { promise };
+        }
+      };
+    },
+    destroy(){
+      try{ doc.destroy(); }catch(e){ /* already gone */ }
+      if(api.variants){
+        for(const v of api.variants.values()){ if(v && v.destroy) v.destroy(); }
+        api.variants.clear();
+      }
+    }
+  };
+  return api;
+}
+
+// ---------------------------------------------------------------
+// Overprint preview. PDFium (like pdf.js) paints every object opaquely
+// and ignores /OP /op /OPM, and no render flag changes that. So instead
+// of fighting the renderer, we render a *rewritten copy* of the PDF in
+// which every ExtGState that turns fill overprint on also gets
+// /BM /Multiply — PDFium does implement blend modes. Multiply is the
+// standard stand-in for overprint: ink from the overprinting object
+// stacks on the ink beneath it instead of knocking it out. The original
+// document is never touched; the variant lives on doc.op.
+//
+// Approximation limits: it can't tell DeviceCMYK-with-OPM-0 (where
+// overprint has no visible effect) from OPM 1 or spot colours, and it
+// works in RGB, not per-plate. Fine for spotting missing/wrong overprint
+// (black text knocking out, white overprinting over art), not a RIP.
+// ---------------------------------------------------------------
+function applyOverprintBlend(pdfLibDoc){
+  const ctx = pdfLibDoc.context;
+  const N = PDFLib.PDFName.of;
+  let count = 0;
+  const seen = new Set();
+  const isTrue = (o) => o === PDFLib.PDFBool.True;
+  const visit = (obj) => {
+    if(!obj) return;
+    if(obj instanceof PDFLib.PDFRef){
+      const key = obj.toString();
+      if(seen.has(key)) return;
+      seen.add(key);
+      visit(ctx.lookup(obj));
+      return;
+    }
+    if(obj instanceof PDFLib.PDFArray){
+      for(let i=0;i<obj.size();i++) visit(obj.get(i));
+      return;
+    }
+    const dict = (obj instanceof PDFLib.PDFStream) ? obj.dict : (obj instanceof PDFLib.PDFDict ? obj : null);
+    if(!dict) return;
+    const op = dict.get(N('op')), OP = dict.get(N('OP'));
+    const fillOverprint = (op !== undefined) ? isTrue(pdfResolve(ctx, op)) : isTrue(pdfResolve(ctx, OP));
+    if(fillOverprint){
+      const bm = dict.get(N('BM'));
+      const bmName = bm instanceof PDFLib.PDFName ? pdfTextOf(bm) : null;
+      if(bm === undefined || bmName === 'Normal' || bmName === 'Compatible'){
+        dict.set(N('BM'), N('Multiply'));
+        count++;
+      }
+    }
+    for(const [, v] of dict.entries()) visit(v);
+  };
+  visit(pdfLibDoc.catalog);
+  return count;
+}
+
+// ---------------------------------------------------------------
+// Render variants. The document actually rendered is a rewritten copy of
+// the PDF whenever overprint preview is on and/or inks are hidden in
+// Output preview (or isolated for a plate compare). Variants are built
+// once per (overprint, hidden-set) key and cached on the document
+// adapter (doc.variants); the original is never modified.
+// ---------------------------------------------------------------
+function stateVariantOpts(){ return { overprint: state.overprint, hidden: state.hiddenChannels }; }
+function variantKeyFor(o){ return (o.overprint ? 'op' : '') + '|' + [...o.hidden].sort().join(','); }
+function isImageFile(file){
+  return !file || /^image\/(jpeg|png)$/i.test(file.type) || /\.(jpe?g|png)$/i.test(file.name);
+}
+
+async function buildVariantDoc(file, opts){
+  const fresh = await PDFLib.PDFDocument.load(await file.arrayBuffer(), { ignoreEncryption:true, updateMetadata:false });
+  let opN = 0, hidN = 0;
+  if(opts.overprint) opN = applyOverprintBlend(fresh);
+  if(opts.hidden && opts.hidden.size) hidN = hideChannelsInDoc(fresh, opts.hidden);
+  if(opN + hidN === 0) return { doc:null, opN, hidN };
+  const bytes = await fresh.save({ useObjectStreams:false });
+  return { doc: await loadPdfiumDocument(bytes), opN, hidN };
+}
+
+// Returns the rewritten PDFium document for these options, or null when
+// the original renders identically (nothing to change / image input).
+async function getVariantDoc(doc, file, opts){
+  if(!doc) return null;
+  const key = variantKeyFor(opts);
+  if(key === '|') return null;
+  if(!doc.variants) doc.variants = new Map();
+  if(doc.variants.has(key)) return doc.variants.get(key);
+  let res = { doc:null, opN:0, hidN:0 };
+  if(!isImageFile(file) && typeof PDFLib !== 'undefined'){
+    try{ res = await buildVariantDoc(file, opts); }
+    catch(err){ console.warn('[Redline] render variant failed', key, err); }
+  }
+  if(opts.overprint) doc.opCount = res.opN;
+  doc.variants.set(key, res.doc);
+  if(doc.variants.size > 10){
+    const keep = variantKeyFor(stateVariantOpts());
+    for(const k of doc.variants.keys()){
+      if(k === keep || k === key) continue;
+      const old = doc.variants.get(k);
+      if(old && old.destroy) old.destroy();
+      doc.variants.delete(k);
+      break;
+    }
+  }
+  return res.doc;
+}
+
+// The document to render from right now (overprint + hidden inks applied
+// if a variant has been built for the current state), else the original.
+function rdoc(doc){
+  const v = doc && doc.variants && doc.variants.get(variantKeyFor(stateVariantOpts()));
+  return v || doc;
+}
+
+async function ensureRenderVariants(){
+  const o = stateVariantOpts();
+  await Promise.all([ getVariantDoc(state.pdfA, state.fileA, o), getVariantDoc(state.pdfB, state.fileB, o) ]);
+  if(state.overprint) updateOverprintNote();
+}
+function updateOverprintNote(){
+  const note = el('overprintNote');
+  if(!state.overprint){ note.style.display = 'none'; return; }
+  const a = state.pdfA ? state.pdfA.opCount : undefined, b = state.pdfB ? state.pdfB.opCount : undefined;
+  if(a === undefined && b === undefined){
+    note.className = 'scan-note info'; note.style.display = 'flex';
+    note.textContent = 'Overprint preview on — objects set to overprint are multiplied over the ink beneath them (approximation, not a RIP).';
+  } else if(!a && !b){
+    note.className = 'scan-note info'; note.style.display = 'flex';
+    note.textContent = 'Overprint preview on — no overprint settings found in either file, so nothing changes.';
+  } else {
+    note.className = 'scan-note warn'; note.style.display = 'flex';
+    note.textContent = 'Overprint preview on — overprinting states simulated: File A ' + (a||0) + ', File B ' + (b||0) + '. Multiply approximation, not a RIP.';
+  }
+}
+
+async function loadPdfiumDocument(bytes){
+  const lib = await getPdfiumLibrary();
+  const doc = await lib.loadDocument(bytes);
+  return makePdfiumDoc(lib, doc);
+}
 
 // ---------------------------------------------------------------
 // JPG/PNG support: rather than teach every function in this file a
 // second code path, a loaded image is wrapped in two tiny adapters that
-// expose just enough of pdf.js's and pdf-lib's own APIs for the existing
+// expose just enough of the renderer's and pdf-lib's own APIs for the existing
 // PDF pipeline (alignment, knockout, diffing, the stage view) to treat a
 // single image as if it were a one-page PDF. There's no real PDF
 // structure behind it, so PDF-only features — page boxes beyond the full
@@ -526,6 +817,7 @@ async function loadImageBitmapSafe(file){
 
 
 const state = {
+  view:'compare', // 'compare' (two files, diff) or 'viewer' (File A only)
   pdfA:null, pdfB:null,
   pdfLibA:null, pdfLibB:null,
   fileA:null, fileB:null,
@@ -536,6 +828,7 @@ const state = {
   pageReport:null, // [{page, pct, kind}]
   alignBox:'trim', // which box (media/crop/trim/bleed) pages are aligned to before diffing
   sizeMode:'fit', // 'fit' = normalize both files to the same pixel width; 'original' = shared physical scale, centered
+  overprint:false, // render overprinting objects multiplied over what's beneath
   hiddenChannels: new Set(), // lowercased colorant names currently knocked out of the render
   expandedChannel: null // lowercased colorant name currently shown in the isolated channel-vs-channel compare
 };
@@ -553,16 +846,19 @@ function fmtSize(bytes){
 function setStatus(){
   const dot = el('statusDot');
   const txt = el('statusText');
-  const ready = !!(state.pdfA && state.pdfB);
+  const viewer = state.view === 'viewer';
+  const ready = viewer ? !!state.pdfA : !!(state.pdfA && state.pdfB);
   dot.classList.toggle('ready', ready);
-  if(ready){
+  if(viewer){
+    txt.textContent = state.pdfA ? ('Viewing — ' + state.pdfA.numPages + ' page' + (state.pdfA.numPages>1?'s':'')) : 'Awaiting a file';
+  } else if(ready){
     txt.textContent = 'Ready — ' + state.pdfA.numPages + ' vs ' + state.pdfB.numPages + ' pages';
   } else if(state.pdfA || state.pdfB){
     txt.textContent = 'Waiting on second file…';
   } else {
     txt.textContent = 'Awaiting two files';
   }
-  el('runBtn').disabled = !ready;
+  el('runBtn').disabled = !(state.pdfA && state.pdfB);
   console.log('[Redline] status', {hasA: !!state.pdfA, hasB: !!state.pdfB, ready});
 }
 
@@ -578,7 +874,7 @@ async function loadFile(file, slot){
       pdfLibDoc = makeFakePdfLibDoc(bitmap);
     } else {
       const [bufForJs, bufForLib] = await Promise.all([file.arrayBuffer(), file.arrayBuffer()]);
-      const pdfPromise = pdfjsLib.getDocument({data:bufForJs}).promise;
+      const pdfPromise = loadPdfiumDocument(new Uint8Array(bufForJs));
       const pdfLibPromise = (typeof PDFLib !== 'undefined')
         ? PDFLib.PDFDocument.load(bufForLib, {ignoreEncryption:true, updateMetadata:false}).catch(err=>{
             console.warn('[Redline] pdf-lib could not parse', slot, err);
@@ -588,6 +884,8 @@ async function loadFile(file, slot){
       [pdf, pdfLibDoc] = await Promise.all([pdfPromise, pdfLibPromise]);
     }
 
+    const prevDoc = slot === 'A' ? state.pdfA : state.pdfB;
+    if(prevDoc && prevDoc.destroy) prevDoc.destroy();
     if(slot === 'A'){
       state.pdfA = pdf; state.pdfLibA = pdfLibDoc; state.fileA = file;
       el('nameA').textContent = file.name;
@@ -613,6 +911,12 @@ async function loadFile(file, slot){
     state.expandedChannel = null;
     el('scanNote').style.display = 'none';
     console.log('[Redline] loaded', slot, 'pages:', pdf.numPages, 'pdf-lib ok:', !!pdfLibDoc, 'isImage:', isImage);
+    if(state.view === 'viewer' && slot === 'A'){
+      state.maxPages = pdf.numPages; state.page = 1; state.lastRender = null;
+      updatePager();
+      setStatus();
+      renderViewer();
+    }
   } catch(err){
     console.error('[Redline] failed to load', slot, err);
     const nameField = slot === 'A' ? el('nameA') : el('nameB');
@@ -669,8 +973,19 @@ function updatePager(){
   el('prevPage').disabled = state.page <= 1;
   el('nextPage').disabled = state.page >= state.maxPages;
 }
-el('prevPage').addEventListener('click', ()=>{ if(state.page>1){ state.page--; updatePager(); runCompare(); }});
-el('nextPage').addEventListener('click', ()=>{ if(state.page<state.maxPages){ state.page++; updatePager(); runCompare(); }});
+function pageStep(d){
+  const np = state.page + d;
+  if(np < 1 || np > state.maxPages) return;
+  state.page = np; updatePager();
+  if(state.view === 'viewer') renderViewer(); else runCompare();
+}
+el('prevPage').addEventListener('click', ()=> pageStep(-1));
+el('nextPage').addEventListener('click', ()=> pageStep(1));
+document.addEventListener('keydown', (e)=>{
+  if(state.view !== 'viewer' || e.target.closest('input,select,textarea') || e.ctrlKey || e.metaKey || e.altKey) return;
+  if(e.key === 'ArrowRight' || e.key === 'PageDown'){ pageStep(1); }
+  else if(e.key === 'ArrowLeft' || e.key === 'PageUp'){ pageStep(-1); }
+});
 
 document.querySelectorAll('.mode-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
@@ -681,12 +996,20 @@ document.querySelectorAll('.mode-btn').forEach(btn=>{
   });
 });
 
-el('zoomIn').addEventListener('click', ()=>{ state.zoom = Math.min(state.zoom+0.15, 2.5); el('zoomLabel').textContent = Math.round(state.zoom*100)+'%'; if(state.lastRender) renderStage(); });
-el('zoomOut').addEventListener('click', ()=>{ state.zoom = Math.max(state.zoom-0.15, 0.4); el('zoomLabel').textContent = Math.round(state.zoom*100)+'%'; if(state.lastRender) renderStage(); });
+function applyZoom(next){
+  const viewer = state.view === 'viewer';
+  state.zoom = Math.min(viewer ? 4 : 2.5, Math.max(viewer ? 0.25 : 0.4, next));
+  el('zoomLabel').textContent = Math.round(state.zoom*100)+'%';
+  if(viewer){ if(state.pdfA) renderViewer(); }   // viewer re-renders at the new size, so zooming stays sharp
+  else if(state.lastRender) renderStage();
+}
+el('zoomIn').addEventListener('click', ()=> applyZoom(state.zoom + (state.view === 'viewer' ? 0.25 : 0.15)));
+el('zoomOut').addEventListener('click', ()=> applyZoom(state.zoom - (state.view === 'viewer' ? 0.25 : 0.15)));
 
 el('alignSelect').addEventListener('change', (e)=>{
   state.alignBox = e.target.value;
-  if(state.pdfA && state.pdfB && state.lastRender) compareAndScan(); // re-run so the new alignment is reflected everywhere
+  if(state.view === 'viewer'){ if(state.pdfA) renderViewer(); }
+  else if(state.pdfA && state.pdfB && state.lastRender) compareAndScan(); // re-run so the new alignment is reflected everywhere
 });
 
 el('sizeModeSelect').addEventListener('change', (e)=>{
@@ -705,6 +1028,72 @@ function updateSizeModeNote(){
     note.style.display = 'none';
   }
 }
+
+// ---- floating Output preview: drag + show/hide (both remembered) ----
+(function setupOutputPanel(){
+  const panel = el('outputPreviewPanel'), head = el('opHead'), chk = el('opPanelToggle');
+  const POS_KEY = 'redline.opPos', VIS_KEY = 'redline.opVisible';
+  const narrow = () => window.matchMedia('(max-width:1000px)').matches;
+  const store = {
+    get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
+    set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+  };
+  const clamp = (x,y) => {
+    const w = panel.offsetWidth || 320, h = Math.min(panel.offsetHeight || 200, window.innerHeight);
+    return { x: Math.max(8, Math.min(x, window.innerWidth - w - 8)), y: Math.max(8, Math.min(y, window.innerHeight - 60)) };
+  };
+  const place = (x,y) => { const c = clamp(x,y); panel.style.left = c.x + 'px'; panel.style.top = c.y + 'px'; panel.style.right = 'auto'; return c; };
+  // default spot: top-right corner of the artwork area, below the toolbar so no control is covered
+  const home = () => {
+    const st = el('stage').getBoundingClientRect();
+    const h = Math.min(panel.offsetHeight || 260, window.innerHeight - 16);
+    const y = Math.min(Math.max(st.top + 12, 96), window.innerHeight - h - 8);
+    place(window.innerWidth - 320 - 24, y);
+  };
+  let userPos = null; try{ userPos = JSON.parse(store.get(POS_KEY)); }catch(e){}
+  if(!(userPos && typeof userPos.x === 'number' && typeof userPos.y === 'number')) userPos = null;
+  const restore = () => {
+    if(narrow()){ panel.style.left = panel.style.top = panel.style.right = ''; return; }
+    if(userPos) place(userPos.x, userPos.y); else home();
+  };
+  window.__opRestore = restore;
+  const setVisible = (v, save) => {
+    panel.classList.toggle('op-hidden', !v);
+    chk.checked = v;
+    if(save) store.set(VIS_KEY, v ? '1' : '0');
+    if(v) restore();
+  };
+  chk.addEventListener('change', () => setVisible(chk.checked, true));
+  el('opClose').addEventListener('click', () => setVisible(false, true));
+  let drag = null;
+  head.addEventListener('pointerdown', (e) => {
+    if(narrow() || e.target.closest('.op-close') || e.button > 0) return;
+    const r = panel.getBoundingClientRect();
+    drag = { dx: e.clientX - r.left, dy: e.clientY - r.top };
+    head.classList.add('dragging');
+    head.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+  head.addEventListener('pointermove', (e) => { if(drag) place(e.clientX - drag.dx, e.clientY - drag.dy); });
+  const end = (e) => {
+    if(!drag) return;
+    drag = null; head.classList.remove('dragging');
+    try{ head.releasePointerCapture(e.pointerId); }catch(_){}
+    const r = panel.getBoundingClientRect();
+    userPos = { x: Math.round(r.left), y: Math.round(r.top) };
+    store.set(POS_KEY, JSON.stringify(userPos));
+  };
+  head.addEventListener('pointerup', end); head.addEventListener('pointercancel', end);
+  window.addEventListener('resize', restore);
+  setVisible(store.get(VIS_KEY) !== '0', false);
+})();
+
+el('overprintToggle').addEventListener('change', (e)=>{
+  state.overprint = e.target.checked;
+  updateOverprintNote();
+  if(state.view === 'viewer'){ if(state.pdfA) renderViewer(); }
+  else if(state.pdfA && state.pdfB && state.lastRender) compareAndScan();
+});
 
 el('runBtn').addEventListener('click', compareAndScan);
 
@@ -826,15 +1215,8 @@ async function renderPageAtScale(pdf, pageNum, scale){
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0,0,canvas.width,canvas.height);
-  // Note: pdf.js does not simulate PDF overprint (OP/op/OPM) — it paints
-  // each object opaquely, full stop. An earlier attempt to work around
-  // that by setting the canvas blend mode to "darken" before rendering
-  // was removed: pdf.js manages its own canvas state internally and very
-  // likely resets compositing to source-over as soon as it starts
-  // drawing, making that a no-op rather than a real approximation. There
-  // is no reliable way to inject overprint behavior into pdf.js's
-  // rendering from the outside — see the footer note for the actual
-  // workflow (pre-flatten with overprint simulation upstream).
+  // Overprint preview is handled by rendering a rewritten copy of the
+  // document (see ensureOverprintVariant); callers pass that in via rdoc().
   await page.render({canvasContext:ctx, viewport}).promise;
   return canvas;
 }
@@ -1024,29 +1406,72 @@ function bytesToLatin1(bytes){
   return s;
 }
 
+function ascii85Decode(bytes){
+  const out = [], tuple = [];
+  let n = 0;
+  for(let i=0;i<bytes.length;i++){
+    const c = bytes[i];
+    if(c === 0x7e) break;            // '~' end of data
+    if(c <= 32) continue;            // whitespace
+    if(c === 0x7a && n === 0){ out.push(0,0,0,0); continue; } // 'z'
+    if(c < 0x21 || c > 0x75) continue;
+    tuple[n++] = c - 33;
+    if(n === 5){
+      let v = 0; for(let k=0;k<5;k++) v = v*85 + tuple[k];
+      out.push((v>>>24)&255, (v>>>16)&255, (v>>>8)&255, v&255);
+      n = 0;
+    }
+  }
+  if(n > 1){
+    for(let k=n;k<5;k++) tuple[k] = 84;
+    let v = 0; for(let k=0;k<5;k++) v = v*85 + tuple[k];
+    const b = [(v>>>24)&255, (v>>>16)&255, (v>>>8)&255, v&255];
+    for(let k=0;k<n-1;k++) out.push(b[k]);
+  }
+  return Uint8Array.from(out);
+}
+function asciiHexDecode(bytes){
+  const out = []; let hi = -1;
+  for(let i=0;i<bytes.length;i++){
+    const c = bytes[i];
+    if(c === 0x3e) break; // '>'
+    const v = (c>=48&&c<=57) ? c-48 : (c>=65&&c<=70) ? c-55 : (c>=97&&c<=102) ? c-87 : -1;
+    if(v < 0) continue;
+    if(hi < 0) hi = v; else { out.push(hi*16+v); hi = -1; }
+  }
+  if(hi >= 0) out.push(hi*16);
+  return Uint8Array.from(out);
+}
+function streamFilterNames(rawStream){
+  try{
+    const f = rawStream.dict.lookup(PDFLib.PDFName.of('Filter'));
+    if(!f) return [];
+    if(f instanceof PDFLib.PDFArray){
+      const names = [];
+      for(let i=0;i<f.size();i++) names.push(pdfTextOf(f.lookup(i)));
+      return names;
+    }
+    return [pdfTextOf(f)];
+  } catch(e){ return []; }
+}
+
+// Decodes a content/form stream to a latin1 string. Handles the filter
+// chains real generators emit (Flate, ASCII85+Flate, ASCIIHex+Flate);
+// anything else (LZW, image codecs…) returns null and is left alone.
 function inflateIfNeeded(rawStream){
   const bytes = rawStream.getContents ? rawStream.getContents() : null;
   if(!bytes) return null;
-  let filter = null;
-  try{
-    const f = rawStream.dict.lookup(PDFLib.PDFName.of('Filter'));
-    if(f instanceof PDFLib.PDFArray) filter = pdfTextOf(f.get(0));
-    else filter = pdfTextOf(f);
-  } catch(e){ /* no filter */ }
-
-  if(!filter) return bytesToLatin1(bytes);
-  if(filter === 'FlateDecode'){
-    try{
-      const inflated = pako.inflate(bytes);
-      return bytesToLatin1(inflated);
-    } catch(e){
-      console.warn('[Redline] FlateDecode failed for content stream', e);
-      return null;
+  let data = bytes;
+  for(const fl of streamFilterNames(rawStream)){
+    if(fl === 'FlateDecode' || fl === 'Fl'){
+      try{ data = pako.inflate(data); }
+      catch(e){ console.warn('[Redline] FlateDecode failed for content stream', e); return null; }
     }
+    else if(fl === 'ASCII85Decode' || fl === 'A85') data = ascii85Decode(data);
+    else if(fl === 'ASCIIHexDecode' || fl === 'AHx') data = asciiHexDecode(data);
+    else return null;
   }
-  // Other filters (DCTDecode/CCITT for images, ASCII85, etc.) aren't
-  // expected on a content stream — bail out gracefully.
-  return null;
+  return bytesToLatin1(data);
 }
 
 function getPageContentText(pdfLibDoc, page){
@@ -1607,19 +2032,28 @@ function interpretCMYKTokens(tokens, context, resources, initialCTM, initialColo
       const n=nums(stack); if(n.length>=4){ flushSub(); const [x,y,w,h]=n.slice(-4); const p0=transform(x,y),p1=transform(x+w,y),p2=transform(x+w,y+h),p3=transform(x,y+h); subpaths.push([{cmd:'M',pts:[p0]},{cmd:'L',pts:[p1]},{cmd:'L',pts:[p2]},{cmd:'L',pts:[p3]},{cmd:'Z'}]); curX=x;curY=y;startX=x;startY=y; }
     }
     else if(op === 'h'){ if(currentSub.length) currentSub.push({cmd:'Z'}); curX=startX; curY=startY; }
+    else if(op === 'Tj' || op === 'TJ' || op === "'" || op === '"'){
+      // Text is painted with the current fill colour but has no path, so
+      // it needs its own record or black type would never register as ink.
+      const tLenOk = (fillModel==='gray'&&fillComp.length>=1)||(fillModel==='rgb'&&fillComp.length>=3)||(fillModel==='cmyk'&&fillComp.length>=4);
+      if(fillModel && tLenOk){
+        const tv = estimateInkIntensity(fillModel, fillComp);
+        if(tv > 0.02) shapes.push({ fill:true, stroke:false, subpaths:[], intensity:tv, lineWidthPts:0, model:fillModel, comp:fillComp.slice(), text:true });
+      }
+    }
     else if(ANY_PAINT_OPS.has(op)){
       flushSub();
       if(subpaths.length){
         const fillLenOk = (fillModel==='gray'&&fillComp.length>=1)||(fillModel==='rgb'&&fillComp.length>=3)||(fillModel==='cmyk'&&fillComp.length>=4);
         if(FILL_PAINT_OPS.has(op) && fillModel && fillLenOk){
           const val = estimateInkIntensity(fillModel, fillComp);
-          if(val > 0.02) shapes.push({ fill:true, stroke:false, subpaths, intensity:val, lineWidthPts:0, model:fillModel });
+          if(val > 0.02) shapes.push({ fill:true, stroke:false, subpaths, intensity:val, lineWidthPts:0, model:fillModel, comp:fillComp.slice() });
         }
         const strokeLenOk = (strokeModel==='gray'&&strokeComp.length>=1)||(strokeModel==='rgb'&&strokeComp.length>=3)||(strokeModel==='cmyk'&&strokeComp.length>=4);
         if(STROKE_PAINT_OPS.has(op) && strokeModel && strokeLenOk){
           const val = estimateInkIntensity(strokeModel, strokeComp);
           const strokeW = lineWidth * ctmScale();
-          if(val > 0.02) shapes.push({ fill:false, stroke:true, subpaths, intensity:val, lineWidthPts:strokeW, model:strokeModel });
+          if(val > 0.02) shapes.push({ fill:false, stroke:true, subpaths, intensity:val, lineWidthPts:strokeW, model:strokeModel, comp:strokeComp.slice() });
         }
       }
       subpaths = [];
@@ -1967,7 +2401,7 @@ function boxesEqual(a, b, tol=0.5){
 // drawImage's source rect isn't pixel-aligned, and since A and B typically
 // land on *different* fractional offsets, each got a slightly different
 // blur — a faint, uniform diff even on genuinely identical artwork. Using
-// pdf.js's own offsetX/offsetY shifts the page during the real vector
+// the renderer's own offset shifts the page during the real vector
 // render instead, so the canvas is rasterized once, directly at the exact
 // target pixel grid, for both files alike.
 async function renderAlignedCanvas(pdf, pdfLibDoc, pageNum, targetWidth, alignKey, forcedScale){
@@ -1988,8 +2422,7 @@ async function renderAlignedCanvas(pdf, pdfLibDoc, pageNum, targetWidth, alignKe
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0,0,canvas.width,canvas.height);
-    // Note: no overprint simulation here — see renderPageAtScale for why
-    // that can't be reliably injected into pdf.js's rendering from outside.
+    // Overprint preview: callers pass the rewritten document via rdoc().
     // anything outside the canvas's own bounds is naturally clipped by the
     // canvas element itself — no manual cropping/resampling needed
     await page.render({canvasContext:ctx, viewport}).promise;
@@ -2003,13 +2436,10 @@ async function renderAlignedCanvas(pdf, pdfLibDoc, pageNum, targetWidth, alignKe
 
 // Applies both knockout types (spot + CMYK process group) to an already-
 // rendered result in place. Shared by both size modes below.
-async function applyKnockouts(res, pdfLibDoc, pageNum, hiddenNamesLower){
-  if(res.canvas && res.geo && hiddenNamesLower && hiddenNamesLower.size){
-    await applyChannelKnockout(res.canvas, pdfLibDoc, pageNum-1, res.geo, hiddenNamesLower);
-    if(hiddenNamesLower.has('cmyk')){
-      await applyProcessChannelKnockout(res.canvas, pdfLibDoc, pageNum-1, res.geo, true);
-    }
-  }
+async function applyKnockouts(res){
+  // Hidden inks are removed by rendering a rewritten copy of the PDF with
+  // those colorants zeroed in the content streams (see hideChannelsInDoc),
+  // so there is nothing left to paint over here.
   return res;
 }
 
@@ -2042,8 +2472,8 @@ async function getComparisonCanvasesOriginalSize(pageNum, targetWidth){
     // "fit" rendering rather than failing outright
     console.warn('[Redline] original-size mode: missing box data, falling back to scale-to-fit');
     const [resA, resB] = await Promise.all([
-      getComparisonCanvas(state.pdfA, state.pdfLibA, pageNum, targetWidth, state.alignBox, state.hiddenChannels),
-      getComparisonCanvas(state.pdfB, state.pdfLibB, pageNum, targetWidth, state.alignBox, state.hiddenChannels)
+      getComparisonCanvas(rdoc(state.pdfA), state.pdfLibA, pageNum, targetWidth, state.alignBox, state.hiddenChannels),
+      getComparisonCanvas(rdoc(state.pdfB), state.pdfLibB, pageNum, targetWidth, state.alignBox, state.hiddenChannels)
     ]);
     return { canvasA: resA.canvas, canvasB: resB.canvas };
   }
@@ -2051,8 +2481,8 @@ async function getComparisonCanvasesOriginalSize(pageNum, targetWidth){
   const sharedScale = targetWidth / Math.max(targetBoxA.width, targetBoxB.width);
 
   const [resA, resB] = await Promise.all([
-    renderAlignedCanvas(state.pdfA, state.pdfLibA, pageNum, targetWidth, state.alignBox, sharedScale),
-    renderAlignedCanvas(state.pdfB, state.pdfLibB, pageNum, targetWidth, state.alignBox, sharedScale)
+    renderAlignedCanvas(rdoc(state.pdfA), state.pdfLibA, pageNum, targetWidth, state.alignBox, sharedScale),
+    renderAlignedCanvas(rdoc(state.pdfB), state.pdfLibB, pageNum, targetWidth, state.alignBox, sharedScale)
   ]);
   await Promise.all([
     applyKnockouts(resA, state.pdfLibA, pageNum, state.hiddenChannels),
@@ -2082,12 +2512,13 @@ async function getComparisonCanvasesOriginalSize(pageNum, targetWidth){
 // Single entry point both runCompare and scanAllPages use — picks the
 // right rendering strategy based on the "Different sizes" toggle.
 async function getComparisonCanvasesForPage(pageNum, targetWidth){
+  await ensureRenderVariants();
   if(state.sizeMode === 'original'){
     return getComparisonCanvasesOriginalSize(pageNum, targetWidth);
   }
   const [resA, resB] = await Promise.all([
-    getComparisonCanvas(state.pdfA, state.pdfLibA, pageNum, targetWidth, state.alignBox, state.hiddenChannels),
-    getComparisonCanvas(state.pdfB, state.pdfLibB, pageNum, targetWidth, state.alignBox, state.hiddenChannels)
+    getComparisonCanvas(rdoc(state.pdfA), state.pdfLibA, pageNum, targetWidth, state.alignBox, state.hiddenChannels),
+    getComparisonCanvas(rdoc(state.pdfB), state.pdfLibB, pageNum, targetWidth, state.alignBox, state.hiddenChannels)
   ]);
   return { canvasA: resA.canvas, canvasB: resB.canvas };
 }
@@ -2152,156 +2583,606 @@ function renderStructuralPanel(pageIndex){
   }
 }
 
-// -- Output Preview: channel list + isolated per-channel render -----
+// -- Output Preview: channel list, plate hiding, isolated compare ---
+const PLATE_ORDER = ['cyan','magenta','yellow','black','rgb'];
+const PLATE_LABEL = { cyan:'Cyan', magenta:'Magenta', yellow:'Yellow', black:'Black', rgb:'RGB' };
+const PLATE_RE = /^(cyan|magenta|yellow|black)$/i;
+
+function decodeNameToken(n){ return n.replace(/#([0-9a-fA-F]{2})/g, (m,h) => String.fromCharCode(parseInt(h,16))); }
+function lookupByDecodedName(dict, name){
+  if(!dict) return undefined;
+  for(const [k,v] of dict.entries()){ if(pdfTextOf(k) === name) return v; }
+  return undefined;
+}
+const DEVICE_CS_KIND = { DeviceGray:'gray', G:'gray', CalGray:'gray', DeviceRGB:'rgb', RGB:'rgb', CalRGB:'rgb', DeviceCMYK:'cmyk', CMYK:'cmyk' };
+
+// Describes a colour space object: {kind:'gray'|'rgb'|'cmyk'} for device-
+// like spaces, {kind:'sep', names:[…]} / {kind:'devn', names:[…]} for
+// spot spaces, {kind:'indexed', base} or {kind:'other'}.
+function describeColorSpaceObject(context, entry){
+  try{
+    entry = pdfResolve(context, entry);
+    if(entry instanceof PDFLib.PDFName){
+      const k = DEVICE_CS_KIND[pdfTextOf(entry)];
+      return k ? { kind:k } : { kind:'other' };
+    }
+    if(entry instanceof PDFLib.PDFArray){
+      const family = pdfTextOf(pdfResolve(context, entry.get(0)));
+      if(DEVICE_CS_KIND[family]) return { kind: DEVICE_CS_KIND[family] };
+      if(family === 'ICCBased'){
+        const streamObj = pdfResolve(context, entry.get(1));
+        const nObj = streamObj && streamObj.dict ? pdfResolve(context, streamObj.dict.get(PDFLib.PDFName.of('N'))) : null;
+        const nVal = pdfNumberValue(nObj);
+        return { kind: nVal === 1 ? 'gray' : nVal === 3 ? 'rgb' : nVal === 4 ? 'cmyk' : 'other' };
+      }
+      if(family === 'Separation'){
+        const nm = pdfTextOf(pdfResolve(context, entry.get(1)));
+        return nm ? { kind:'sep', names:[nm.trim()] } : { kind:'other' };
+      }
+      if(family === 'DeviceN'){
+        const arr = pdfResolve(context, entry.get(1));
+        const names = [];
+        if(arr instanceof PDFLib.PDFArray){
+          for(let i=0;i<arr.size();i++){ const nm = pdfTextOf(pdfResolve(context, arr.get(i))); names.push(nm ? nm.trim() : ''); }
+        }
+        return names.length ? { kind:'devn', names } : { kind:'other' };
+      }
+      if(family === 'Indexed'){
+        return { kind:'indexed', base: describeColorSpaceObject(context, entry.get(1)) };
+      }
+    }
+  } catch(e){ /* fall through */ }
+  return { kind:'other' };
+}
+function describeColorSpaceName(context, resources, name){
+  if(!name) return null;
+  if(DEVICE_CS_KIND[name]) return { kind: DEVICE_CS_KIND[name] };
+  try{
+    const csDict = resources && resources.lookupMaybe(PDFLib.PDFName.of('ColorSpace'), PDFLib.PDFDict);
+    const raw = lookupByDecodedName(csDict, name);
+    return raw === undefined ? null : describeColorSpaceObject(context, raw);
+  } catch(e){ return null; }
+}
+
+// Every spot colorant a page can print, found by walking the page's
+// resources AND everything nested under it — Form XObjects (groups,
+// transparency), tiling/shading patterns, shadings, and the colour
+// space of every placed image. Illustrator/InDesign exports routinely
+// keep their Separation spaces in those nested resources, not on the page.
+function collectSpotColorants(pdfLibDoc, pageIndex){
+  const out = new Map(); // lowercase -> display name
+  if(!pdfLibDoc) return out;
+  try{
+    const page = pdfLibDoc.getPages()[pageIndex];
+    if(!page) return out;
+    const ctx = pdfLibDoc.context;
+    const N = PDFLib.PDFName.of;
+    const seen = new Set();
+    const addDesc = (d) => {
+      if(!d) return;
+      if(d.kind === 'sep' || d.kind === 'devn'){
+        d.names.forEach(nm => { if(nm && !/^(none|all)$/i.test(nm)) out.set(nm.toLowerCase(), nm); });
+      } else if(d.kind === 'indexed') addDesc(d.base);
+    };
+    const addCS = (obj) => addDesc(describeColorSpaceObject(ctx, obj));
+    const once = (raw) => {
+      if(raw instanceof PDFLib.PDFRef){ const k = raw.toString(); if(seen.has(k)) return false; seen.add(k); }
+      return true;
+    };
+    const dictOf = (o) => (o instanceof PDFLib.PDFStream) ? o.dict : (o instanceof PDFLib.PDFDict ? o : null);
+    const walk = (res, depth) => {
+      if(!res || depth > 8) return;
+      try{
+        const cs = res.lookupMaybe(N('ColorSpace'), PDFLib.PDFDict);
+        if(cs) for(const [, v] of cs.entries()) addCS(v);
+      } catch(e){}
+      try{
+        const xo = res.lookupMaybe(N('XObject'), PDFLib.PDFDict);
+        if(xo) for(const [, raw] of xo.entries()){
+          if(!once(raw)) continue;
+          const obj = pdfResolve(ctx, raw), d = dictOf(obj);
+          if(!d) continue;
+          const sub = pdfTextOf(pdfResolve(ctx, d.get(N('Subtype'))));
+          if(sub === 'Image'){ const c = d.get(N('ColorSpace')); if(c) addCS(c); }
+          else if(sub === 'Form') walk(d.lookupMaybe(N('Resources'), PDFLib.PDFDict), depth+1);
+        }
+      } catch(e){}
+      try{
+        const pt = res.lookupMaybe(N('Pattern'), PDFLib.PDFDict);
+        if(pt) for(const [, raw] of pt.entries()){
+          if(!once(raw)) continue;
+          const obj = pdfResolve(ctx, raw), d = dictOf(obj);
+          if(!d) continue;
+          const sh = pdfResolve(ctx, d.get(N('Shading')));
+          const sd = dictOf(sh);
+          if(sd){ const c = sd.get(N('ColorSpace')); if(c) addCS(c); }
+          const r2 = d.lookupMaybe(N('Resources'), PDFLib.PDFDict);
+          if(r2) walk(r2, depth+1);
+        }
+      } catch(e){}
+      try{
+        const shd = res.lookupMaybe(N('Shading'), PDFLib.PDFDict);
+        if(shd) for(const [, raw] of shd.entries()){
+          const sd = dictOf(pdfResolve(ctx, raw));
+          if(sd){ const c = sd.get(N('ColorSpace')); if(c) addCS(c); }
+        }
+      } catch(e){}
+    };
+    walk(getInheritedResources(page), 0);
+  } catch(err){ console.warn('[Redline] collectSpotColorants failed', err); }
+  return out;
+}
+
+// Which of Cyan/Magenta/Yellow/Black (and non-CMYK RGB) actually get
+// painted on this page. CMYK-like fills and strokes are read per
+// component; gray counts as Black. Placed raster images can only be
+// detected, not measured, so a CMYK image marks all four plates.
+function getProcessPlatesUsed(pdfLibDoc, pageIndex){
+  const used = new Set();
+  if(!pdfLibDoc) return used;
+  try{
+    const pages = pdfLibDoc.getPages();
+    if(pageIndex >= pages.length) return used;
+    const page = pages[pageIndex];
+    const resources = getInheritedResources(page);
+    const contentText = getPageContentText(pdfLibDoc, page);
+    if(!resources || !contentText) return used;
+    const tokens = tokenizeContentStream(contentText);
+    const { shapes } = traceCMYKChannels(tokens, pdfLibDoc.context, resources);
+    for(const sh of shapes){
+      if(sh.model === 'cmyk'){
+        if(sh.approx){ PLATE_ORDER.slice(0,4).forEach(k => used.add(k)); continue; }
+        const c = sh.comp || [];
+        ['cyan','magenta','yellow','black'].forEach((k,i) => { if((c[i]||0) > 0.005) used.add(k); });
+      } else if(sh.model === 'gray'){
+        if(sh.approx || !sh.comp || sh.comp[0] < 0.995) used.add('black');
+      } else if(sh.model === 'rgb'){
+        used.add('rgb');
+      }
+    }
+  } catch(err){ console.warn('[Redline] getProcessPlatesUsed failed', err); }
+  return used;
+}
+
+// ---- hiding inks: rewrite colour operators in the content streams ----
+const NUM_TOKEN_RE = /^[+-]?(?:\d+\.?\d*|\.\d+)$/;
+// Tokenizer that keeps character offsets, so operands can be edited in
+// place and everything else in the stream stays byte-for-byte untouched.
+function tokenizeWithPos(str){
+  const toks = [], len = str.length;
+  let i = 0;
+  const isWS = c => c===' '||c==='\t'||c==='\r'||c==='\n'||c==='\f'||c==='\0';
+  const isDelim = c => '()<>[]{}/%'.indexOf(c) >= 0;
+  while(i < len){
+    const c = str[i];
+    if(isWS(c)){ i++; continue; }
+    if(c === '%'){ while(i<len && str[i] !== '\n' && str[i] !== '\r') i++; continue; }
+    const s0 = i;
+    if(c === '/'){
+      i++; while(i<len && !isWS(str[i]) && !isDelim(str[i])) i++;
+      toks.push({ t:'name', s:s0, e:i, v:str.slice(s0+1, i) }); continue;
+    }
+    if(c === '('){
+      let depth = 1; i++;
+      while(i<len && depth>0){ const d = str[i]; if(d==='\\'){ i+=2; continue; } if(d==='(') depth++; else if(d===')') depth--; i++; }
+      toks.push({ t:'str', s:s0, e:i }); continue;
+    }
+    if(c === '<'){
+      if(str[i+1] === '<'){ toks.push({ t:'dopen', s:s0, e:i+2 }); i += 2; continue; }
+      i++; while(i<len && str[i] !== '>') i++; i++;
+      toks.push({ t:'str', s:s0, e:i }); continue;
+    }
+    if(c === '>'){ if(str[i+1] === '>'){ toks.push({ t:'dclose', s:s0, e:i+2 }); i += 2; } else i++; continue; }
+    if(c === '['){ toks.push({ t:'aopen', s:s0, e:i+1 }); i++; continue; }
+    if(c === ']'){ toks.push({ t:'aclose', s:s0, e:i+1 }); i++; continue; }
+    if(c === '{' || c === '}'){ i++; continue; }
+    while(i<len && !isWS(str[i]) && !isDelim(str[i])) i++;
+    const run = str.slice(s0, i);
+    if(NUM_TOKEN_RE.test(run)) toks.push({ t:'num', s:s0, e:i, v:parseFloat(run) });
+    else {
+      toks.push({ t:'op', s:s0, e:i, v:run });
+      if(run === 'BI'){ // inline image: skip its dict and binary data up to EI
+        const idRe = /\sID[ \t\r\n\f\0]/g; idRe.lastIndex = i;
+        const m1 = idRe.exec(str);
+        if(m1){
+          const eiRe = /\sEI(?=\s|$)/g; eiRe.lastIndex = m1.index + m1[0].length - 1;
+          const m2 = eiRe.exec(str);
+          i = m2 ? m2.index + m2[0].length : len;
+        } else i = len;
+      }
+    }
+  }
+  return toks;
+}
+
+// Which inks a placed image carries, as lowercase plate/spot keys, or null
+// when unknown. Process images map to their plates (CMYK -> all four,
+// Gray -> Black, RGB -> rgb); Separation/DeviceN images (also Indexed
+// over them) map to their spot colorants, so a spot image is never
+// mistaken for CMYK.
+function imageInkKeys(ctx, resources, imgDict){
+  try{
+    let cs = imgDict.get(PDFLib.PDFName.of('ColorSpace'));
+    if(cs === undefined) return null;
+    let d = describeColorSpaceObject(ctx, cs);
+    if(d.kind === 'other'){
+      const r = pdfResolve(ctx, cs);
+      if(r instanceof PDFLib.PDFName) d = describeColorSpaceName(ctx, resources, decodeNameToken(pdfTextOf(r))) || d;
+    }
+    while(d && d.kind === 'indexed') d = d.base;
+    if(!d) return null;
+    if(d.kind === 'cmyk') return ['cyan','magenta','yellow','black'];
+    if(d.kind === 'gray') return ['black'];
+    if(d.kind === 'rgb') return ['rgb'];
+    if(d.kind === 'sep' || d.kind === 'devn'){
+      const keys = d.names.filter(n => n && !/^(none|all)$/i.test(n)).map(n => n.toLowerCase());
+      return keys.length ? keys : null;
+    }
+  } catch(e){}
+  return null;
+}
+
+// Separates a CMYK image per plate without touching its pixels: the
+// image's colour space is swapped for a DeviceN [Cyan Magenta Yellow
+// Black] space over DeviceCMYK whose PostScript tint transform multiplies
+// each component by 0 or 1. PDFium then zeroes the hidden plates per
+// pixel while the original (JPEG/Flate) data, /Decode array and soft mask
+// stay as they are. Works for DeviceCMYK, ICC N=4 and Indexed-over-CMYK
+// images. Returns true when the image was patched.
+const __patchedImages = new WeakSet();
+let __patchedImageCount = 0; // WeakSet has no size; callers diff this to see whether images were patched
+function patchCmykImageForHidden(ctx, resources, xd, hidden){
+  if(__patchedImages.has(xd)) return true;
+  const N = PDFLib.PDFName.of;
+  const plates = ['cyan','magenta','yellow','black'];
+  const m = plates.map(k => hidden.has(k) ? 0 : 1);
+  const csRaw = xd.get(N('ColorSpace'));
+  const cs = pdfResolve(ctx, csRaw);
+  const isCmyk = (obj) => {
+    let d = describeColorSpaceObject(ctx, obj);
+    if(d.kind === 'other'){
+      const r = pdfResolve(ctx, obj);
+      if(r instanceof PDFLib.PDFName) d = describeColorSpaceName(ctx, resources, decodeNameToken(pdfTextOf(r))) || d;
+    }
+    return d.kind === 'cmyk';
+  };
+  const indexed = cs instanceof PDFLib.PDFArray && pdfTextOf(pdfResolve(ctx, cs.get(0))) === 'Indexed';
+  if(indexed){
+    // Indexed: only the small palette is converted by the renderer, so a
+    // DeviceN tint transform that scales each component by 0 or 1 is cheap.
+    if(!isCmyk(cs.get(1))) return false;
+    const code = '{ ' + [3,2,1,0].map(i => m[i] + ' mul 4 1 roll').join(' ') + ' }';
+    // inputs c m y k (k on top): scale k, roll it to the bottom, repeat for y, m, c
+    const fn = ctx.stream(code, { FunctionType:4, Domain:[0,1,0,1,0,1,0,1], Range:[0,1,0,1,0,1,0,1] });
+    cs.set(1, ctx.obj([ N('DeviceN'), ctx.obj(plates.map(k => N(k[0].toUpperCase() + k.slice(1)))), N('DeviceCMYK'), ctx.register(fn) ]));
+  } else {
+    // Direct CMYK (DeviceCMYK or ICC N=4, Flate or JPEG): pin the hidden
+    // plates' /Decode range to 0..0, so those samples decode to 0 whatever
+    // the data says, and leave the colour space, profile and pixel data
+    // alone. No per-pixel function runs, so this stays fast on huge images.
+    if(!isCmyk(csRaw)) return false;
+    let dec = [];
+    const old = pdfResolve(ctx, xd.get(N('Decode')));
+    if(old instanceof PDFLib.PDFArray && old.size() === 8){
+      for(let i=0;i<8;i++){ const v = pdfNumberValue(pdfResolve(ctx, old.get(i))); dec.push(v === undefined || v === null ? (i%2) : v); }
+    } else dec = [0,1,0,1,0,1,0,1];
+    m.forEach((keep, i) => { if(!keep){ dec[i*2] = 0; dec[i*2+1] = 0; } });
+    xd.set(N('Decode'), ctx.obj(dec));
+  }
+  __patchedImages.add(xd);
+  __patchedImageCount++;
+  return true;
+}
+
+// Returns the rewritten stream text, or null when nothing needed to change.
+function rewriteContentForHidden(text, ctx, resources, hidden, onForm){
+  const toks = tokenizeWithPos(text);
+  const edits = [];
+  const put = (t, txt) => edits.push({ s:t.s, e:t.e, text:txt });
+  const hideFor = (cs, nums) => {
+    if(!cs) return;
+    if(cs.kind === 'cmyk'){
+      if(nums.length < 4) return;
+      const last = nums.slice(-4);
+      ['cyan','magenta','yellow','black'].forEach((k,i) => { if(hidden.has(k)) put(last[i], '0'); });
+    } else if(cs.kind === 'gray'){
+      if(hidden.has('black') && nums.length >= 1) put(nums[nums.length-1], '1');
+    } else if(cs.kind === 'rgb'){
+      if(hidden.has('rgb') && nums.length >= 3) nums.slice(-3).forEach(t => put(t, '1'));
+    } else if(cs.kind === 'sep'){
+      if(cs.names[0] && hidden.has(cs.names[0].toLowerCase()) && nums.length >= 1) put(nums[nums.length-1], '0');
+    } else if(cs.kind === 'devn'){
+      const n = cs.names.length, use = nums.slice(-n);
+      if(use.length === n) cs.names.forEach((nm,i) => { if(nm && hidden.has(nm.toLowerCase())) put(use[i], '0'); });
+    }
+  };
+  let stack = [], depth = 0, fill = null, stroke = null;
+  const gs = [];
+  for(const tok of toks){
+    if(tok.t === 'aopen' || tok.t === 'dopen'){ depth++; continue; }
+    if(tok.t === 'aclose' || tok.t === 'dclose'){ depth = Math.max(0, depth-1); continue; }
+    if(tok.t !== 'op'){ if(depth === 0) stack.push(tok); continue; }
+    const op = tok.v;
+    const nums = stack.filter(t => t.t === 'num');
+    const nameTok = [...stack].reverse().find(t => t.t === 'name');
+    if(op === 'q') gs.push({ fill, stroke });
+    else if(op === 'Q'){ if(gs.length){ const g = gs.pop(); fill = g.fill; stroke = g.stroke; } }
+    else if(op === 'cs') fill = describeColorSpaceName(ctx, resources, nameTok ? decodeNameToken(nameTok.v) : null);
+    else if(op === 'CS') stroke = describeColorSpaceName(ctx, resources, nameTok ? decodeNameToken(nameTok.v) : null);
+    else if(op === 'g'){ hideFor({ kind:'gray' }, nums); fill = { kind:'gray' }; }
+    else if(op === 'G'){ hideFor({ kind:'gray' }, nums); stroke = { kind:'gray' }; }
+    else if(op === 'rg'){ hideFor({ kind:'rgb' }, nums); fill = { kind:'rgb' }; }
+    else if(op === 'RG'){ hideFor({ kind:'rgb' }, nums); stroke = { kind:'rgb' }; }
+    else if(op === 'k'){ hideFor({ kind:'cmyk' }, nums); fill = { kind:'cmyk' }; }
+    else if(op === 'K'){ hideFor({ kind:'cmyk' }, nums); stroke = { kind:'cmyk' }; }
+    else if(op === 'sc' || op === 'scn'){ if(!nameTok) hideFor(fill, nums); }
+    else if(op === 'SC' || op === 'SCN'){ if(!nameTok) hideFor(stroke, nums); }
+    else if(op === 'Do' && nameTok){
+      const nm = decodeNameToken(nameTok.v);
+      let dropped = false;
+      try{
+        const xo = resources && resources.lookupMaybe(PDFLib.PDFName.of('XObject'), PDFLib.PDFDict);
+        const xobj = pdfResolve(ctx, lookupByDecodedName(xo, nm));
+        const xd = xobj && xobj.dict;
+        if(xd && pdfTextOf(pdfResolve(ctx, xd.get(PDFLib.PDFName.of('Subtype')))) === 'Image'){
+          // An image can't be edited pixel by pixel, but it can be removed
+          // whole when every ink it carries is hidden. Image masks (1-bit
+          // stencils painted in the current fill colour) follow that colour.
+          const isMask = pdfResolve(ctx, xd.get(PDFLib.PDFName.of('ImageMask'))) === PDFLib.PDFBool.True;
+          const keys = isMask ? null : imageInkKeys(ctx, resources, xd);
+          if(keys && keys.every(k => hidden.has(k))){ edits.push({ s:nameTok.s, e:tok.e, text:' ' }); dropped = true; }
+          else if(keys && keys.length === 4 && keys.some(k => hidden.has(k)) && ['cyan','magenta','yellow','black'].every(k => keys.includes(k))){
+            patchCmykImageForHidden(ctx, resources, xd, hidden);
+          }
+        }
+      } catch(e){}
+      if(!dropped && onForm) onForm(nm, resources);
+    }
+    stack = [];
+  }
+  if(!edits.length) return null;
+  edits.sort((a,b) => a.s - b.s);
+  let out = '', pos = 0;
+  for(const ed of edits){ if(ed.s < pos) continue; out += text.slice(pos, ed.s) + ed.text; pos = ed.e; }
+  return out + text.slice(pos);
+}
+
+function latin1ToBytes(str){
+  const b = new Uint8Array(str.length);
+  for(let i=0;i<str.length;i++) b[i] = str.charCodeAt(i) & 255;
+  return b;
+}
+
+// Zeroes the given inks (lowercase keys: cyan/magenta/yellow/black/rgb or
+// any spot colorant name) in every colour operator of every page, plus
+// every Form XObject and tiling pattern they reach. Returns the number of
+// streams changed. Pixels inside placed images and shading gradients are
+// not touched — those can't be separated at this level.
+function hideChannelsInDoc(pdfLibDoc, hidden){
+  if(!hidden || !hidden.size) return 0;
+  const ctx = pdfLibDoc.context;
+  const N = PDFLib.PDFName.of;
+  const done = new Set();
+  let changed = 0;
+  const SKIP_KEYS = new Set(['Filter','DecodeParms','Length','DL','F','FFilter','FDecodeParms']);
+
+  const streamEntries = (stream) => {
+    const e = {};
+    for(const [k,v] of stream.dict.entries()){ const nm = pdfTextOf(k); if(nm && !SKIP_KEYS.has(nm)) e[nm] = v; }
+    return e;
+  };
+
+  const processPatterns = (res, depth) => {
+    try{
+      const pt = res && res.lookupMaybe(N('Pattern'), PDFLib.PDFDict);
+      if(!pt) return;
+      for(const [, raw] of pt.entries()){
+        if(!(raw instanceof PDFLib.PDFRef)) continue;
+        const obj = ctx.lookup(raw);
+        if(obj && obj.dict && pdfNumberValue(pdfResolve(ctx, obj.dict.get(N('PatternType')))) === 1) processStream(raw, obj, res, depth+1);
+      }
+    } catch(e){}
+  };
+
+  const makeOnForm = (depth) => (name, res) => {
+    try{
+      const xo = res && res.lookupMaybe(N('XObject'), PDFLib.PDFDict);
+      const raw = lookupByDecodedName(xo, name);
+      if(!(raw instanceof PDFLib.PDFRef)) return;
+      const obj = ctx.lookup(raw);
+      if(obj && obj.dict && pdfTextOf(pdfResolve(ctx, obj.dict.get(N('Subtype')))) === 'Form') processStream(raw, obj, res, depth+1);
+    } catch(e){}
+  };
+
+  const processStream = (ref, stream, parentRes, depth) => {
+    const key = ref.toString();
+    if(done.has(key) || depth > 8) return;
+    done.add(key);
+    let res = parentRes;
+    try{ const r = stream.dict.lookupMaybe(N('Resources'), PDFLib.PDFDict); if(r) res = r; } catch(e){}
+    const text = inflateIfNeeded(stream);
+    if(text == null) return;
+    const before = __patchedImageCount;
+    const out = rewriteContentForHidden(text, ctx, res, hidden, makeOnForm(depth));
+    processPatterns(res, depth);
+    if(__patchedImageCount !== before) changed++;
+    if(out != null){
+      ctx.assign(ref, ctx.flateStream(latin1ToBytes(out), streamEntries(stream)));
+      changed++;
+    }
+  };
+
+  for(const page of pdfLibDoc.getPages()){
+    try{
+      const res = getInheritedResources(page);
+      const contentsRaw = page.node.get(N('Contents'));
+      const contents = pdfResolve(ctx, contentsRaw);
+      const parts = [];
+      let ok = !!contents;
+      const items = contents instanceof PDFLib.PDFArray ? Array.from({length:contents.size()}, (_,i) => contents.get(i)) : [contentsRaw];
+      for(const it of items){
+        const st = pdfResolve(ctx, it);
+        const t = st ? inflateIfNeeded(st) : null;
+        if(t == null){ ok = false; break; }
+        parts.push(t);
+      }
+      if(!ok) continue;
+      const before = __patchedImageCount;
+      const out = rewriteContentForHidden(parts.join('\n'), ctx, res, hidden, makeOnForm(0));
+      processPatterns(res, 0);
+      if(__patchedImageCount !== before) changed++;
+      if(out != null){
+        page.node.set(N('Contents'), ctx.register(ctx.flateStream(latin1ToBytes(out))));
+        changed++;
+      }
+    } catch(err){ console.warn('[Redline] hideChannelsInDoc page failed', err); }
+  }
+  return changed;
+}
+
 function renderOutputPreviewList(pageIndex){
   const panel = el('outputPreviewPanel');
   const listEl = el('channelList');
 
-  if(!state.pdfLibA || !state.pdfLibB){
+  const viewer = state.view === 'viewer';
+  if(!state.pdfLibA || (!viewer && !state.pdfLibB)){
     panel.style.display = 'none';
     return;
   }
 
-  let namesA = [], namesB = [];
-  try{
-    const pageA = state.pdfLibA.getPages()[pageIndex];
-    const resA = pageA ? getInheritedResources(pageA) : null;
-    if(resA) namesA = findAllSpotColorNames(state.pdfLibA.context, resA);
-  } catch(e){ /* ignore */ }
-  try{
-    const pageB = state.pdfLibB.getPages()[pageIndex];
-    const resB = pageB ? getInheritedResources(pageB) : null;
-    if(resB) namesB = findAllSpotColorNames(state.pdfLibB.context, resB);
-  } catch(e){ /* ignore */ }
-
+  const wasHidden = panel.style.display === 'none';
   panel.style.display = 'block';
+  if(wasHidden && window.__opRestore) window.__opRestore();
   el('channelPageNum').textContent = '· page ' + (pageIndex+1);
 
-  // union by colorant name (case-insensitive) — the hidden/shown state is
-  // tracked by name so toggling "Varnish" knocks it out of whichever file
-  // (or both) actually has a plate by that name.
-  const byName = new Map();
-  namesA.forEach(({colorantName}) => {
-    const key = colorantName.toLowerCase();
-    if(!byName.has(key)) byName.set(key, { colorantName, inA:false, inB:false, isProcess:false });
-    byName.get(key).inA = true;
-  });
-  namesB.forEach(({colorantName}) => {
-    const key = colorantName.toLowerCase();
-    if(!byName.has(key)) byName.set(key, { colorantName, inA:false, inB:false, isProcess:false });
-    byName.get(key).inB = true;
+  // key (lowercase) -> entry; process plates and spots live in one namespace
+  // so a Separation literally named "Black" folds into the Black plate.
+  const byKey = new Map();
+  const touch = (key, label, isProcess, tagText, slot) => {
+    if(!byKey.has(key)) byKey.set(key, { key, colorantName:label, inA:false, inB:false, isProcess, tagText });
+    byKey.get(key)[slot] = true;
+  };
+  (viewer ? [['inA', state.pdfLibA]] : [['inA', state.pdfLibA], ['inB', state.pdfLibB]]).forEach(([slot, doc]) => {
+    getProcessPlatesUsed(doc, pageIndex).forEach(k => touch(k, PLATE_LABEL[k], true, k === 'rgb' ? 'non-cmyk' : 'process', slot));
+    collectSpotColorants(doc, pageIndex).forEach((display, lower) => {
+      if(PLATE_RE.test(lower)) touch(lower, PLATE_LABEL[lower], true, 'process', slot);
+      else touch(lower, display, false, '', slot);
+    });
   });
 
-  // CMYK as one combined process-color toggle — detected the same way (via
-  // g/rg/k operators, or any Gray/RGB/CMYK device color space actually
-  // used in the content, including inside raster images), not just
-  // assumed present.
-  const anyA = getProcessColorUsed(state.pdfLibA, pageIndex);
-  const anyB = getProcessColorUsed(state.pdfLibB, pageIndex);
-  if(anyA || anyB){
-    byName.set('cmyk', { colorantName:'CMYK', inA:anyA, inB:anyB, isProcess:true });
-  }
-
-  if(byName.size === 0){
+  if(byKey.size === 0){
     listEl.innerHTML = '<div class="ch-empty">No channels detected on this page in either file.</div>';
     return;
   }
 
-  // CMYK first, then spot colors alphabetically
-  const entries = [...byName.values()].sort((a,b) => {
-    if(a.isProcess !== b.isProcess) return a.isProcess ? -1 : 1;
+  const entries = [...byKey.values()].sort((a,b) => {
+    const ia = PLATE_ORDER.indexOf(a.key), ib = PLATE_ORDER.indexOf(b.key);
+    if(ia >= 0 || ib >= 0) return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
     return a.colorantName.localeCompare(b.colorantName);
   });
+  const allKeys = entries.map(e => e.key);
+  const esc = (t) => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
 
   listEl.innerHTML = entries.map(entry => {
     const status = (entry.inA && entry.inB) ? 'both' : entry.inB ? 'added' : 'removed';
     const tag = status === 'both' ? 'Both' : status === 'added' ? 'B only' : 'A only';
-    const key = entry.colorantName.toLowerCase();
-    const isOn = !state.hiddenChannels.has(key);
-    const isExpanded = state.expandedChannel === key;
+    const isOn = !state.hiddenChannels.has(entry.key);
     return `
       <div class="channel-row-wrap">
-        <div class="channel-row ${isOn ? '' : 'off'} ${isExpanded ? 'expanded' : ''}" data-key="${key.replace(/"/g,'&quot;')}">
-          <button class="ch-check ${isOn ? 'checked' : ''}" type="button" aria-label="Toggle ${entry.colorantName}">
+        <div class="channel-row ${isOn ? '' : 'off'}" data-key="${esc(entry.key)}">
+          <button class="ch-check ${isOn ? 'checked' : ''}" type="button" aria-label="Toggle ${esc(entry.colorantName)}">
             <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
           </button>
-          <span class="ch-name" data-role="expand">${entry.colorantName}${entry.isProcess ? ' <span class="ch-process-tag">process</span>' : ''}</span>
-          <span class="ch-tag ${status}">${tag}</span>
-          <span class="ch-expand-arrow" data-role="expand">${isExpanded ? '▾' : '▸'}</span>
+          <span class="ch-name" data-role="toggle">${esc(entry.colorantName)}${entry.tagText ? ' <span class="ch-process-tag">' + entry.tagText + '</span>' : ''}</span>
+          ${viewer ? '' : `<span class="ch-tag ${status}">${tag}</span>`}
         </div>
-        <div class="channel-compare" style="display:${isExpanded ? 'flex' : 'none'};"></div>
       </div>`;
   }).join('');
 
   const wraps = listEl.querySelectorAll('.channel-row-wrap');
   entries.forEach((entry, idx) => {
     const wrap = wraps[idx];
-    const key = entry.colorantName.toLowerCase();
-
-    wrap.querySelector('.ch-check').addEventListener('click', (e) => {
+    const toggle = (e) => {
       e.stopPropagation();
-      if(state.hiddenChannels.has(key)) state.hiddenChannels.delete(key);
-      else state.hiddenChannels.add(key);
-      // re-run the full comparison so the knockout is reflected in the
-      // stage view, stats, and the page-by-page report alike
-      compareAndScan();
-    });
-
-    wrap.querySelectorAll('[data-role="expand"]').forEach(el2 => {
-      el2.addEventListener('click', () => {
-        state.expandedChannel = (state.expandedChannel === key) ? null : key;
-        renderOutputPreviewList(pageIndex);
-      });
-    });
-
-    if(state.expandedChannel === key){
-      populateChannelCompare(pageIndex, entry, wrap.querySelector('.channel-compare'));
-    }
+      if(state.hiddenChannels.has(entry.key)) state.hiddenChannels.delete(entry.key);
+      else state.hiddenChannels.add(entry.key);
+      // re-run so the change shows up in the stage (and, when comparing,
+      // the stats and page-by-page report too)
+      if(viewer) renderViewer(); else compareAndScan();
+    };
+    wrap.querySelector('.ch-check').addEventListener('click', toggle);
+    wrap.querySelector('[data-role="toggle"]').addEventListener('click', toggle);
   });
 }
 
-// Isolates the selected channel independently in each file and diffs those
-// two isolated renders directly against each other — this is what actually
-// answers "does this plate itself match?" without assuming anything about
-// what's printed underneath it (unlike the checkbox knockout above, which
-// works on the flattened composite and can't see through other ink).
-async function populateChannelCompare(pageIndex, entry, container){
-  container.innerHTML = '<div class="cc-loading">Rendering channel…</div>';
-  const key = entry.colorantName.toLowerCase();
-  const targetWidth = 320;
-
-  const [canvasA, canvasB] = entry.isProcess
-    ? await Promise.all([
-        renderIsolatedProcessChannelCanvas(state.pdfLibA, pageIndex, targetWidth, state.alignBox),
-        renderIsolatedProcessChannelCanvas(state.pdfLibB, pageIndex, targetWidth, state.alignBox)
-      ])
-    : await Promise.all([
-        renderIsolatedChannelCanvas(state.pdfLibA, pageIndex, targetWidth, state.alignBox, key),
-        renderIsolatedChannelCanvas(state.pdfLibB, pageIndex, targetWidth, state.alignBox, key)
-      ]);
-  const diff = (canvasA && canvasB) ? computeDiff(canvasA, canvasB) : null;
-  const pct = diff ? (diff.changed / diff.total) * 100 : null;
-
-  container.innerHTML = `
-    <div class="cc-pane"><div class="cc-label">File A</div><div class="cc-canvas" data-slot="a"></div></div>
-    <div class="cc-pane"><div class="cc-label">File B</div><div class="cc-canvas" data-slot="b"></div></div>
-    <div class="cc-pane"><div class="cc-label">Difference</div><div class="cc-canvas" data-slot="d"></div></div>
-  `;
-  const slotA = container.querySelector('[data-slot="a"]');
-  const slotB = container.querySelector('[data-slot="b"]');
-  const slotD = container.querySelector('[data-slot="d"]');
-  if(canvasA) slotA.appendChild(canvasA); else slotA.innerHTML = '<span class="ch-empty">Not present</span>';
-  if(canvasB) slotB.appendChild(canvasB); else slotB.innerHTML = '<span class="ch-empty">Not present</span>';
-  if(diff) slotD.appendChild(diff.canvas); else slotD.innerHTML = '<span class="ch-empty">—</span>';
-
-  const stat = document.createElement('div');
-  stat.className = 'cc-stat ' + (diff ? (pct < 0.05 ? 'ok' : 'warn') : 'warn');
-  stat.textContent = diff
-    ? (pct < 0.05 ? '✓ This channel matches between both files.' : '⚠ This channel differs on ' + pct.toFixed(2) + '% of the aligned area.')
-    : 'Could not isolate this channel (missing alignment box data).';
-  container.appendChild(stat);
+// ---- Viewer mode: one file, rendered sharp at the current zoom ----
+let viewerToken = 0;
+async function renderViewer(){
+  if(state.view !== 'viewer' || !state.pdfA) return;
+  const token = ++viewerToken;
+  stage.classList.add('loading');
+  try{
+    await ensureRenderVariants();
+    if(token !== viewerToken) return;
+    // zoom 100% = 900 px wide; cap the pixel budget so tall pages at high zoom stay renderable
+    const g = computeAlignGeometry(state.pdfLibA, state.page-1, 1000, state.alignBox);
+    const aspect = g && g.sw > 0 ? g.sh / g.sw : 1.5;
+    const maxW = Math.max(300, Math.min(6000, Math.floor(Math.sqrt(36e6 / Math.max(aspect, 0.2)))));
+    const width = Math.min(maxW, Math.max(200, Math.round(900 * state.zoom)));
+    const res = await getComparisonCanvas(rdoc(state.pdfA), state.pdfLibA, state.page, width, state.alignBox, state.hiddenChannels);
+    if(token !== viewerToken) return;
+    emptyState.style.display = 'none';
+    stage.innerHTML = '';
+    const scroll = document.createElement('div');
+    scroll.className = 'canvas-scroll';
+    const holder = document.createElement('div');
+    holder.className = 'viewer-holder';
+    holder.appendChild(res.canvas);
+    scroll.appendChild(holder);
+    stage.appendChild(scroll);
+    state.lastRender = null;
+    renderOutputPreviewList(state.page - 1);
+    updatePager();
+  } catch(err){
+    console.error('[Redline] viewer render failed', err);
+  } finally {
+    if(token === viewerToken) stage.classList.remove('loading');
+  }
 }
 
+function showEmptyStage(){
+  stage.innerHTML = '';
+  emptyState.style.display = '';
+  stage.appendChild(emptyState);
+}
+
+function setView(view){
+  if(view === state.view) return;
+  state.view = view;
+  viewerToken++; // cancel any in-flight viewer render
+  document.body.classList.toggle('view-viewer', view === 'viewer');
+  document.querySelectorAll('.vs-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+  const viewer = view === 'viewer';
+  el('tagline').textContent = viewer ? 'PDF Viewer' : 'PDF Visual Compare';
+  el('labelA').textContent = viewer ? 'PDF file' : 'File A · Original';
+  el('alignLabel').textContent = viewer ? 'View box' : 'Align by';
+  state.zoom = 1; el('zoomLabel').textContent = '100%';
+  el('outputPreviewPanel').style.display = 'none';
+  if(viewer){
+    state.maxPages = state.pdfA ? state.pdfA.numPages : 1;
+    state.page = 1; updatePager(); setStatus();
+    if(state.pdfA) renderViewer(); else showEmptyStage();
+    emptyState.querySelector('p').innerHTML = 'Load a PDF, JPG or PNG above to view it.<br>Switch inks on and off in Output preview, or turn on Overprint preview.';
+  } else {
+    emptyState.querySelector('p').innerHTML = 'Load a File A and File B above (PDF, JPG, or PNG), then run a comparison.<br>Pages render at matched scale so every shift, added mark, or missing element is caught pixel-for-pixel.';
+    state.maxPages = (state.pdfA && state.pdfB) ? Math.max(state.pdfA.numPages, state.pdfB.numPages) : 1;
+    state.page = 1; updatePager(); setStatus();
+    state.lastRender = null;
+    showEmptyStage();
+    if(state.pdfA && state.pdfB) runCompare();
+  }
+}
+document.querySelectorAll('.vs-btn').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
 
 async function runCompare(){
   if(!state.pdfA || !state.pdfB) return;
