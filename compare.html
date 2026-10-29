@@ -603,7 +603,7 @@ function makePdfiumDoc(lib, doc){
     destroy(){
       try{ doc.destroy(); }catch(e){ /* already gone */ }
       if(api.plateShared){
-        for(const p of api.plateShared.pages.values()){ p.then(m => m.forEach(d => d.destroy())).catch(() => {}); }
+        for(const p of api.plateShared.pages.values()){ p.then(m => { m.forEach(d => d.destroy()); if(m.ko) m.ko.forEach(d => d.destroy()); }).catch(() => {}); }
         api.plateShared.pages.clear();
         if(api.plateShared.rc){ api.plateShared.rc.clear(); api.plateShared.rcBytes = 0; }
       }
@@ -2752,8 +2752,9 @@ function plateSpecified(desc, nums, opm){
   }
   return null;
 }
+let PLATE_KO = false; // build plates as if nothing overprinted (reference for the delta)
 function plateIsNoop(overprint, spec, P){
-  if(!overprint || !spec) return false;
+  if(PLATE_KO || !overprint || !spec) return false;
   return !(spec.has('*') || spec.has(P));
 }
 
@@ -2912,8 +2913,13 @@ function plateRewriteContent(text, ctx, resources, P, env, inherited, isPage){
     } catch(e){}
     return key;
   };
-  const setBM = (pos, noop, usesStroke) => {
-    const want = noop ? 'Multiply' : st.bm;
+  // A spot ink printed over itself does not get darker: Multiply between two
+  // objects of the SAME spot is a union of tints, which Darken gives on this
+  // plate. (Objects of other inks stay Multiply so they remain invisible here.)
+  const spotPlate = !PLATE_PROCESS.includes(P) && P !== 'rgb';
+  const names = (spec) => !!spec && (spec.has('*') || spec.has(P));
+  const setBM = (pos, noop, own) => {
+    const want = noop ? 'Multiply' : (spotPlate && own && st.bm === 'Multiply' ? 'Darken' : st.bm);
     if(want !== st.eff){ ins(pos, '/' + gsFor(want) + ' gs '); st.eff = want; }
   };
   const fillNoop = () => plateIsNoop(st.fop, plateSpecified(st.fill.desc, st.fill.nums, st.opm), P);
@@ -3010,20 +3016,22 @@ function plateRewriteContent(text, ctx, resources, P, env, inherited, isPage){
         if(toks[j].t === 'op' && Object.prototype.hasOwnProperty.call(PATH_PAINT, toks[j].v)){ kind = PATH_PAINT[toks[j].v]; break; }
         if(toks[j].t === 'op' && ['BT','Do','sh','q','Q'].includes(toks[j].v)) break;
       }
-      if(kind === 'f') setBM(opStart, fillNoop());
-      else if(kind === 's') setBM(opStart, strokeNoop());
-      else if(kind === 'fs') setBM(opStart, fillNoop() && strokeNoop());
+      const fOwn = () => names(plateSpecified(st.fill.desc, st.fill.nums, st.opm));
+      const sOwn = () => names(plateSpecified(st.stroke.desc, st.stroke.nums, st.opm));
+      if(kind === 'f') setBM(opStart, fillNoop(), fOwn());
+      else if(kind === 's') setBM(opStart, strokeNoop(), sOwn());
+      else if(kind === 'fs') setBM(opStart, fillNoop() && strokeNoop(), fOwn() && sOwn());
     }
     else if(Object.prototype.hasOwnProperty.call(PATH_PAINT, op)){ inPath = false; }
     else if(op === 'Tj' || op === 'TJ' || op === "'" || op === '"'){
       const strokeOnly = (tr === 1 || tr === 5), invisible = (tr === 3 || tr === 7);
-      if(!invisible) setBM(opStart, strokeOnly ? strokeNoop() : fillNoop());
+      if(!invisible) setBM(opStart, strokeOnly ? strokeNoop() : fillNoop(), names(plateSpecified((strokeOnly ? st.stroke : st.fill).desc, (strokeOnly ? st.stroke : st.fill).nums, st.opm)));
     }
     else if(op === 'sh' && nameTok){
       try{
         const shr = resources.lookupMaybe(N('Shading'), PDFLib.PDFDict);
         const sh = pdfResolve(ctx, lookupByDecodedName(shr, decodeNameToken(nameTok.v)));
-        if(sh){ const spec = platePatchShading(ctx, resources, sh, P, env); setBM(opStart, plateIsNoop(st.fop, spec, P)); }
+        if(sh){ const spec = platePatchShading(ctx, resources, sh, P, env); setBM(opStart, plateIsNoop(st.fop, spec, P), names(spec)); }
       } catch(e){}
     }
     else if(op === 'Do' && nameTok){
@@ -3036,7 +3044,7 @@ function plateRewriteContent(text, ctx, resources, P, env, inherited, isPage){
           const sub = pdfTextOf(pdfResolve(ctx, xd.get(N('Subtype'))));
           if(sub === 'Image'){
             const spec = platePatchImage(ctx, resources, xd, P, env);
-            setBM(opStart, plateIsNoop(st.fop, spec, P));
+            setBM(opStart, plateIsNoop(st.fop, spec, P), names(spec));
           } else if(sub === 'Form'){
             env.onForm(nm, resources, st);
           }
@@ -3127,11 +3135,15 @@ function platesForPage(pdfLibDoc, pageNum){
 async function buildPlateDocs(shared, pdfLibDoc, pageNum, file){
   const bytes = await plateMiniPageBytes(pdfLibDoc, pageNum, file);
   const keys = platesForPage(pdfLibDoc, pageNum);
-  const plates = new Map();
+  const plates = new Map(), ko = new Map();
+  plates.ko = ko;
   for(const P of keys){
-    const d = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption:true, updateMetadata:false });
-    plateRewriteDoc(d, P);
-    plates.set(P, await loadPdfiumDocument(await d.save({ useObjectStreams:false })));
+    for(const [target, flag] of [[plates, false], [ko, true]]){
+      const d = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption:true, updateMetadata:false });
+      PLATE_KO = flag;
+      try{ plateRewriteDoc(d, P); } finally { PLATE_KO = false; }
+      target.set(P, await loadPdfiumDocument(await d.save({ useObjectStreams:false })));
+    }
   }
   return plates;
 }
@@ -3161,13 +3173,37 @@ function makeOverprintDoc(baseDoc, pdfLibDoc, file, hidden){
   const shared = baseDoc.plateShared;
   if(!shared.rc){ shared.rc = new Map(); shared.rcBytes = 0; }
   const RC_BUDGET = 400e6; // bytes of cached plate bitmaps per file
+  // Hidden SPOT inks must vanish from the plates too (their objects would
+  // otherwise still knock out the other inks), so the plate set is built
+  // from a copy of the file with those inks hidden. One set per spot subset.
+  const hs = hidden ? [...hidden].filter(k => !PLATE_PROCESS.includes(k) && k !== 'rgb').sort() : [];
+  const hsKey = hs.join(',');
   const platesFor = (n) => {
-    if(!shared.pages.has(n)){
-      const p = buildPlateDocs(shared, pdfLibDoc, n, file);
-      p.catch(() => shared.pages.delete(n));
-      shared.pages.set(n, p);
+    const pk = hsKey + '#' + n;
+    if(!shared.pages.has(pk)){
+      // keep at most 3 spot-subsets of plates alive
+      const subsets = [...new Set([...shared.pages.keys()].map(k => k.split('#')[0]))];
+      if(!subsets.includes(hsKey) && subsets.length >= 3){
+        const drop = subsets.find(x => x !== '') ?? subsets[0];
+        for(const k of [...shared.pages.keys()]){
+          if(k.split('#')[0] !== drop) continue;
+          shared.pages.get(k).then(m => { m.forEach(d => d.destroy()); if(m.ko) m.ko.forEach(d => d.destroy()); }).catch(() => {});
+          shared.pages.delete(k);
+        }
+        for(const k of [...shared.rc.keys()]){ if(k.split('~')[0] === drop){ const c = shared.rc.get(k); shared.rcBytes -= c.width * c.height * 4; shared.rc.delete(k); } }
+      }
+      const p = (async () => {
+        let src = pdfLibDoc;
+        if(hs.length){
+          src = await PDFLib.PDFDocument.load(await file.arrayBuffer(), { ignoreEncryption:true, updateMetadata:false });
+          hideChannelsInDoc(src, new Set(hs));
+        }
+        return buildPlateDocs(shared, src, n, file);
+      })();
+      p.catch(() => shared.pages.delete(pk));
+      shared.pages.set(pk, p);
     }
-    return shared.pages.get(n);
+    return shared.pages.get(pk);
   };
   return {
     numPages: baseDoc.numPages,
@@ -3179,31 +3215,59 @@ function makeOverprintDoc(baseDoc, pdfLibDoc, file, hidden){
           const promise = (async () => {
             const plates = await platesFor(n);
             const W = canvasContext.canvas.width, H = canvasContext.canvas.height;
+            const vpKey = hsKey + '~' + [n, W, H, viewport.scale, viewport.offsetX, viewport.offsetY].join('|');
+            const cached = async (ck, draw) => {
+              let c = shared.rc.get(ck);
+              if(c){ shared.rc.delete(ck); shared.rc.set(ck, c); return c; }
+              c = document.createElement('canvas'); c.width = W; c.height = H;
+              await draw(c.getContext('2d'));
+              shared.rc.set(ck, c); shared.rcBytes += W * H * 4;
+              while(shared.rcBytes > RC_BUDGET && shared.rc.size > 1){
+                const [k0, c0] = shared.rc.entries().next().value;
+                if(k0 === ck) break;
+                shared.rc.delete(k0); shared.rcBytes -= c0.width * c0.height * 4;
+              }
+              return c;
+            };
+            // plates multiplied together on white
+            const composite = async (set, tag) => {
+              const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+              const cx = cv.getContext('2d');
+              cx.fillStyle = '#fff'; cx.fillRect(0, 0, W, H);
+              for(const [key, pd] of set){
+                if(hidden && hidden.has(key)) continue;
+                const tmp = await cached(vpKey + '|' + tag + '|' + key, async (tcx) => {
+                  const pp = await pd.getPage(1);
+                  await pp.render({ canvasContext: tcx, viewport }).promise;
+                });
+                cx.globalCompositeOperation = 'multiply';
+                cx.drawImage(tmp, 0, 0);
+              }
+              return cx.getImageData(0, 0, W, H);
+            };
+            const hk = hidden && hidden.size ? [...hidden].sort().join(',') : '';
+            // The page itself, rendered normally by PDFium (hidden inks zeroed)
+            const plain = await cached(vpKey + '|P|' + hk, async (tcx) => {
+              tcx.fillStyle = '#fff'; tcx.fillRect(0, 0, W, H);
+              let pdoc = baseDoc;
+              if(hk){ const v = await getVariantDoc(baseDoc, file, { overprint:false, hidden }); if(v) pdoc = v; }
+              const pp = await pdoc.getPage(n);
+              await pp.render({ canvasContext: tcx, viewport }).promise;
+            });
+            // Overprint effect = (plates with overprint) - (same plates as knockouts).
+            // Both go through the same plate maths, so its colour-model error cancels
+            // and everything that does not overprint stays exactly as PDFium draws it.
+            const Mo = await composite(plates, 'o');
+            const Mk = await composite(plates.ko, 'k');
+            const P = plain.getContext('2d').getImageData(0, 0, W, H);
+            const o = Mo.data, k = Mk.data, d = P.data;
+            for(let i = 0; i < d.length; i += 4){
+              const dr = o[i] - k[i], dg = o[i+1] - k[i+1], db = o[i+2] - k[i+2];
+              if(dr | dg | db){ d[i] += dr; d[i+1] += dg; d[i+2] += db; } // clamped array clips 0..255
+            }
             canvasContext.save();
             canvasContext.globalCompositeOperation = 'source-over';
-            canvasContext.fillStyle = '#fff';
-            canvasContext.fillRect(0, 0, W, H);
-            const vpKey = [n, W, H, viewport.scale, viewport.offsetX, viewport.offsetY].join('|');
-            for(const [key, pd] of plates){
-              if(hidden && hidden.has(key)) continue;
-              const ck = vpKey + '|' + key;
-              let tmp = shared.rc.get(ck);
-              if(tmp){ shared.rc.delete(ck); shared.rc.set(ck, tmp); } // LRU touch
-              else {
-                tmp = document.createElement('canvas');
-                tmp.width = W; tmp.height = H;
-                const pp = await pd.getPage(1);
-                await pp.render({ canvasContext: tmp.getContext('2d'), viewport }).promise;
-                shared.rc.set(ck, tmp); shared.rcBytes += W * H * 4;
-                while(shared.rcBytes > RC_BUDGET && shared.rc.size > 1){
-                  const [k0, c0] = shared.rc.entries().next().value;
-                  if(k0 === ck) break;
-                  shared.rc.delete(k0); shared.rcBytes -= c0.width * c0.height * 4;
-                }
-              }
-              canvasContext.globalCompositeOperation = 'multiply';
-              canvasContext.drawImage(tmp, 0, 0);
-            }
+            canvasContext.putImageData(P, 0, 0);
             canvasContext.restore();
           })();
           return { promise };
@@ -3658,6 +3722,65 @@ function rewriteContentForHidden(text, ctx, resources, hidden, onForm){
   };
   let stack = [], depth = 0, fill = null, stroke = null;
   const gs = [];
+  // A hidden SPOT ink must vanish completely, not stay behind as a ghost
+  // knockout. Its colour is already zeroed to white; painting white with a
+  // Multiply blend changes nothing, whatever the opacity, so objects whose
+  // fill/stroke is a hidden spot are drawn Multiply.
+  const hiddenSpot = (cs) => {
+    if(!cs) return false;
+    if(cs.kind === 'sep') return !!(cs.names[0] && hidden.has(cs.names[0].toLowerCase()));
+    if(cs.kind === 'devn'){ const ns = cs.names.filter(n => n && !/^none$/i.test(n)); return ns.length > 0 && ns.every(n => hidden.has(n.toLowerCase())); }
+    return false;
+  };
+  let fh = false, sth = false, fa = 1, sa = 1, hidOn = false;
+  // a shading pattern whose colour space is a hidden spot
+  const patternHidden = (nameTxt) => {
+    try{
+      const pt = resources && resources.lookupMaybe(PDFLib.PDFName.of('Pattern'), PDFLib.PDFDict);
+      const po = pdfResolve(ctx, lookupByDecodedName(pt, decodeNameToken(nameTxt)));
+      const pd = po && (po.dict || po);
+      if(!pd || !pd.get) return false;
+      const sh = pdfResolve(ctx, pd.get(PDFLib.PDFName.of('Shading')));
+      const sd = sh && (sh.dict || sh);
+      return !!(sd && sd.get && hiddenSpot(describeColorSpaceObject(ctx, sd.get(PDFLib.PDFName.of('ColorSpace')))));
+    } catch(e){ return false; }
+  };
+  const gsDictH = () => { try{ return resources && resources.lookupMaybe(PDFLib.PDFName.of('ExtGState'), PDFLib.PDFDict); }catch(e){ return null; } };
+  const alphaGs = (ca, CA) => {
+    const key = 'RLa_' + String(ca).replace('.', 'p') + '_' + String(CA).replace('.', 'p');
+    try{
+      let eg = resources.lookupMaybe(PDFLib.PDFName.of('ExtGState'), PDFLib.PDFDict);
+      if(!eg){ eg = ctx.obj({}); resources.set(PDFLib.PDFName.of('ExtGState'), eg); }
+      if(eg.get(PDFLib.PDFName.of(key)) === undefined) eg.set(PDFLib.PDFName.of(key), ctx.register(ctx.obj({ Type:PDFLib.PDFName.of('ExtGState'), ca, CA })));
+      return key;
+    } catch(e){ return null; }
+  };
+  // objects painted in a hidden spot are drawn with zero opacity (and restored after)
+  const setHid = (pos, want) => {
+    if(!resources || want === hidOn) return;
+    const k = want ? alphaGs(0, 0) : alphaGs(fa, sa);
+    if(k){ edits.push({ s:pos, e:pos, text:'/' + k + ' gs ' }); hidOn = want; }
+  };
+  // A spot ink over the same spot must not get darker: Multiply between two
+  // objects of one spot is a union of tints (Darken on the alt colour), not a
+  // product. Objects painted in a visible spot with Multiply are drawn Darken.
+  let bm = 'Normal', bmEff = 'Normal';
+  const bmGs = (b) => {
+    const key = 'RLbm_' + b;
+    try{
+      let eg = resources.lookupMaybe(PDFLib.PDFName.of('ExtGState'), PDFLib.PDFDict);
+      if(!eg){ eg = ctx.obj({}); resources.set(PDFLib.PDFName.of('ExtGState'), eg); }
+      if(eg.get(PDFLib.PDFName.of(key)) === undefined) eg.set(PDFLib.PDFName.of(key), ctx.register(ctx.obj({ Type:PDFLib.PDFName.of('ExtGState'), BM:PDFLib.PDFName.of(b) })));
+      return key;
+    } catch(e){ return null; }
+  };
+  const setBmEff = (pos, want) => {
+    if(!resources || want === bmEff) return;
+    const k = bmGs(want);
+    if(k){ edits.push({ s:pos, e:pos, text:'/' + k + ' gs ' }); bmEff = want; }
+  };
+  const isSpotCS = (cs) => !!cs && (cs.kind === 'sep' || cs.kind === 'devn') && !hiddenSpot(cs);
+  const bmFor = (spot) => (spot && bm === 'Multiply') ? 'Darken' : bm;
   for(const tok of toks){
     if(tok.t === 'aopen' || tok.t === 'dopen'){ depth++; continue; }
     if(tok.t === 'aclose' || tok.t === 'dclose'){ depth = Math.max(0, depth-1); continue; }
@@ -3665,19 +3788,62 @@ function rewriteContentForHidden(text, ctx, resources, hidden, onForm){
     const op = tok.v;
     const nums = stack.filter(t => t.t === 'num');
     const nameTok = [...stack].reverse().find(t => t.t === 'name');
-    if(op === 'q') gs.push({ fill, stroke });
-    else if(op === 'Q'){ if(gs.length){ const g = gs.pop(); fill = g.fill; stroke = g.stroke; } }
-    else if(op === 'cs') fill = describeColorSpaceName(ctx, resources, nameTok ? decodeNameToken(nameTok.v) : null);
-    else if(op === 'CS') stroke = describeColorSpaceName(ctx, resources, nameTok ? decodeNameToken(nameTok.v) : null);
-    else if(op === 'g'){ hideFor({ kind:'gray' }, nums); fill = { kind:'gray' }; }
-    else if(op === 'G'){ hideFor({ kind:'gray' }, nums); stroke = { kind:'gray' }; }
-    else if(op === 'rg'){ hideFor({ kind:'rgb' }, nums); fill = { kind:'rgb' }; }
-    else if(op === 'RG'){ hideFor({ kind:'rgb' }, nums); stroke = { kind:'rgb' }; }
-    else if(op === 'k'){ hideFor({ kind:'cmyk' }, nums); fill = { kind:'cmyk' }; }
-    else if(op === 'K'){ hideFor({ kind:'cmyk' }, nums); stroke = { kind:'cmyk' }; }
-    else if(op === 'sc' || op === 'scn'){ if(!nameTok) hideFor(fill, nums); }
-    else if(op === 'SC' || op === 'SCN'){ if(!nameTok) hideFor(stroke, nums); }
+    const opStart = stack.length ? stack[0].s : tok.s;
+    if(op === 'q') gs.push({ fill, stroke, fh, sth, fa, sa, hidOn, bm, bmEff });
+    else if(op === 'Q'){ if(gs.length){ const g = gs.pop(); fill = g.fill; stroke = g.stroke; fh = g.fh; sth = g.sth; fa = g.fa; sa = g.sa; hidOn = g.hidOn; bm = g.bm; bmEff = g.bmEff; } }
+    else if(op === 'gs' && nameTok){
+      try{
+        const g = pdfResolve(ctx, lookupByDecodedName(gsDictH(), decodeNameToken(nameTok.v)));
+        const gd = g instanceof PDFLib.PDFStream ? g.dict : g;
+        if(gd && gd.get){
+          const bmo = gd.get(PDFLib.PDFName.of('BM'));
+          if(bmo !== undefined){
+            const b0 = pdfResolve(ctx, bmo);
+            let nm = b0 instanceof PDFLib.PDFName ? pdfTextOf(b0) : (b0 instanceof PDFLib.PDFArray && b0.size() ? pdfTextOf(pdfResolve(ctx, b0.get(0))) : null);
+            if(nm === 'Compatible') nm = 'Normal';
+            if(nm){ bm = nm; bmEff = nm; }
+          }
+          const ca = gd.get(PDFLib.PDFName.of('ca')), CA = gd.get(PDFLib.PDFName.of('CA'));
+          if(ca !== undefined){ const v = pdfNumberValue(pdfResolve(ctx, ca)); if(v != null) fa = v; }
+          if(CA !== undefined){ const v = pdfNumberValue(pdfResolve(ctx, CA)); if(v != null) sa = v; }
+          if(hidOn && ca !== undefined && CA !== undefined) hidOn = false; // both overwritten
+          else if(hidOn && (ca !== undefined || CA !== undefined)) hidOn = false, edits.push({ s:tok.e, e:tok.e, text:' ' }); // partial: re-hide on the next paint
+        }
+      } catch(e){}
+    }
+    else if(op === 'cs'){ fill = describeColorSpaceName(ctx, resources, nameTok ? decodeNameToken(nameTok.v) : null); fh = hiddenSpot(fill); }
+    else if(op === 'CS'){ stroke = describeColorSpaceName(ctx, resources, nameTok ? decodeNameToken(nameTok.v) : null); sth = hiddenSpot(stroke); }
+    else if(op === 'g'){ hideFor({ kind:'gray' }, nums); fill = { kind:'gray' }; fh = false; }
+    else if(op === 'G'){ hideFor({ kind:'gray' }, nums); stroke = { kind:'gray' }; sth = false; }
+    else if(op === 'rg'){ hideFor({ kind:'rgb' }, nums); fill = { kind:'rgb' }; fh = false; }
+    else if(op === 'RG'){ hideFor({ kind:'rgb' }, nums); stroke = { kind:'rgb' }; sth = false; }
+    else if(op === 'k'){ hideFor({ kind:'cmyk' }, nums); fill = { kind:'cmyk' }; fh = false; }
+    else if(op === 'K'){ hideFor({ kind:'cmyk' }, nums); stroke = { kind:'cmyk' }; sth = false; }
+    else if(op === 'sc' || op === 'scn'){ if(!nameTok) hideFor(fill, nums); else fh = patternHidden(nameTok.v); }
+    else if(op === 'SC' || op === 'SCN'){ if(!nameTok) hideFor(stroke, nums); else sth = patternHidden(nameTok.v); }
+    else if(op === 'f' || op === 'F' || op === 'f*' || op === 'Tj' || op === 'TJ' || op === "'" || op === '"'){ setHid(opStart, fh); setBmEff(opStart, bmFor(isSpotCS(fill))); }
+    else if(op === 'S' || op === 's'){ setHid(opStart, sth); setBmEff(opStart, bmFor(isSpotCS(stroke))); }
+    else if(op === 'B' || op === 'B*' || op === 'b' || op === 'b*'){ setHid(opStart, fh && sth); setBmEff(opStart, bmFor(isSpotCS(fill) && isSpotCS(stroke))); }
+    else if(op === 'sh'){
+      let hid = false, shSpot = false;
+      try{
+        const shr = resources && resources.lookupMaybe(PDFLib.PDFName.of('Shading'), PDFLib.PDFDict);
+        const sh = pdfResolve(ctx, lookupByDecodedName(shr, decodeNameToken(nameTok.v)));
+        const sd = sh && (sh.dict || sh);
+        if(sd && sd.get){ const dcs = describeColorSpaceObject(ctx, sd.get(PDFLib.PDFName.of('ColorSpace'))); hid = hiddenSpot(dcs); shSpot = isSpotCS(dcs); }
+      } catch(e){}
+      setHid(opStart, hid); setBmEff(opStart, bmFor(shSpot));
+    }
     else if(op === 'Do' && nameTok){
+      // forms must not inherit the zero opacity; stencil masks follow the fill
+      let maskHidden = false;
+      try{
+        const xo0 = resources && resources.lookupMaybe(PDFLib.PDFName.of('XObject'), PDFLib.PDFDict);
+        const xd0 = (pdfResolve(ctx, lookupByDecodedName(xo0, decodeNameToken(nameTok.v))) || {}).dict;
+        maskHidden = !!xd0 && pdfResolve(ctx, xd0.get(PDFLib.PDFName.of('ImageMask'))) === PDFLib.PDFBool.True && fh;
+      } catch(e){}
+      setHid(opStart, maskHidden);
+      let imgSpot = false;
       const nm = decodeNameToken(nameTok.v);
       let dropped = false;
       try{
@@ -3690,12 +3856,18 @@ function rewriteContentForHidden(text, ctx, resources, hidden, onForm){
           // stencils painted in the current fill colour) follow that colour.
           const isMask = pdfResolve(ctx, xd.get(PDFLib.PDFName.of('ImageMask'))) === PDFLib.PDFBool.True;
           const keys = isMask ? null : imageInkKeys(ctx, resources, xd);
-          if(keys && keys.every(k => hidden.has(k))){ edits.push({ s:nameTok.s, e:tok.e, text:' ' }); dropped = true; }
-          else if(keys && keys.length === 4 && keys.some(k => hidden.has(k)) && ['cyan','magenta','yellow','black'].every(k => keys.includes(k))){
-            patchCmykImageForHidden(ctx, resources, xd, hidden);
+          if(keys && keys.length && keys.every(k => !['cyan','magenta','yellow','black','rgb'].includes(k) && !hidden.has(k))) imgSpot = true;
+          const isCmykImg = !!keys && keys.length === 4 && ['cyan','magenta','yellow','black'].every(k => keys.includes(k));
+          if(isCmykImg){
+            // a CMYK image keeps its shape even when every process ink is hidden:
+            // it still knocks out whatever spot ink lies beneath it, so blank its
+            // channels instead of removing it
+            if(keys.some(k => hidden.has(k))) patchCmykImageForHidden(ctx, resources, xd, hidden);
           }
+          else if(keys && keys.every(k => hidden.has(k))){ edits.push({ s:nameTok.s, e:tok.e, text:' ' }); dropped = true; }
         }
       } catch(e){}
+      setBmEff(opStart, bmFor(imgSpot));
       if(!dropped && onForm) onForm(nm, resources);
     }
     stack = [];
