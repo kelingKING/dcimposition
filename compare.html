@@ -297,6 +297,16 @@
   .ch-check.checked svg{ opacity:1; transform:scale(1); }
   .ch-check.checked{ border-color:var(--teal); background:rgba(45,212,191,0.12); }
 
+
+  .ch-swatch{ width:16px; height:16px; border-radius:3px; flex:none; border:1px solid rgba(255,255,255,0.28); box-shadow:inset 0 0 0 1px rgba(0,0,0,0.25); }
+  .ch-swatch.unknown{ border-style:dashed; background:repeating-linear-gradient(45deg,#555 0 3px,#333 3px 6px); }
+  .channel-row.off .ch-swatch{ opacity:.35; }
+  .ch-group{ display:flex; align-items:center; gap:10px; padding:7px 12px; background:rgba(255,255,255,0.05); border-bottom:1px solid rgba(255,255,255,0.06); cursor:pointer; user-select:none; }
+  .ch-group .gname{ flex:1; font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-dim,var(--ink)); }
+  .ch-group .gcount{ font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--ink-faint); }
+  .ch-group:hover .gname{ color:var(--teal); }
+  .ch-check.partial{ border-color:var(--teal); background:rgba(45,212,191,0.12); }
+  .ch-check.partial::after{ content:''; display:block; width:7px; height:2px; background:var(--teal); margin:0 auto; }
   .ch-name{ font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--ink); flex:1; }
   .ch-tag{ font-family:'JetBrains Mono',monospace; font-size:9px; text-transform:uppercase; letter-spacing:.04em;
     padding:3px 8px; border-radius:10px; flex:none; }
@@ -468,11 +478,11 @@
     <span><span class="swatch" style="background:#F2A93B"></span> Shifted, modified, or color/hue shift</span>
   </div>
 
-  <div class="structural cmp-only" id="structuralPanel" style="display:none;">
+  <div class="structural" id="structuralPanel" style="display:none;">
     <div class="struct-section">
       <div class="struct-title">Page boxes <span class="n" id="boxPageNum"></span></div>
       <table class="box-table" id="boxTable">
-        <thead><tr><th></th><th>Box</th><th>File A (mm)</th><th>File B (mm)</th><th></th></tr></thead>
+        <thead id="boxTableHead"><tr><th></th><th>Box</th><th>File A (mm)</th><th>File B (mm)</th><th></th></tr></thead>
         <tbody id="boxTableBody"></tbody>
       </table>
       <div class="struct-note" id="boxNote"></div>
@@ -489,7 +499,7 @@
     <div class="report-list" id="reportList"></div>
   </div>
 
-  <footer>Runs entirely in your browser — no file is uploaded anywhere. Rendered with PDFium (WebAssembly). · Overprint preview is a Multiply approximation — for RIP-accurate overprint, flatten with overprint simulation in Acrobat/your RIP first, then compare those outputs here. · Redline</footer>
+  <footer>Runs entirely in your browser — no file is uploaded anywhere. Rendered with PDFium (WebAssembly). · Overprint preview is a per-plate approximation — for RIP-accurate overprint, flatten with overprint simulation in Acrobat/your RIP first, then compare those outputs here. · Redline</footer>
 </div>
 
 <script>
@@ -592,6 +602,11 @@ function makePdfiumDoc(lib, doc){
     },
     destroy(){
       try{ doc.destroy(); }catch(e){ /* already gone */ }
+      if(api.plateShared){
+        for(const p of api.plateShared.pages.values()){ p.then(m => m.forEach(d => d.destroy())).catch(() => {}); }
+        api.plateShared.pages.clear();
+        if(api.plateShared.rc){ api.plateShared.rc.clear(); api.plateShared.rcBytes = 0; }
+      }
       if(api.variants){
         for(const v of api.variants.values()){ if(v && v.destroy) v.destroy(); }
         api.variants.clear();
@@ -666,10 +681,17 @@ function isImageFile(file){
   return !file || /^image\/(jpeg|png)$/i.test(file.type) || /\.(jpe?g|png)$/i.test(file.name);
 }
 
-async function buildVariantDoc(file, opts){
+async function buildVariantDoc(file, opts, baseDoc, pdfLibDoc){
+  // Overprint preview: per-ink-plate composite (hidden inks are simply left
+  // out of the composite). A file without any overprinting state renders
+  // normally, so nothing is approximated needlessly.
+  let opN = 0;
+  if(opts.overprint && pdfLibDoc){
+    opN = countOverprintStates(pdfLibDoc);
+    if(opN > 0) return { doc: makeOverprintDoc(baseDoc, pdfLibDoc, file, opts.hidden), opN, hidN:0 };
+  }
   const fresh = await PDFLib.PDFDocument.load(await file.arrayBuffer(), { ignoreEncryption:true, updateMetadata:false });
-  let opN = 0, hidN = 0;
-  if(opts.overprint) opN = applyOverprintBlend(fresh);
+  let hidN = 0;
   if(opts.hidden && opts.hidden.size) hidN = hideChannelsInDoc(fresh, opts.hidden);
   if(opN + hidN === 0) return { doc:null, opN, hidN };
   const bytes = await fresh.save({ useObjectStreams:false });
@@ -686,7 +708,7 @@ async function getVariantDoc(doc, file, opts){
   if(doc.variants.has(key)) return doc.variants.get(key);
   let res = { doc:null, opN:0, hidN:0 };
   if(!isImageFile(file) && typeof PDFLib !== 'undefined'){
-    try{ res = await buildVariantDoc(file, opts); }
+    try{ res = await buildVariantDoc(file, opts, doc, doc === state.pdfA ? state.pdfLibA : state.pdfLibB); }
     catch(err){ console.warn('[Redline] render variant failed', key, err); }
   }
   if(opts.overprint) doc.opCount = res.opN;
@@ -722,13 +744,13 @@ function updateOverprintNote(){
   const a = state.pdfA ? state.pdfA.opCount : undefined, b = state.pdfB ? state.pdfB.opCount : undefined;
   if(a === undefined && b === undefined){
     note.className = 'scan-note info'; note.style.display = 'flex';
-    note.textContent = 'Overprint preview on — objects set to overprint are multiplied over the ink beneath them (approximation, not a RIP).';
+    note.textContent = 'Overprint preview on — each ink is rendered on its own plate, overprinting objects leave the other plates alone, then the plates are multiplied (approximation, not a RIP).';
   } else if(!a && !b){
     note.className = 'scan-note info'; note.style.display = 'flex';
     note.textContent = 'Overprint preview on — no overprint settings found in either file, so nothing changes.';
   } else {
     note.className = 'scan-note warn'; note.style.display = 'flex';
-    note.textContent = 'Overprint preview on — overprinting states simulated: File A ' + (a||0) + ', File B ' + (b||0) + '. Multiply approximation, not a RIP.';
+    note.textContent = 'Overprint preview on — overprinting states simulated per ink plate: File A ' + (a||0) + ', File B ' + (b||0) + '. Approximation, not a RIP.';
   }
 }
 
@@ -2379,6 +2401,7 @@ function getPageBoxes(pdfLibDoc, pageIndex){
       crop:  boxToObj(safeCall(()=>page.getCropBox())),
       trim:  boxToObj(safeCall(()=>page.getTrimBox())),
       bleed: boxToObj(safeCall(()=>page.getBleedBox())),
+      art:   boxToObj(safeCall(()=>page.getArtBox())),
       dieline: safeCall(()=>getDielineBox(pdfLibDoc, pageIndex)),
     };
   } catch(err){
@@ -2526,7 +2549,9 @@ async function getComparisonCanvasesForPage(pageNum, targetWidth){
 const BOX_LABELS = [['media','MediaBox'],['crop','CropBox'],['trim','TrimBox'],['bleed','BleedBox'],['dieline','Dieline']];
 
 // -- Rendering the structural panel --------------------------------
+const COMPARE_BOX_HEAD = '<tr><th></th><th>Box</th><th>File A (mm)</th><th>File B (mm)</th><th></th></tr>';
 function renderStructuralPanel(pageIndex){
+  el('boxTableHead').innerHTML = COMPARE_BOX_HEAD;
   const boxesA = getPageBoxes(state.pdfLibA, pageIndex);
   const boxesB = getPageBoxes(state.pdfLibB, pageIndex);
 
@@ -2583,6 +2608,612 @@ function renderStructuralPanel(pageIndex){
   }
 }
 
+// -- Viewer: page boxes for the one loaded file ---------------------
+const VIEWER_BOX_HEAD = '<tr><th></th><th>Box</th><th>Size (mm)</th><th>Size (pt)</th><th>Status</th></tr>';
+const VIEWER_BOX_ROWS = [['media','MediaBox'],['crop','CropBox'],['trim','TrimBox'],['bleed','BleedBox'],['art','ArtBox'],['dieline','Dieline']];
+function renderViewerBoxes(pageIndex){
+  const panel = el('structuralPanel');
+  panel.style.display = 'block';
+  el('boxPageNum').textContent = '· page ' + (pageIndex+1);
+  el('boxTableHead').innerHTML = VIEWER_BOX_HEAD;
+  const boxes = getPageBoxes(state.pdfLibA, pageIndex);
+  const note = el('boxNote');
+  if(!boxes){
+    el('boxTableBody').innerHTML = '<tr><td colspan="5" style="color:var(--ink-faint);">Box data unavailable for this file.</td></tr>';
+    note.className = 'struct-note'; note.textContent = 'pdf-lib could not parse box data for this file.';
+    return;
+  }
+  // pdf-lib quietly substitutes the CropBox for a missing Trim/Bleed/Art box,
+  // so look at the page dictionary itself to tell "set" from "defaulted".
+  const N = PDFLib.PDFName.of;
+  let leaf = null, rotation = 0;
+  try{ const pg = state.pdfLibA.getPages()[pageIndex]; leaf = pg.node; rotation = pg.getRotation().angle || 0; }catch(e){}
+  const isSet = (key) => {
+    if(!leaf) return null;
+    if(key === 'media') return true;
+    if(key === 'dieline') return !!boxes.dieline;
+    const name = { crop:'CropBox', trim:'TrimBox', bleed:'BleedBox', art:'ArtBox' }[key];
+    try{ return key === 'crop' ? !!leaf.CropBox() : leaf.get(N(name)) !== undefined; }catch(e){ return null; }
+  };
+  const fallback = { crop:'MediaBox', trim:'CropBox', bleed:'CropBox', art:'CropBox' };
+  const PT_TO_MM = 25.4 / 72;
+  const f1 = (n) => n.toFixed(1), f2 = (n) => n.toFixed(2);
+  el('boxTableBody').innerHTML = VIEWER_BOX_ROWS.map(([key,label]) => {
+    const b = boxes[key];
+    const set = isSet(key);
+    const used = key === state.alignBox;
+    const selectable = !!{ media:1, crop:1, trim:1, bleed:1, dieline:1 }[key];
+    let status;
+    if(key === 'dieline') status = b ? 'found' : 'none';
+    else if(set === null) status = '';
+    else status = set ? 'set' : ('not set · uses ' + fallback[key]);
+    const statusColor = (key !== 'media' && set === false) ? 'var(--ink-faint)' : (set || key==='dieline' && b) ? 'var(--mint)' : 'var(--ink-faint)';
+    return `
+      <tr class="${used ? 'used' : ''}" data-box="${key}" ${selectable ? 'style="cursor:pointer;" title="Click to view by ' + label + '"' : ''}>
+        <td>${used ? '<span class="box-used-dot" title="Current view box"></span>' : ''}</td>
+        <td class="box-name">${label}</td>
+        <td>${b ? f1(b.width*PT_TO_MM) + ' × ' + f1(b.height*PT_TO_MM) + '<br><span style="opacity:.6;">@ ' + f1(b.x0*PT_TO_MM) + ', ' + f1(b.y0*PT_TO_MM) + '</span>' : '—'}</td>
+        <td>${b ? f2(b.width) + ' × ' + f2(b.height) + '<br><span style="opacity:.6;">@ ' + f2(b.x0) + ', ' + f2(b.y0) + '</span>' : '—'}</td>
+        <td style="color:${statusColor};">${status}</td>
+      </tr>`;
+  }).join('');
+  el('boxTableBody').querySelectorAll('tr[data-box]').forEach(tr => {
+    const key = tr.dataset.box;
+    if(!['media','crop','trim','bleed','dieline'].includes(key)) return;
+    tr.addEventListener('click', () => {
+      el('alignSelect').value = key;
+      state.alignBox = key;
+      renderViewer();
+    });
+  });
+  const usedLabel = (VIEWER_BOX_ROWS.find(([k]) => k === state.alignBox) || [0,'TrimBox'])[1];
+  const usedBox = boxes[state.alignBox];
+  if(state.alignBox === 'dieline' && !usedBox){
+    note.className = 'struct-note warn';
+    note.textContent = '⚠ No "Cut" / "Dieline" / "Diecut" / "CutContour" spot-color object found on this page — showing the page as is.';
+  } else {
+    note.className = 'struct-note';
+    note.textContent = 'Viewing by ' + usedLabel + (usedBox ? ' (' + f1(usedBox.width*PT_TO_MM) + ' × ' + f1(usedBox.height*PT_TO_MM) + ' mm)' : '')
+      + (rotation ? ' · page rotated ' + rotation + '°' : '') + ' · click a row to view by that box.';
+  }
+}
+
+// ---------------------------------------------------------------
+// Overprint preview, per ink plate.
+//
+// Rendering every object opaquely (what PDFium and pdf.js do) ignores
+// overprint, and a Multiply shortcut over the whole page gets mixed
+// overprint / knockout / white-ink artwork wrong. Instead each ink gets
+// its own render: the page is rewritten so every object paints only that
+// ink's share of its colour, in the ink's own colour on paper white.
+//   - a normal (non-overprinting) object knocks out the plate: it paints
+//     that plate even when its tint there is 0, which erases what is below;
+//   - an overprinting object that does NOT name this ink leaves the plate
+//     alone (painted in Multiply with paper white, a no-op);
+//   - which inks an overprinting object "names" follows the PDF rules:
+//     DeviceCMYK/ICC-CMYK objects name all four process inks in overprint
+//     mode 0, or only the non-zero ones in mode 1; Separation/DeviceN
+//     objects name their own colorants; gray names Black; RGB names "rgb".
+// The plate renders are then multiplied together, which is how inks stack.
+// Images (CMYK/ICC/Indexed/Separation/DeviceN/gray/RGB), axial/radial
+// shadings and Form XObjects are handled; soft masks are left alone so
+// their luminosity still works.
+// ---------------------------------------------------------------
+const PLATE_PROCESS = ['cyan','magenta','yellow','black'];
+
+function plateDescKind(desc){ return desc ? desc.kind : 'other'; }
+
+// {keep:[bool per component], off:[value per component when not kept]} or null
+function platePlan(desc, P){
+  if(!desc) return null;
+  const lower = (n) => String(n || '').trim().toLowerCase();
+  switch(desc.kind){
+    case 'gray': { const k = P === 'black'; return { keep:[k], off:[1] }; }
+    case 'rgb':  { const k = P === 'rgb';   return { keep:[k,k,k], off:[1,1,1] }; }
+    case 'cmyk': { const i = PLATE_PROCESS.indexOf(P); return { keep:[0,1,2,3].map(x => x === i), off:[0,0,0,0] }; }
+    case 'sep':  { const n = lower(desc.names[0]); const k = n === P || n === 'all'; return { keep:[k], off:[0] }; }
+    case 'devn': { const ks = desc.names.map(n => { const l = lower(n); return l === P || l === 'all'; }); return { keep:ks, off:ks.map(() => 0) }; }
+  }
+  return null;
+}
+function plateApply(desc, nums, P){
+  const plan = platePlan(desc, P);
+  if(!plan || nums.length < plan.keep.length) return null;
+  const base = nums.length - plan.keep.length; // trailing operands only
+  return nums.slice(base).map((v, i) => plan.keep[i] ? v : plan.off[i]);
+}
+function plateInitialColor(desc){
+  switch(desc && desc.kind){
+    case 'gray': return [0];
+    case 'rgb': return [0,0,0];
+    case 'cmyk': return [0,0,0,1];
+    case 'sep': return [1];
+    case 'devn': return desc.names.map(() => 1);
+  }
+  return null;
+}
+// Set of ink keys a colour "names" for overprint purposes, '*' = every ink,
+// or null when unknown (treated as an ordinary painting object).
+function plateSpecified(desc, nums, opm){
+  const lower = (n) => String(n || '').trim().toLowerCase();
+  switch(desc && desc.kind){
+    case 'cmyk': {
+      if(opm === 1 && nums && nums.length >= 4){
+        const s = new Set();
+        nums.slice(-4).forEach((v, i) => { if(v > 0.0005) s.add(PLATE_PROCESS[i]); });
+        return s;
+      }
+      return new Set(PLATE_PROCESS);
+    }
+    case 'gray': return (opm === 1 && nums && nums.length && nums[nums.length-1] >= 0.9995) ? new Set() : new Set(['black']);
+    case 'rgb': return new Set(['rgb']);
+    case 'sep': { const n = lower(desc.names[0]); return n === 'none' ? new Set() : new Set([n === 'all' ? '*' : n]); }
+    case 'devn': { const s = new Set(); desc.names.forEach(n => { const l = lower(n); if(l === 'all') s.add('*'); else if(l && l !== 'none') s.add(l); }); return s; }
+  }
+  return null;
+}
+function plateIsNoop(overprint, spec, P){
+  if(!overprint || !spec) return false;
+  return !(spec.has('*') || spec.has(P));
+}
+
+function plateCloneState(s){
+  return { fill:s.fill, stroke:s.stroke, fop:s.fop, sop:s.sop, opm:s.opm, bm:s.bm, eff:s.eff };
+}
+function plateNewState(){
+  return { fill:{ desc:{kind:'gray'}, nums:[0] }, stroke:{ desc:{kind:'gray'}, nums:[0] }, fop:false, sop:false, opm:0, bm:'Normal', eff:'Normal' };
+}
+
+// Describe an image's colour space for plate work.
+function plateImageDesc(ctx, resources, xd){
+  const N = PLATE_N;
+  const csRaw = xd.get(N('ColorSpace'));
+  if(csRaw === undefined) return null;
+  let d = describeColorSpaceObject(ctx, csRaw);
+  if(d.kind === 'other'){
+    const r = pdfResolve(ctx, csRaw);
+    if(r instanceof PDFLib.PDFName){ const dd = describeColorSpaceName(ctx, resources, decodeNameToken(pdfTextOf(r))); if(dd) d = dd; }
+  }
+  return d;
+}
+const PLATE_N = (n) => PDFLib.PDFName.of(n);
+
+function plateCompCount(desc){
+  switch(desc.kind){ case 'gray': case 'sep': return 1; case 'rgb': return 3; case 'cmyk': return 4; case 'devn': return desc.names.length; }
+  return 0;
+}
+
+function plateBytesOf(ctx, obj){
+  try{
+    obj = pdfResolve(ctx, obj);
+    if(!obj) return null;
+    if(obj.asBytes) return obj.asBytes();
+    if(obj.getContents){ const t = inflateIfNeeded(obj); return t == null ? null : latin1ToBytes(t); }
+  } catch(e){}
+  return null;
+}
+
+// Rewrites an image so it paints only this plate's ink (or paper white).
+// Returns the set of inks the image names (for overprint), or null.
+function platePatchImage(ctx, resources, xd, P, env){
+  const N = PLATE_N;
+  const isMask = pdfResolve(ctx, xd.get(N('ImageMask'))) === PDFLib.PDFBool.True;
+  if(isMask) return null;
+  const desc0 = plateImageDesc(ctx, resources, xd);
+  if(!desc0) return null;
+  let desc = desc0, indexed = null;
+  if(desc0.kind === 'indexed'){ indexed = desc0; desc = desc0.base || { kind:'other' }; }
+  const plan = platePlan(desc, P);
+  const spec = plateSpecified(desc, null, 0);
+  if(!plan) return spec;
+  if(env.images.has(xd)) return spec;
+  env.images.add(xd);
+  if(plan.keep.every(Boolean)) return spec; // whole image belongs to this plate
+  if(indexed){
+    // Indexed: rewrite the palette entries, leave the index data alone
+    const csArr = pdfResolve(ctx, xd.get(N('ColorSpace')));
+    if(csArr instanceof PDFLib.PDFArray && csArr.size() >= 4){
+      if(env.palettes.has(csArr)) return spec;
+      env.palettes.add(csArr);
+      const bytes = plateBytesOf(ctx, csArr.get(3));
+      const n = plan.keep.length;
+      if(bytes){
+        const out = new Uint8Array(bytes.length);
+        for(let e = 0; e + n <= bytes.length; e += n){
+          for(let c = 0; c < n; c++) out[e+c] = plan.keep[c] ? bytes[e+c] : Math.round(plan.off[c] * 255);
+        }
+        csArr.set(3, ctx.register(ctx.stream(out)));
+      }
+    }
+    return spec;
+  }
+  // direct colour space: pin the other components' /Decode to their "no ink" value
+  const n = plan.keep.length;
+  let dec = [];
+  const old = pdfResolve(ctx, xd.get(N('Decode')));
+  if(old instanceof PDFLib.PDFArray && old.size() === n*2){
+    for(let i = 0; i < n*2; i++){ const v = pdfNumberValue(pdfResolve(ctx, old.get(i))); dec.push(v == null ? (i % 2) : v); }
+  } else { for(let i = 0; i < n; i++) dec.push(0, 1); }
+  plan.keep.forEach((k, i) => { if(!k){ dec[i*2] = plan.off[i]; dec[i*2+1] = plan.off[i]; } });
+  xd.set(N('Decode'), ctx.obj(dec));
+  return spec;
+}
+
+// Axial/radial shading: rewrite the colour function so it yields only this
+// plate's share. Works for exponential (type 2) and stitching (type 3)
+// functions; anything else is left alone. Returns the inks it names.
+function platePatchShading(ctx, resources, sh, P, env){
+  const N = PLATE_N;
+  const d0 = sh instanceof PDFLib.PDFStream ? sh.dict : sh;
+  if(!d0 || !d0.get) return null;
+  const csRaw = d0.get(N('ColorSpace'));
+  const desc = csRaw === undefined ? null : describeColorSpaceObject(ctx, csRaw);
+  if(!desc) return null;
+  const spec = plateSpecified(desc, null, 0);
+  const plan = platePlan(desc, P);
+  if(!plan || env.shadings.has(d0)) return spec;
+  env.shadings.add(d0);
+  const fix = (fnRaw) => {
+    const fn = pdfResolve(ctx, fnRaw);
+    const fd = fn instanceof PDFLib.PDFStream ? fn.dict : fn;
+    if(!fd || !fd.get) return false;
+    if(env.functions.has(fd)) return true;
+    const type = pdfNumberValue(pdfResolve(ctx, fd.get(N('FunctionType'))));
+    if(type === 2){
+      const n = plan.keep.length;
+      const arr = (key, dflt) => {
+        const a = pdfResolve(ctx, fd.get(N(key)));
+        if(a instanceof PDFLib.PDFArray && a.size() === n) return Array.from({length:n}, (_, i) => pdfNumberValue(pdfResolve(ctx, a.get(i))));
+        return dflt;
+      };
+      if(n === 1 && !(pdfResolve(ctx, fd.get(N('C0'))) instanceof PDFLib.PDFArray)) fd.set(N('C0'), ctx.obj([0]));
+      if(n === 1 && !(pdfResolve(ctx, fd.get(N('C1'))) instanceof PDFLib.PDFArray)) fd.set(N('C1'), ctx.obj([1]));
+      const c0 = arr('C0', null), c1 = arr('C1', null);
+      if(!c0 || !c1) return false;
+      fd.set(N('C0'), ctx.obj(c0.map((v,i) => plan.keep[i] ? v : plan.off[i])));
+      fd.set(N('C1'), ctx.obj(c1.map((v,i) => plan.keep[i] ? v : plan.off[i])));
+      env.functions.add(fd);
+      return true;
+    }
+    if(type === 3){
+      const subs = pdfResolve(ctx, fd.get(N('Functions')));
+      if(!(subs instanceof PDFLib.PDFArray)) return false;
+      let ok = true;
+      for(let i = 0; i < subs.size(); i++) ok = fix(subs.get(i)) && ok;
+      env.functions.add(fd);
+      return ok;
+    }
+    return false;
+  };
+  fix(d0.get(N('Function')));
+  return spec;
+}
+
+// Rewrites one content stream for plate P. Returns the new text or null.
+function plateRewriteContent(text, ctx, resources, P, env, inherited, isPage){
+  const N = PLATE_N;
+  const toks = tokenizeWithPos(text);
+  const edits = [];
+  let order = 0;
+  const put = (t, txt) => edits.push({ s:t.s, e:t.e, text:txt, o:order++ });
+  const ins = (pos, txt) => edits.push({ s:pos, e:pos, text:txt, o:order++ });
+  let st = inherited ? plateCloneState(inherited) : plateNewState();
+  const stackQ = [];
+  let stack = [], depth = 0, inPath = false, tr = 0;
+  if(isPage && P !== 'black') ins(0, '1 g 1 G\n');
+
+  const gsDict = () => { try{ return resources && resources.lookupMaybe(N('ExtGState'), PDFLib.PDFDict); }catch(e){ return null; } };
+  const gsFor = (bm) => {
+    const key = 'RLbm_' + bm;
+    try{
+      let eg = resources.lookupMaybe(N('ExtGState'), PDFLib.PDFDict);
+      if(!eg){ eg = ctx.obj({}); resources.set(N('ExtGState'), eg); }
+      if(eg.get(N(key)) === undefined) eg.set(N(key), ctx.register(ctx.obj({ Type:N('ExtGState'), BM:N(bm) })));
+    } catch(e){}
+    return key;
+  };
+  const setBM = (pos, noop, usesStroke) => {
+    const want = noop ? 'Multiply' : st.bm;
+    if(want !== st.eff){ ins(pos, '/' + gsFor(want) + ' gs '); st.eff = want; }
+  };
+  const fillNoop = () => plateIsNoop(st.fop, plateSpecified(st.fill.desc, st.fill.nums, st.opm), P);
+  const strokeNoop = () => plateIsNoop(st.sop, plateSpecified(st.stroke.desc, st.stroke.nums, st.opm), P);
+
+  const PATH_PAINT = { f:'f', F:'f', 'f*':'f', B:'fs', 'B*':'fs', b:'fs', 'b*':'fs', S:'s', s:'s', n:null };
+  for(let i = 0; i < toks.length; i++){
+    const tok = toks[i];
+    if(tok.t === 'aopen' || tok.t === 'dopen'){ depth++; continue; }
+    if(tok.t === 'aclose' || tok.t === 'dclose'){ depth = Math.max(0, depth-1); continue; }
+    if(tok.t !== 'op'){ if(depth === 0) stack.push(tok); continue; }
+    const op = tok.v;
+    const nums = stack.filter(t => t.t === 'num');
+    const vals = nums.map(t => t.v);
+    const nameTok = [...stack].reverse().find(t => t.t === 'name');
+    const opStart = stack.length ? stack[0].s : tok.s;
+
+    if(op === 'q') stackQ.push(plateCloneState(st));
+    else if(op === 'Q'){ if(stackQ.length) st = stackQ.pop(); }
+    else if(op === 'gs' && nameTok){
+      try{
+        const d = lookupByDecodedName(gsDict(), decodeNameToken(nameTok.v));
+        const g = pdfResolve(ctx, d);
+        const gd = g instanceof PDFLib.PDFStream ? g.dict : g;
+        if(gd && gd.get){
+          const OP = gd.get(N('OP')), opf = gd.get(N('op')), opm = gd.get(N('OPM')), bm = gd.get(N('BM'));
+          if(OP !== undefined){ st.sop = pdfResolve(ctx, OP) === PDFLib.PDFBool.True; if(opf === undefined) st.fop = st.sop; }
+          if(opf !== undefined) st.fop = pdfResolve(ctx, opf) === PDFLib.PDFBool.True;
+          if(opm !== undefined){ const v = pdfNumberValue(pdfResolve(ctx, opm)); if(v != null) st.opm = v; }
+          if(bm !== undefined){
+            const b = pdfResolve(ctx, bm);
+            let nm = b instanceof PDFLib.PDFName ? pdfTextOf(b) : (b instanceof PDFLib.PDFArray && b.size() ? pdfTextOf(pdfResolve(ctx, b.get(0))) : null);
+            if(nm === 'Compatible') nm = 'Normal';
+            if(nm){ st.bm = nm; st.eff = nm; }
+          }
+        }
+      } catch(e){}
+    }
+    else if(op === 'g' || op === 'G'){
+      const desc = { kind:'gray' };
+      const out = plateApply(desc, vals, P);
+      if(out && nums.length) put(nums[nums.length-1], String(out[0]));
+      (op === 'g' ? (st.fill = { desc, nums:vals.slice() }) : (st.stroke = { desc, nums:vals.slice() }));
+    }
+    else if(op === 'rg' || op === 'RG'){
+      const desc = { kind:'rgb' };
+      const out = plateApply(desc, vals, P);
+      if(out && nums.length >= 3) nums.slice(-3).forEach((t, k) => put(t, String(out[k])));
+      (op === 'rg' ? (st.fill = { desc, nums:vals.slice() }) : (st.stroke = { desc, nums:vals.slice() }));
+    }
+    else if(op === 'k' || op === 'K'){
+      const desc = { kind:'cmyk' };
+      const out = plateApply(desc, vals, P);
+      if(out && nums.length >= 4) nums.slice(-4).forEach((t, k) => put(t, String(out[k])));
+      (op === 'k' ? (st.fill = { desc, nums:vals.slice() }) : (st.stroke = { desc, nums:vals.slice() }));
+    }
+    else if(op === 'cs' || op === 'CS'){
+      const desc = describeColorSpaceName(ctx, resources, nameTok ? decodeNameToken(nameTok.v) : null) || { kind:'other' };
+      const init = plateInitialColor(desc);
+      const slot = { desc, nums: init ? init.slice() : [] };
+      if(op === 'cs') st.fill = slot; else st.stroke = slot;
+      const out = init ? plateApply(desc, init, P) : null;
+      if(out) ins(tok.e, ' ' + out.join(' ') + (op === 'cs' ? ' scn' : ' SCN'));
+    }
+    else if(op === 'sc' || op === 'scn' || op === 'SC' || op === 'SCN'){
+      const isFill = (op === 'sc' || op === 'scn');
+      const cur = isFill ? st.fill : st.stroke;
+      if(nameTok){
+        // pattern: a shading pattern can be separated, a tiling pattern is left as is
+        try{
+          const pr = resources.lookupMaybe(N('Pattern'), PDFLib.PDFDict);
+          const pobj = pdfResolve(ctx, lookupByDecodedName(pr, decodeNameToken(nameTok.v)));
+          const pd = pobj instanceof PDFLib.PDFStream ? pobj.dict : pobj;
+          if(pd && pd.get){
+            const sh = pdfResolve(ctx, pd.get(N('Shading')));
+            if(sh) platePatchShading(ctx, resources, sh, P, env);
+          }
+        } catch(e){}
+        const slot = { desc:{ kind:'other' }, nums:[] };
+        if(isFill) st.fill = slot; else st.stroke = slot;
+      } else if(cur && cur.desc){
+        const out = plateApply(cur.desc, vals, P);
+        if(out){ const k = out.length; nums.slice(-k).forEach((t, j) => put(t, String(out[j]))); }
+        const slot = { desc:cur.desc, nums:vals.slice() };
+        if(isFill) st.fill = slot; else st.stroke = slot;
+      }
+    }
+    else if(op === 'Tr'){ tr = vals.length ? vals[vals.length-1] : 0; }
+    else if((op === 'm' || op === 're') && !inPath){
+      inPath = true;
+      // look ahead for the operator that actually paints this path
+      let kind;
+      for(let j = i+1; j < toks.length; j++){
+        if(toks[j].t === 'op' && Object.prototype.hasOwnProperty.call(PATH_PAINT, toks[j].v)){ kind = PATH_PAINT[toks[j].v]; break; }
+        if(toks[j].t === 'op' && ['BT','Do','sh','q','Q'].includes(toks[j].v)) break;
+      }
+      if(kind === 'f') setBM(opStart, fillNoop());
+      else if(kind === 's') setBM(opStart, strokeNoop());
+      else if(kind === 'fs') setBM(opStart, fillNoop() && strokeNoop());
+    }
+    else if(Object.prototype.hasOwnProperty.call(PATH_PAINT, op)){ inPath = false; }
+    else if(op === 'Tj' || op === 'TJ' || op === "'" || op === '"'){
+      const strokeOnly = (tr === 1 || tr === 5), invisible = (tr === 3 || tr === 7);
+      if(!invisible) setBM(opStart, strokeOnly ? strokeNoop() : fillNoop());
+    }
+    else if(op === 'sh' && nameTok){
+      try{
+        const shr = resources.lookupMaybe(N('Shading'), PDFLib.PDFDict);
+        const sh = pdfResolve(ctx, lookupByDecodedName(shr, decodeNameToken(nameTok.v)));
+        if(sh){ const spec = platePatchShading(ctx, resources, sh, P, env); setBM(opStart, plateIsNoop(st.fop, spec, P)); }
+      } catch(e){}
+    }
+    else if(op === 'Do' && nameTok){
+      const nm = decodeNameToken(nameTok.v);
+      try{
+        const xo = resources && resources.lookupMaybe(N('XObject'), PDFLib.PDFDict);
+        const xobj = pdfResolve(ctx, lookupByDecodedName(xo, nm));
+        const xd = xobj && xobj.dict;
+        if(xd){
+          const sub = pdfTextOf(pdfResolve(ctx, xd.get(N('Subtype'))));
+          if(sub === 'Image'){
+            const spec = platePatchImage(ctx, resources, xd, P, env);
+            setBM(opStart, plateIsNoop(st.fop, spec, P));
+          } else if(sub === 'Form'){
+            env.onForm(nm, resources, st);
+          }
+        }
+      } catch(e){}
+    }
+    stack = [];
+  }
+  if(!edits.length) return null;
+  edits.sort((a, b) => (a.s - b.s) || (a.o - b.o));
+  let out = '', pos = 0;
+  for(const ed of edits){ if(ed.s < pos) continue; out += text.slice(pos, ed.s) + ed.text; pos = Math.max(pos, ed.e); }
+  return out + text.slice(pos);
+}
+
+// Rewrites a (one page) pdf-lib document in place for plate P.
+function plateRewriteDoc(doc, P){
+  const ctx = doc.context, N = PLATE_N;
+  const env = { images:new WeakSet(), palettes:new WeakSet(), shadings:new WeakSet(), functions:new WeakSet(), done:new Set(), onForm:null };
+  const SKIP = new Set(['Filter','DecodeParms','Length','DL','F','FFilter','FDecodeParms']);
+  const entries = (stream) => { const e = {}; for(const [k,v] of stream.dict.entries()){ const nm = pdfTextOf(k); if(nm && !SKIP.has(nm)) e[nm] = v; } return e; };
+  let depthNow = 0;
+  const processForm = (ref, stream, parentRes, state) => {
+    const key = ref.toString();
+    if(env.done.has(key) || depthNow > 8) return;
+    env.done.add(key);
+    let res = parentRes;
+    try{ const r = stream.dict.lookupMaybe(N('Resources'), PDFLib.PDFDict); if(r) res = r; }catch(e){}
+    const text = inflateIfNeeded(stream);
+    if(text == null) return;
+    depthNow++;
+    const out = plateRewriteContent(text, ctx, res, P, env, state, false);
+    depthNow--;
+    if(out != null) ctx.assign(ref, ctx.flateStream(latin1ToBytes(out), entries(stream)));
+  };
+  env.onForm = (name, res, state) => {
+    try{
+      const xo = res && res.lookupMaybe(N('XObject'), PDFLib.PDFDict);
+      const raw = lookupByDecodedName(xo, name);
+      if(!(raw instanceof PDFLib.PDFRef)) return;
+      const obj = ctx.lookup(raw);
+      if(obj && obj.dict) processForm(raw, obj, res, state);
+    } catch(e){}
+  };
+  const page = doc.getPages()[0];
+  try{ page.node.delete(N('Annots')); }catch(e){}
+  const res = getInheritedResources(page);
+  const contentsRaw = page.node.get(N('Contents'));
+  const contents = pdfResolve(ctx, contentsRaw);
+  const items = contents instanceof PDFLib.PDFArray ? Array.from({length:contents.size()}, (_, i) => contents.get(i)) : [contentsRaw];
+  const parts = [];
+  for(const it of items){
+    const st = pdfResolve(ctx, it);
+    const t = st ? inflateIfNeeded(st) : null;
+    if(t == null) return false;
+    parts.push(t);
+  }
+  const out = plateRewriteContent(parts.join('\n'), ctx, res, P, env, null, true);
+  if(out != null) page.node.set(N('Contents'), ctx.register(ctx.flateStream(latin1ToBytes(out))));
+  return true;
+}
+
+// One-page source for plate work (cached per page on the shared object).
+async function plateMiniPageBytes(pdfLibDoc, pageNum, file){
+  try{
+    const mini = await PDFLib.PDFDocument.create();
+    const [pg] = await mini.copyPages(pdfLibDoc, [pageNum-1]);
+    mini.addPage(pg);
+    const a = pdfLibDoc.getPages()[pageNum-1].getMediaBox(), b = mini.getPage(0).getMediaBox();
+    if(Math.abs(a.width-b.width) < 0.01 && Math.abs(a.height-b.height) < 0.01 && getInheritedResources(mini.getPage(0))){
+      return await mini.save({ useObjectStreams:false });
+    }
+  } catch(e){ console.warn('[Redline] copyPages failed, falling back', e); }
+  const full = await PDFLib.PDFDocument.load(await file.arrayBuffer(), { ignoreEncryption:true, updateMetadata:false });
+  for(let i = full.getPageCount()-1; i >= 0; i--) if(i !== pageNum-1) full.removePage(i);
+  return await full.save({ useObjectStreams:false });
+}
+
+// Ink plates present on a page: the four process inks, every spot colorant,
+// and RGB when the page uses it.
+function platesForPage(pdfLibDoc, pageNum){
+  const keys = PLATE_PROCESS.slice();
+  collectSpotColorants(pdfLibDoc, pageNum-1).forEach((display, lower) => { if(!keys.includes(lower)) keys.push(lower); });
+  try{ if(getProcessPlatesUsed(pdfLibDoc, pageNum-1).has('rgb')) keys.push('rgb'); }catch(e){}
+  return keys;
+}
+
+async function buildPlateDocs(shared, pdfLibDoc, pageNum, file){
+  const bytes = await plateMiniPageBytes(pdfLibDoc, pageNum, file);
+  const keys = platesForPage(pdfLibDoc, pageNum);
+  const plates = new Map();
+  for(const P of keys){
+    const d = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption:true, updateMetadata:false });
+    plateRewriteDoc(d, P);
+    plates.set(P, await loadPdfiumDocument(await d.save({ useObjectStreams:false })));
+  }
+  return plates;
+}
+
+// Read-only count of overprinting graphics states in a document.
+function countOverprintStates(pdfLibDoc){
+  const ctx = pdfLibDoc.context, N = PLATE_N, seen = new Set();
+  let count = 0;
+  const visit = (obj) => {
+    if(!obj) return;
+    if(obj instanceof PDFLib.PDFRef){ const k = obj.toString(); if(seen.has(k)) return; seen.add(k); visit(ctx.lookup(obj)); return; }
+    if(obj instanceof PDFLib.PDFArray){ for(let i = 0; i < obj.size(); i++) visit(obj.get(i)); return; }
+    const dict = (obj instanceof PDFLib.PDFStream) ? obj.dict : (obj instanceof PDFLib.PDFDict ? obj : null);
+    if(!dict) return;
+    const op = dict.get(N('op')), OP = dict.get(N('OP'));
+    const on = (op !== undefined) ? pdfResolve(ctx, op) === PDFLib.PDFBool.True : pdfResolve(ctx, OP) === PDFLib.PDFBool.True;
+    if(on) count++;
+    for(const [, v] of dict.entries()) visit(v);
+  };
+  try{ visit(pdfLibDoc.catalog); } catch(e){}
+  return count;
+}
+
+// Render adapter: draws each (visible) plate and multiplies them together.
+function makeOverprintDoc(baseDoc, pdfLibDoc, file, hidden){
+  if(!baseDoc.plateShared) baseDoc.plateShared = { pages:new Map() };
+  const shared = baseDoc.plateShared;
+  if(!shared.rc){ shared.rc = new Map(); shared.rcBytes = 0; }
+  const RC_BUDGET = 400e6; // bytes of cached plate bitmaps per file
+  const platesFor = (n) => {
+    if(!shared.pages.has(n)){
+      const p = buildPlateDocs(shared, pdfLibDoc, n, file);
+      p.catch(() => shared.pages.delete(n));
+      shared.pages.set(n, p);
+    }
+    return shared.pages.get(n);
+  };
+  return {
+    numPages: baseDoc.numPages,
+    async getPage(n){
+      const basePage = await baseDoc.getPage(n);
+      return {
+        getViewport: (o) => basePage.getViewport(o),
+        render({ canvasContext, viewport }){
+          const promise = (async () => {
+            const plates = await platesFor(n);
+            const W = canvasContext.canvas.width, H = canvasContext.canvas.height;
+            canvasContext.save();
+            canvasContext.globalCompositeOperation = 'source-over';
+            canvasContext.fillStyle = '#fff';
+            canvasContext.fillRect(0, 0, W, H);
+            const vpKey = [n, W, H, viewport.scale, viewport.offsetX, viewport.offsetY].join('|');
+            for(const [key, pd] of plates){
+              if(hidden && hidden.has(key)) continue;
+              const ck = vpKey + '|' + key;
+              let tmp = shared.rc.get(ck);
+              if(tmp){ shared.rc.delete(ck); shared.rc.set(ck, tmp); } // LRU touch
+              else {
+                tmp = document.createElement('canvas');
+                tmp.width = W; tmp.height = H;
+                const pp = await pd.getPage(1);
+                await pp.render({ canvasContext: tmp.getContext('2d'), viewport }).promise;
+                shared.rc.set(ck, tmp); shared.rcBytes += W * H * 4;
+                while(shared.rcBytes > RC_BUDGET && shared.rc.size > 1){
+                  const [k0, c0] = shared.rc.entries().next().value;
+                  if(k0 === ck) break;
+                  shared.rc.delete(k0); shared.rcBytes -= c0.width * c0.height * 4;
+                }
+              }
+              canvasContext.globalCompositeOperation = 'multiply';
+              canvasContext.drawImage(tmp, 0, 0);
+            }
+            canvasContext.restore();
+          })();
+          return { promise };
+        }
+      };
+    },
+    destroy(){}
+  };
+}
+
 // -- Output Preview: channel list, plate hiding, isolated compare ---
 const PLATE_ORDER = ['cyan','magenta','yellow','black','rgb'];
 const PLATE_LABEL = { cyan:'Cyan', magenta:'Magenta', yellow:'Yellow', black:'Black', rgb:'RGB' };
@@ -2599,6 +3230,117 @@ const DEVICE_CS_KIND = { DeviceGray:'gray', G:'gray', CalGray:'gray', DeviceRGB:
 // Describes a colour space object: {kind:'gray'|'rgb'|'cmyk'} for device-
 // like spaces, {kind:'sep', names:[…]} / {kind:'devn', names:[…]} for
 // spot spaces, {kind:'indexed', base} or {kind:'other'}.
+
+// ---- Swatch colours for the Output preview ----
+const SPOT_SWATCH = new Map(); // lowercase colorant -> css colour (first seen wins)
+function swCmyk(c,m,y,k){ const r=255*(1-Math.min(1,c))*(1-Math.min(1,k)), g=255*(1-Math.min(1,m))*(1-Math.min(1,k)), b=255*(1-Math.min(1,y))*(1-Math.min(1,k)); return [r,g,b]; }
+function swLab(L,a,b){ const fy=(L+16)/116, fx=fy+a/500, fz=fy-b/200; const f=t=>t*t*t>0.008856?t*t*t:(t-16/116)/7.787; const X=0.9505*f(fx),Y=f(fy),Z=1.089*f(fz); const lin=[3.2406*X-1.5372*Y-0.4986*Z,-0.9689*X+1.8758*Y+0.0415*Z,0.0557*X-0.2040*Y+1.0570*Z]; return lin.map(v=>255*Math.pow(Math.max(0,Math.min(1,v)),1/2.2)); }
+// PostScript calculator (Type 4) — enough for tint transforms
+function swPS(code, inputs){
+  const toks = code.replace(/[{}]/g, m => ' '+m+' ').split(/\s+/).filter(Boolean);
+  let i = 0;
+  const block = () => { const out=[]; while(i<toks.length){ const t=toks[i++]; if(t==='{') out.push(block()); else if(t==='}') return out; else out.push(t); } return out; };
+  i = toks.indexOf('{') + 1; const prog = block();
+  const st = inputs.slice();
+  const run = (b) => { for(let k=0;k<b.length;k++){ const t=b[k];
+    if(Array.isArray(t)){ const nx=b[k+1]; if(nx==='if'){ k++; if(st.pop()) run(t); } else if(Array.isArray(nx) && b[k+2]==='ifelse'){ k+=2; if(st.pop()) run(t); else run(nx); } continue; }
+    const n=Number(t); if(t!=='' && !isNaN(n)){ st.push(n); continue; }
+    let a,b2;
+    switch(t){
+      case 'add': b2=st.pop();a=st.pop();st.push(a+b2);break; case 'sub': b2=st.pop();a=st.pop();st.push(a-b2);break;
+      case 'mul': b2=st.pop();a=st.pop();st.push(a*b2);break; case 'div': b2=st.pop();a=st.pop();st.push(b2?a/b2:0);break;
+      case 'idiv': b2=st.pop();a=st.pop();st.push(b2?Math.trunc(a/b2):0);break; case 'mod': b2=st.pop();a=st.pop();st.push(b2?a%b2:0);break;
+      case 'neg': st.push(-st.pop());break; case 'abs': st.push(Math.abs(st.pop()));break; case 'sqrt': st.push(Math.sqrt(st.pop()));break;
+      case 'exp': b2=st.pop();a=st.pop();st.push(Math.pow(a,b2));break; case 'ln': st.push(Math.log(st.pop()));break; case 'log': st.push(Math.log10(st.pop()));break;
+      case 'sin': st.push(Math.sin(st.pop()*Math.PI/180));break; case 'cos': st.push(Math.cos(st.pop()*Math.PI/180));break;
+      case 'cvi': case 'truncate': st.push(Math.trunc(st.pop()));break; case 'cvr': break;
+      case 'round': st.push(Math.round(st.pop()));break; case 'floor': st.push(Math.floor(st.pop()));break; case 'ceiling': st.push(Math.ceil(st.pop()));break;
+      case 'dup': a=st.pop();st.push(a,a);break; case 'pop': st.pop();break; case 'exch': b2=st.pop();a=st.pop();st.push(b2,a);break;
+      case 'copy': { const c=st.pop(); st.push(...st.slice(st.length-c)); break; }
+      case 'index': { const c=st.pop(); st.push(st[st.length-1-c]); break; }
+      case 'roll': { let j=st.pop(); const c=st.pop(); if(c>0){ const seg=st.splice(st.length-c,c); j=((j%c)+c)%c; st.push(...seg.slice(c-j),...seg.slice(0,c-j)); } break; }
+      case 'gt': b2=st.pop();a=st.pop();st.push(a>b2);break; case 'lt': b2=st.pop();a=st.pop();st.push(a<b2);break;
+      case 'ge': b2=st.pop();a=st.pop();st.push(a>=b2);break; case 'le': b2=st.pop();a=st.pop();st.push(a<=b2);break;
+      case 'eq': b2=st.pop();a=st.pop();st.push(a===b2);break; case 'ne': b2=st.pop();a=st.pop();st.push(a!==b2);break;
+      case 'and': b2=st.pop();a=st.pop();st.push(typeof a==='boolean'?(a&&b2):(a&b2));break; case 'or': b2=st.pop();a=st.pop();st.push(typeof a==='boolean'?(a||b2):(a|b2));break;
+      case 'not': a=st.pop();st.push(typeof a==='boolean'?!a:~a);break; case 'true': st.push(true);break; case 'false': st.push(false);break;
+      default: throw new Error('ps op '+t);
+    } } };
+  run(prog);
+  return st.map(Number);
+}
+function swEvalFn(ctx, raw, x){
+  const N = PDFLib.PDFName.of;
+  const fn = pdfResolve(ctx, raw);
+  const fd = fn instanceof PDFLib.PDFStream ? fn.dict : fn;
+  if(!fd || !fd.get) return null;
+  const type = pdfNumberValue(pdfResolve(ctx, fd.get(N('FunctionType'))));
+  const nums = (key) => { const a = pdfResolve(ctx, fd.get(N(key))); return a instanceof PDFLib.PDFArray ? Array.from({length:a.size()}, (_,i) => pdfNumberValue(pdfResolve(ctx, a.get(i)))) : null; };
+  if(type === 2){
+    const c0 = nums('C0') || [0], c1 = nums('C1') || [1];
+    const e = pdfNumberValue(pdfResolve(ctx, fd.get(N('N'))));
+    const t = Math.pow(x[0], isNaN(e) ? 1 : e);
+    return c0.map((v,i) => v + t*((c1[i] ?? v) - v));
+  }
+  if(type === 4 && fn instanceof PDFLib.PDFStream){
+    const text = inflateIfNeeded(fn);
+    if(text == null) return null;
+    const out = swPS(text, x);
+    const rng = nums('Range');
+    const n = rng ? rng.length/2 : out.length;
+    return out.slice(-n);
+  }
+  if(type === 0 && fn instanceof PDFLib.PDFStream && x.length === 1){
+    const size = nums('Size'), bps = pdfNumberValue(pdfResolve(ctx, fd.get(N('BitsPerSample'))));
+    const rng = nums('Range'); if(!size || !rng || bps !== 8) return null;
+    const bytes = fn.getContents ? fn.getContents() : null; if(!bytes) return null;
+    // stream might be Flate-encoded; getContents returns raw — decode when needed
+    let data = bytes;
+    try{ const f = pdfResolve(ctx, fd.get(N('Filter'))); if(f) data = pako.inflate(bytes); }catch(e){ return null; }
+    const nOut = rng.length/2, pos = Math.min(size[0]-1, Math.max(0, x[0]*(size[0]-1))), i0 = Math.round(pos);
+    return Array.from({length:nOut}, (_, j) => rng[2*j] + (data[i0*nOut + j]/255)*(rng[2*j+1]-rng[2*j]));
+  }
+  if(type === 3){
+    const subs = pdfResolve(ctx, fd.get(N('Functions'))), bounds = nums('Bounds') || [], dom = nums('Domain') || [0,1], enc = nums('Encode') || [];
+    if(!(subs instanceof PDFLib.PDFArray)) return null;
+    let k = 0; while(k < bounds.length && x[0] >= bounds[k]) k++;
+    const lo = k === 0 ? dom[0] : bounds[k-1], hi = k === bounds.length ? dom[1] : bounds[k];
+    const e0 = enc[2*k] ?? 0, e1 = enc[2*k+1] ?? 1;
+    const xx = hi === lo ? e0 : e0 + (x[0]-lo)*(e1-e0)/(hi-lo);
+    return swEvalFn(ctx, subs.get(k), [xx]);
+  }
+  return null;
+}
+function swAltToRgb(ctx, alt, v){
+  alt = pdfResolve(ctx, alt);
+  let fam = alt instanceof PDFLib.PDFName ? pdfTextOf(alt) : (alt instanceof PDFLib.PDFArray ? pdfTextOf(pdfResolve(ctx, alt.get(0))) : '');
+  let n = v.length;
+  if(fam === 'ICCBased' && alt instanceof PDFLib.PDFArray){ const so = pdfResolve(ctx, alt.get(1)); const nn = so && so.dict ? pdfNumberValue(pdfResolve(ctx, so.dict.get(PDFLib.PDFName.of('N')))) : n; fam = nn === 1 ? 'DeviceGray' : nn === 3 ? 'DeviceRGB' : 'DeviceCMYK'; }
+  if(fam === 'DeviceCMYK' || fam === 'CMYK') return swCmyk(v[0],v[1],v[2],v[3]);
+  if(fam === 'DeviceRGB' || fam === 'RGB' || fam === 'CalRGB') return v.slice(0,3).map(t => 255*Math.max(0,Math.min(1,t)));
+  if(fam === 'DeviceGray' || fam === 'G' || fam === 'CalGray') return [0,1,2].map(() => 255*Math.max(0,Math.min(1,v[0])));
+  if(fam === 'Lab') return swLab(v[0], v[1], v[2]);
+  return null;
+}
+// tint 1.0 of colour space [/Separation name alt fn] or [/DeviceN [names] alt fn]; returns {name: css}
+function swatchesForCS(ctx, arr){
+  const out = {};
+  try{
+    const family = pdfTextOf(pdfResolve(ctx, arr.get(0)));
+    const alt = arr.get(2), fn = arr.get(3);
+    const names = family === 'Separation' ? [pdfTextOf(pdfResolve(ctx, arr.get(1))).trim()]
+      : (() => { const a = pdfResolve(ctx, arr.get(1)); return Array.from({length:a.size()}, (_,i) => (pdfTextOf(pdfResolve(ctx, a.get(i)))||'').trim()); })();
+    names.forEach((nm, idx) => {
+      if(!nm || /^(none|all)$/i.test(nm)) return;
+      const x = names.map((_, j) => j === idx ? 1 : 0);
+      const comps = swEvalFn(ctx, fn, x);
+      if(!comps) return;
+      const rgb = swAltToRgb(ctx, alt, comps);
+      if(rgb) out[nm.toLowerCase()] = 'rgb(' + rgb.map(t => Math.round(Math.max(0,Math.min(255,t)))).join(',') + ')';
+    });
+  } catch(e){}
+  return out;
+}
 function describeColorSpaceObject(context, entry){
   try{
     entry = pdfResolve(context, entry);
@@ -2617,6 +3359,7 @@ function describeColorSpaceObject(context, entry){
       }
       if(family === 'Separation'){
         const nm = pdfTextOf(pdfResolve(context, entry.get(1)));
+        const sw = swatchesForCS(context, entry); for(const k in sw) if(!SPOT_SWATCH.has(k)) SPOT_SWATCH.set(k, sw[k]);
         return nm ? { kind:'sep', names:[nm.trim()] } : { kind:'other' };
       }
       if(family === 'DeviceN'){
@@ -2625,6 +3368,7 @@ function describeColorSpaceObject(context, entry){
         if(arr instanceof PDFLib.PDFArray){
           for(let i=0;i<arr.size();i++){ const nm = pdfTextOf(pdfResolve(context, arr.get(i))); names.push(nm ? nm.trim() : ''); }
         }
+        { const sw = swatchesForCS(context, entry); for(const k in sw) if(!SPOT_SWATCH.has(k)) SPOT_SWATCH.set(k, sw[k]); }
         return names.length ? { kind:'devn', names } : { kind:'other' };
       }
       if(family === 'Indexed'){
@@ -2650,6 +3394,14 @@ function describeColorSpaceName(context, resources, name){
 // space of every placed image. Illustrator/InDesign exports routinely
 // keep their Separation spaces in those nested resources, not on the page.
 function collectSpotColorants(pdfLibDoc, pageIndex){
+  // memoised: these walk the whole page tree, and the source PDF never changes
+  if(!pdfLibDoc) return collectSpotColorants_raw(pdfLibDoc, pageIndex);
+  const m = pdfLibDoc.__memo || (pdfLibDoc.__memo = new Map());
+  const k = 'collectSpotColorants:' + pageIndex;
+  if(!m.has(k)) m.set(k, collectSpotColorants_raw(pdfLibDoc, pageIndex));
+  return m.get(k);
+}
+function collectSpotColorants_raw(pdfLibDoc, pageIndex){
   const out = new Map(); // lowercase -> display name
   if(!pdfLibDoc) return out;
   try{
@@ -2718,6 +3470,14 @@ function collectSpotColorants(pdfLibDoc, pageIndex){
 // component; gray counts as Black. Placed raster images can only be
 // detected, not measured, so a CMYK image marks all four plates.
 function getProcessPlatesUsed(pdfLibDoc, pageIndex){
+  // memoised: these walk the whole page tree, and the source PDF never changes
+  if(!pdfLibDoc) return getProcessPlatesUsed_raw(pdfLibDoc, pageIndex);
+  const m = pdfLibDoc.__memo || (pdfLibDoc.__memo = new Map());
+  const k = 'getProcessPlatesUsed:' + pageIndex;
+  if(!m.has(k)) m.set(k, getProcessPlatesUsed_raw(pdfLibDoc, pageIndex));
+  return m.get(k);
+}
+function getProcessPlatesUsed_raw(pdfLibDoc, pageIndex){
   const used = new Set();
   if(!pdfLibDoc) return used;
   try{
@@ -3083,7 +3843,12 @@ function renderOutputPreviewList(pageIndex){
   const allKeys = entries.map(e => e.key);
   const esc = (t) => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
 
-  listEl.innerHTML = entries.map(entry => {
+  const SW_PROCESS = { cyan:'#00aeef', magenta:'#ec008c', yellow:'#fff200', black:'#231f20', rgb:'linear-gradient(135deg,#f33 0 33%,#3c3 33% 66%,#36f 66%)' };
+  const swatchOf = (entry) => {
+    const css = entry.isProcess ? SW_PROCESS[entry.key] : (/^(white|opaque white|white ink)$/.test(entry.key) ? '#ffffff' : SPOT_SWATCH.get(entry.key));
+    return css ? `<span class="ch-swatch" style="background:${css}" title="${esc(css.startsWith('rgb(') ? css : entry.colorantName)}"></span>` : '<span class="ch-swatch unknown" title="Colour unknown"></span>';
+  };
+  const rowHtml = (entry) => {
     const status = (entry.inA && entry.inB) ? 'both' : entry.inB ? 'added' : 'removed';
     const tag = status === 'both' ? 'Both' : status === 'added' ? 'B only' : 'A only';
     const isOn = !state.hiddenChannels.has(entry.key);
@@ -3093,25 +3858,50 @@ function renderOutputPreviewList(pageIndex){
           <button class="ch-check ${isOn ? 'checked' : ''}" type="button" aria-label="Toggle ${esc(entry.colorantName)}">
             <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
           </button>
-          <span class="ch-name" data-role="toggle">${esc(entry.colorantName)}${entry.tagText ? ' <span class="ch-process-tag">' + entry.tagText + '</span>' : ''}</span>
+          ${swatchOf(entry)}
+          <span class="ch-name" data-role="toggle">${esc(entry.colorantName)}${entry.tagText && entry.key === 'rgb' ? ' <span class="ch-process-tag">' + entry.tagText + '</span>' : ''}</span>
           ${viewer ? '' : `<span class="ch-tag ${status}">${tag}</span>`}
         </div>
       </div>`;
-  }).join('');
+  };
+  const groups = [
+    { id:'process', label:'Process', items: entries.filter(e => e.isProcess) },
+    { id:'spot', label:'Spot', items: entries.filter(e => !e.isProcess) }
+  ].filter(g => g.items.length);
+  const groupHtml = (g) => {
+    const on = g.items.filter(e => !state.hiddenChannels.has(e.key)).length;
+    const cls = on === g.items.length ? 'checked' : on === 0 ? '' : 'partial';
+    return `<div class="ch-group" data-group="${g.id}" title="Show / hide every ${g.label.toLowerCase()} colour">
+        <button class="ch-check ${cls}" type="button" aria-label="Toggle all ${g.label.toLowerCase()} colours"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></button>
+        <span class="gname">${g.label}</span><span class="gcount">${on}/${g.items.length}</span>
+      </div>` + g.items.map(rowHtml).join('');
+  };
+  listEl.innerHTML = groups.map(groupHtml).join('');
 
-  const wraps = listEl.querySelectorAll('.channel-row-wrap');
-  entries.forEach((entry, idx) => {
-    const wrap = wraps[idx];
+  const rerender = () => { if(viewer) renderViewer(); else compareAndScan(); };
+  const byKeyEntry = new Map(entries.map(e => [e.key, e]));
+  listEl.querySelectorAll('.channel-row').forEach(row => {
+    const entry = byKeyEntry.get(row.dataset.key);
     const toggle = (e) => {
       e.stopPropagation();
       if(state.hiddenChannels.has(entry.key)) state.hiddenChannels.delete(entry.key);
       else state.hiddenChannels.add(entry.key);
-      // re-run so the change shows up in the stage (and, when comparing,
-      // the stats and page-by-page report too)
-      if(viewer) renderViewer(); else compareAndScan();
+      renderOutputPreviewList(pageIndex); // tick boxes right away, render follows
+      rerender();
     };
-    wrap.querySelector('.ch-check').addEventListener('click', toggle);
-    wrap.querySelector('[data-role="toggle"]').addEventListener('click', toggle);
+    row.querySelector('.ch-check').addEventListener('click', toggle);
+    row.querySelector('[data-role="toggle"]').addEventListener('click', toggle);
+    row.querySelector('.ch-swatch').addEventListener('click', toggle);
+  });
+  listEl.querySelectorAll('.ch-group').forEach(h => {
+    const g = groups.find(x => x.id === h.dataset.group);
+    h.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const allOn = g.items.every(it => !state.hiddenChannels.has(it.key));
+      g.items.forEach(it => { if(allOn) state.hiddenChannels.add(it.key); else state.hiddenChannels.delete(it.key); });
+      renderOutputPreviewList(pageIndex);
+      rerender();
+    });
   });
 }
 
@@ -3129,7 +3919,30 @@ async function renderViewer(){
     const aspect = g && g.sw > 0 ? g.sh / g.sw : 1.5;
     const maxW = Math.max(300, Math.min(6000, Math.floor(Math.sqrt(36e6 / Math.max(aspect, 0.2)))));
     const width = Math.min(maxW, Math.max(200, Math.round(900 * state.zoom)));
-    const res = await getComparisonCanvas(rdoc(state.pdfA), state.pdfLibA, state.page, width, state.alignBox, state.hiddenChannels);
+    // Remember recent renders per file so flipping back to a view already
+    // seen (toggling an ink off and on again) is instant.
+    const vc = state.pdfA.__vc || (state.pdfA.__vc = { map:new Map(), bytes:0 });
+    const vkey = [variantKeyFor(stateVariantOpts()), state.page, width, state.alignBox].join('#');
+    let res;
+    const hit = vc.map.get(vkey);
+    if(hit){
+      vc.map.delete(vkey); vc.map.set(vkey, hit);
+      const cv = document.createElement('canvas'); cv.width = hit.width; cv.height = hit.height;
+      cv.getContext('2d').drawImage(hit, 0, 0);
+      res = { canvas: cv };
+    } else {
+      res = await getComparisonCanvas(rdoc(state.pdfA), state.pdfLibA, state.page, width, state.alignBox, state.hiddenChannels);
+      if(token !== viewerToken) return;
+      if(res && res.canvas){
+        const keep = document.createElement('canvas'); keep.width = res.canvas.width; keep.height = res.canvas.height;
+        keep.getContext('2d').drawImage(res.canvas, 0, 0);
+        vc.map.set(vkey, keep); vc.bytes += keep.width * keep.height * 4;
+        while(vc.bytes > 300e6 && vc.map.size > 1){
+          const [k0, c0] = vc.map.entries().next().value;
+          vc.map.delete(k0); vc.bytes -= c0.width * c0.height * 4;
+        }
+      }
+    }
     if(token !== viewerToken) return;
     emptyState.style.display = 'none';
     stage.innerHTML = '';
@@ -3142,6 +3955,7 @@ async function renderViewer(){
     stage.appendChild(scroll);
     state.lastRender = null;
     renderOutputPreviewList(state.page - 1);
+    renderViewerBoxes(state.page - 1);
     updatePager();
   } catch(err){
     console.error('[Redline] viewer render failed', err);
@@ -3168,6 +3982,7 @@ function setView(view){
   el('alignLabel').textContent = viewer ? 'View box' : 'Align by';
   state.zoom = 1; el('zoomLabel').textContent = '100%';
   el('outputPreviewPanel').style.display = 'none';
+  el('structuralPanel').style.display = 'none';
   if(viewer){
     state.maxPages = state.pdfA ? state.pdfA.numPages : 1;
     state.page = 1; updatePager(); setStatus();
