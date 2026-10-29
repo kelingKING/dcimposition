@@ -784,6 +784,19 @@
 
   var revealed = false, timer = null;
 
+  // Called by the Generate button after a PDF has been produced, so the admin
+  // page can show when each person last made one. Fire-and-forget: it can
+  // never delay or break generation, and it only updates the caller's own
+  // row (the record_generation database function enforces that).
+  window.imposeRecordGeneration = function(){
+    if (!revealed) return;
+    try {
+      Promise.resolve(sb.rpc('record_generation')).then(function(r){
+        if (r && r.error) console.warn('Could not record generation:', r.error.message);
+      }, function(){});
+    } catch(e){}
+  };
+
   // Checks the session against the SERVER (getUser, not just the cached
   // token) and then the profile row, so a deleted or disabled account is
   // caught. Returns {ok, profile} | {fail:'none'|'disabled'|'missing'} | {offline:true}.
@@ -4160,6 +4173,7 @@ $('generateBtn').addEventListener('click', async ()=>{
         document.body.appendChild(a); a.click(); a.remove();
       }, i*400);
     });
+    if (outputs.length && window.imposeRecordGeneration) window.imposeRecordGeneration();   // admin page: "last imposed PDF"
     renderOutputsList([]);
     const totalKB = outputs.reduce((sum,o)=>sum+o.bytes.length,0)/1024;
     setStatus(outputs.length===1
