@@ -176,8 +176,8 @@
       <div id="listMsg" hidden></div>
       <div class="table-scroll">
         <table>
-          <thead><tr><th>Username</th><th>Status</th><th>Created</th><th>Last sign-in</th><th></th></tr></thead>
-          <tbody id="userRows"><tr><td colspan="5" class="empty">Loading…</td></tr></tbody>
+          <thead><tr><th>Username</th><th>Status</th><th>Created</th><th>Last sign-in</th><th>Last imposed PDF</th><th></th></tr></thead>
+          <tbody id="userRows"><tr><td colspan="6" class="empty">Loading…</td></tr></tbody>
         </table>
       </div>
     </section>
@@ -329,7 +329,7 @@
     try {
       var data = await call('list');
       var users = data.users || [];
-      if (!users.length){ tbody.innerHTML = '<tr><td colspan="5" class="empty">No users yet.</td></tr>'; return; }
+      if (!users.length){ tbody.innerHTML = '<tr><td colspan="6" class="empty">No users yet.</td></tr>'; return; }
       tbody.innerHTML = users.map(function(u){
         var self = u.id === myId;
         return '<tr data-id="' + esc(u.id) + '" data-name="' + esc(u.username) + '">' +
@@ -337,6 +337,7 @@
           '<td><span class="badge ' + (u.is_disabled ? 'off">Disabled' : 'active">Active') + '</span></td>' +
           '<td class="muted">' + esc(fmt(u.created_at)) + '</td>' +
           '<td class="muted">' + esc(fmt(u.last_sign_in_at)) + '</td>' +
+          '<td class="muted">' + esc(fmt(u.last_generated_at)) + '</td>' +
           '<td class="actions">' +
             '<button class="btn btn-plain btn-sm" data-act="pw">Reset password</button>' +
             (self ? '' :
@@ -345,7 +346,7 @@
           '</td></tr>';
       }).join('');
     } catch(e){
-      tbody.innerHTML = '<tr><td colspan="5" class="empty">Couldn’t load users.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" class="empty">Couldn’t load users.</td></tr>';
       showMsg(lm, 'err', esc(e.message) + (/not found|404|failed to send/i.test(e.message) ? ' — is the <b>admin-users</b> Edge Function deployed?' : ''));
     }
   }
