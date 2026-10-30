@@ -92,6 +92,17 @@
   .vs-btn:not(.active):hover{ color:var(--ink); }
   /* Viewer mode: one file, no comparison controls */
   .view-viewer .cmp-only, .view-viewer #scanNote, .view-viewer #sizeModeNote{ display:none !important; }
+  .vw-only{ display:none !important; }
+  .view-viewer .vw-only{ display:flex !important; }
+  #inkTip{ position:fixed; z-index:60; pointer-events:none; display:none; min-width:150px; padding:8px 10px; border-radius:8px;
+    background:rgba(17,22,28,0.96); border:1px solid rgba(255,255,255,0.14); box-shadow:0 8px 28px rgba(0,0,0,0.5);
+    font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--ink); }
+  #inkTip .it-row{ display:flex; align-items:center; gap:7px; padding:1.5px 0; }
+  #inkTip .it-sw{ width:11px; height:11px; border-radius:2px; border:1px solid rgba(255,255,255,0.3); flex:none; }
+  #inkTip .it-name{ flex:1; } #inkTip .it-val{ font-variant-numeric:tabular-nums; }
+  #inkTip .it-sep{ margin-top:4px; padding-top:4px; border-top:1px dashed rgba(255,255,255,0.15); color:var(--ink-faint); }
+  #inkTip .it-note{ color:var(--ink-faint); }
+  .viewer-holder.probing canvas{ cursor:crosshair; }
   .view-viewer .uploads{ grid-template-columns:1fr; }
   .stage.loading{ opacity:.55; transition:opacity .15s; }
   .viewer-holder{ position:relative; box-shadow:0 12px 40px rgba(0,0,0,0.45); flex:none; background:#fff; }
@@ -439,6 +450,7 @@
       </select>
     </div>
     <label class="op-toggle" title="Show or hide the floating Output preview panel"><input type="checkbox" id="opPanelToggle" checked><span>Output preview</span></label>
+    <label class="op-toggle vw-only" title="Hover the artwork to read the ink percentages under the cursor"><input type="checkbox" id="inkProbeToggle"><span>Ink values</span></label>
     <label class="op-toggle" title="Approximates overprint: objects set to overprint are multiplied over the ink beneath them"><input type="checkbox" id="overprintToggle"><span>Overprint preview</span></label>
     <button class="run-btn cmp-only" id="runBtn" disabled>Compare pages</button>
   </div>
@@ -446,6 +458,7 @@
   <div class="scan-note cmp-only" id="scanNote" style="display:none;"></div>
   <div class="scan-note cmp-only" id="sizeModeNote" style="display:none;"></div>
   <div class="scan-note" id="overprintNote" style="display:none;"></div>
+  <div id="inkTip"></div>
 
   <div class="work-row">
   <div class="stage-wrap">
@@ -681,6 +694,89 @@ function isImageFile(file){
   return !file || /^image\/(jpeg|png)$/i.test(file.type) || /\.(jpe?g|png)$/i.test(file.name);
 }
 
+// ---- One colour per spot ink ----
+// PDFium converts a single-spot IMAGE (Separation/DeviceN through a tint
+// function) with a simpler formula than a spot FILL, so the same ink looks like
+// two different colours. For the render copy these images are re-expressed as
+// Indexed-CMYK (the tint function pre-evaluated per sample), which PDFium
+// converts exactly like a fill. Plates and the original document are untouched.
+function spotImageList(pdfLibDoc){
+  if(!pdfLibDoc) return [];
+  if(pdfLibDoc.__spotImgs) return pdfLibDoc.__spotImgs;
+  const out = [], N = PDFLib.PDFName.of, ctx = pdfLibDoc.context;
+  try{
+    for(const [ref, obj] of ctx.enumerateIndirectObjects()){
+      const d = obj && obj.dict;
+      if(!d || !d.get) continue;
+      if(pdfTextOf(pdfResolve(ctx, d.get(N('Subtype')))) !== 'Image') continue;
+      const cs = pdfResolve(ctx, d.get(N('ColorSpace')));
+      if(!(cs instanceof PDFLib.PDFArray) || cs.size() < 4) continue;
+      const fam = pdfTextOf(pdfResolve(ctx, cs.get(0)));
+      if(fam !== 'Separation' && fam !== 'DeviceN') continue;
+      if(fam === 'DeviceN'){ const a = pdfResolve(ctx, cs.get(1)); if(!(a instanceof PDFLib.PDFArray) || a.size() !== 1) continue; }
+      const alt = pdfResolve(ctx, cs.get(2));
+      if(!(alt instanceof PDFLib.PDFName) || pdfTextOf(alt) !== 'DeviceCMYK') continue;
+      if(pdfNumberValue(pdfResolve(ctx, d.get(N('BitsPerComponent')))) !== 8) continue;
+      out.push(ref);
+    }
+  } catch(e){}
+  pdfLibDoc.__spotImgs = out;
+  return out;
+}
+// What PDFium's fill path turns a CMYK colour into (measured, not assumed).
+async function fillRgbForCmyk(list){
+  const CELL = 4, COLS = 64, rows = Math.max(1, Math.ceil(list.length/COLS));
+  const doc = await PDFLib.PDFDocument.create();
+  const page = doc.addPage([COLS*CELL, rows*CELL]);
+  list.forEach((c, i) => {
+    page.drawRectangle({ x:(i%COLS)*CELL, y:(rows-1-Math.floor(i/COLS))*CELL, width:CELL, height:CELL,
+      color:PDFLib.cmyk(Math.max(0,Math.min(1,c[0])), Math.max(0,Math.min(1,c[1])), Math.max(0,Math.min(1,c[2])), Math.max(0,Math.min(1,c[3]))) });
+  });
+  const pd = await loadPdfiumDocument(await doc.save({ useObjectStreams:false }));
+  const pg = await pd.getPage(1);
+  const cv = document.createElement('canvas'); cv.width = COLS*CELL; cv.height = rows*CELL;
+  const cx = cv.getContext('2d', { willReadFrequently:true });
+  cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height);
+  await pg.render({ canvasContext:cx, viewport:pg.getViewport({ scale:1 }) }).promise;
+  const out = list.map((_, i) => { const d = cx.getImageData((i%COLS)*CELL + CELL/2, Math.floor(i/COLS)*CELL + CELL/2, 1, 1).data; return [d[0], d[1], d[2]]; });
+  pd.destroy();
+  return out;
+}
+async function unifySpotImages(doc){
+  const ctx = doc.context, N = PDFLib.PDFName.of;
+  const jobs = [];
+  for(const ref of spotImageList(doc)){
+    try{
+      const obj = ctx.lookup(ref), d = obj.dict;
+      const cs = pdfResolve(ctx, d.get(N('ColorSpace')));
+      const fn = cs.get(3);
+      const dec = pdfResolve(ctx, d.get(N('Decode')));
+      let rev = false;
+      if(dec instanceof PDFLib.PDFArray && dec.size() === 2){ rev = pdfNumberValue(pdfResolve(ctx, dec.get(0))) > pdfNumberValue(pdfResolve(ctx, dec.get(1))); }
+      const cm = [];
+      for(let i = 0; i < 256; i++){
+        const c = swEvalFn(ctx, fn, [(rev ? 255 - i : i)/255]);
+        if(!c || c.length < 4) throw new Error('tint function');
+        cm.push(c);
+      }
+      jobs.push({ d, dec, cm });
+    } catch(e){ /* leave this image as it was */ }
+  }
+  if(!jobs.length) return 0;
+  // Inside a transparency group or blend PDFium converts an image's CMYK with a
+  // simpler formula than a fill's, so hand it RGB made the way a fill is made.
+  const all = [].concat(...jobs.map(j => j.cm));
+  const rgb = await fillRgbForCmyk(all);
+  jobs.forEach((j, ji) => {
+    const pal = new Uint8Array(256*3);
+    for(let i = 0; i < 256; i++){ const c = rgb[ji*256 + i]; pal[i*3] = c[0]; pal[i*3+1] = c[1]; pal[i*3+2] = c[2]; }
+    j.d.set(N('ColorSpace'), ctx.obj([N('Indexed'), N('DeviceRGB'), 255, ctx.register(ctx.stream(pal))]));
+    if(j.dec) j.d.delete(N('Decode'));
+  });
+  return jobs.length;
+}
+function needsUnify(pdfLibDoc){ return spotImageList(pdfLibDoc).length > 0; }
+
 async function buildVariantDoc(file, opts, baseDoc, pdfLibDoc){
   // Overprint preview: per-ink-plate composite (hidden inks are simply left
   // out of the composite). A file without any overprinting state renders
@@ -693,16 +789,21 @@ async function buildVariantDoc(file, opts, baseDoc, pdfLibDoc){
   const fresh = await PDFLib.PDFDocument.load(await file.arrayBuffer(), { ignoreEncryption:true, updateMetadata:false });
   let hidN = 0;
   if(opts.hidden && opts.hidden.size) hidN = hideChannelsInDoc(fresh, opts.hidden);
-  if(opN + hidN === 0) return { doc:null, opN, hidN };
+  const uniN = needsUnify(pdfLibDoc) ? await unifySpotImages(fresh) : 0;
+  if(opN + hidN + uniN === 0) return { doc:null, opN, hidN };
   const bytes = await fresh.save({ useObjectStreams:false });
   return { doc: await loadPdfiumDocument(bytes), opN, hidN };
 }
 
 // Returns the rewritten PDFium document for these options, or null when
 // the original renders identically (nothing to change / image input).
+function variantKeyForDoc(doc, o){
+  const lib = doc === state.pdfA ? state.pdfLibA : state.pdfLibB;
+  return variantKeyFor(o) + (!isImageFile(doc === state.pdfA ? state.fileA : state.fileB) && typeof PDFLib !== 'undefined' && needsUnify(lib) ? '+u' : '');
+}
 async function getVariantDoc(doc, file, opts){
   if(!doc) return null;
-  const key = variantKeyFor(opts);
+  const key = variantKeyForDoc(doc, opts);
   if(key === '|') return null;
   if(!doc.variants) doc.variants = new Map();
   if(doc.variants.has(key)) return doc.variants.get(key);
@@ -714,7 +815,7 @@ async function getVariantDoc(doc, file, opts){
   if(opts.overprint) doc.opCount = res.opN;
   doc.variants.set(key, res.doc);
   if(doc.variants.size > 10){
-    const keep = variantKeyFor(stateVariantOpts());
+    const keep = variantKeyForDoc(doc, stateVariantOpts());
     for(const k of doc.variants.keys()){
       if(k === keep || k === key) continue;
       const old = doc.variants.get(k);
@@ -729,7 +830,7 @@ async function getVariantDoc(doc, file, opts){
 // The document to render from right now (overprint + hidden inks applied
 // if a variant has been built for the current state), else the original.
 function rdoc(doc){
-  const v = doc && doc.variants && doc.variants.get(variantKeyFor(stateVariantOpts()));
+  const v = doc && doc.variants && doc.variants.get(variantKeyForDoc(doc, stateVariantOpts()));
   return v || doc;
 }
 
@@ -850,6 +951,7 @@ const state = {
   pageReport:null, // [{page, pct, kind}]
   alignBox:'trim', // which box (media/crop/trim/bleed) pages are aligned to before diffing
   sizeMode:'fit', // 'fit' = normalize both files to the same pixel width; 'original' = shared physical scale, centered
+  inkProbe:false, // hover readout of ink percentages (Viewer)
   overprint:false, // render overprinting objects multiplied over what's beneath
   hiddenChannels: new Set(), // lowercased colorant names currently knocked out of the render
   expandedChannel: null // lowercased colorant name currently shown in the isolated channel-vs-channel compare
@@ -3250,7 +3352,7 @@ function makeOverprintDoc(baseDoc, pdfLibDoc, file, hidden){
             const plain = await cached(vpKey + '|P|' + hk, async (tcx) => {
               tcx.fillStyle = '#fff'; tcx.fillRect(0, 0, W, H);
               let pdoc = baseDoc;
-              if(hk){ const v = await getVariantDoc(baseDoc, file, { overprint:false, hidden }); if(v) pdoc = v; }
+              { const v = await getVariantDoc(baseDoc, file, { overprint:false, hidden:hidden || new Set() }); if(v) pdoc = v; }
               const pp = await pdoc.getPage(n);
               await pp.render({ canvasContext: tcx, viewport }).promise;
             });
@@ -3296,6 +3398,7 @@ const DEVICE_CS_KIND = { DeviceGray:'gray', G:'gray', CalGray:'gray', DeviceRGB:
 // spot spaces, {kind:'indexed', base} or {kind:'other'}.
 
 // ---- Swatch colours for the Output preview ----
+const SPOT_ALT = new Map(); // lowercase colorant -> tint -> [c,m,y,k] (CMYK alternates only)
 const SPOT_SWATCH = new Map(); // lowercase colorant -> css colour (first seen wins)
 function swCmyk(c,m,y,k){ const r=255*(1-Math.min(1,c))*(1-Math.min(1,k)), g=255*(1-Math.min(1,m))*(1-Math.min(1,k)), b=255*(1-Math.min(1,y))*(1-Math.min(1,k)); return [r,g,b]; }
 function swLab(L,a,b){ const fy=(L+16)/116, fx=fy+a/500, fz=fy-b/200; const f=t=>t*t*t>0.008856?t*t*t:(t-16/116)/7.787; const X=0.9505*f(fx),Y=f(fy),Z=1.089*f(fz); const lin=[3.2406*X-1.5372*Y-0.4986*Z,-0.9689*X+1.8758*Y+0.0415*Z,0.0557*X-0.2040*Y+1.0570*Z]; return lin.map(v=>255*Math.pow(Math.max(0,Math.min(1,v)),1/2.2)); }
@@ -3399,6 +3502,12 @@ function swatchesForCS(ctx, arr){
       const x = names.map((_, j) => j === idx ? 1 : 0);
       const comps = swEvalFn(ctx, fn, x);
       if(!comps) return;
+      try{
+        const altR = pdfResolve(ctx, alt);
+        const fam0 = altR instanceof PDFLib.PDFName ? pdfTextOf(altR) : (altR instanceof PDFLib.PDFArray ? pdfTextOf(pdfResolve(ctx, altR.get(0))) : '');
+        if(comps.length === 4 && /CMYK/.test(fam0) && !SPOT_ALT.has(nm.toLowerCase()))
+          SPOT_ALT.set(nm.toLowerCase(), (t) => swEvalFn(ctx, fn, names.map((_, j) => j === idx ? t : 0)));
+      } catch(e){}
       const rgb = swAltToRgb(ctx, alt, comps);
       if(rgb) out[nm.toLowerCase()] = 'rgb(' + rgb.map(t => Math.round(Math.max(0,Math.min(255,t)))).join(',') + ')';
     });
@@ -4012,6 +4121,7 @@ function renderOutputPreviewList(pageIndex){
     if(ia >= 0 || ib >= 0) return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
     return a.colorantName.localeCompare(b.colorantName);
   });
+  entries.forEach(e => probeNames.set(e.key, e.colorantName));
   const allKeys = entries.map(e => e.key);
   const esc = (t) => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
 
@@ -4077,6 +4187,193 @@ function renderOutputPreviewList(pageIndex){
   });
 }
 
+
+// ---- Ink value probe (Viewer): per-ink coverage under the cursor ----
+// Every ink is rendered on its own plate (the same plates Overprint preview
+// uses) at the viewer's alignment, and a pixel of a plate is turned back into
+// a tint by matching it against that ink's own tint ramp, rendered through
+// PDFium from a tiny calibration PDF so the colour conversion is identical.
+function getPlateSet(baseDoc, pdfLibDoc, file, n){
+  if(!baseDoc.plateShared) baseDoc.plateShared = { pages:new Map() };
+  const shared = baseDoc.plateShared;
+  if(!shared.rc){ shared.rc = new Map(); shared.rcBytes = 0; }
+  const pk = '#' + n;
+  if(!shared.pages.has(pk)){
+    const p = (async () => buildPlateDocs(shared, pdfLibDoc, n, file))();
+    p.catch(() => shared.pages.delete(pk));
+    shared.pages.set(pk, p);
+  }
+  return shared.pages.get(pk);
+}
+const probe = { data:null, key:'', busy:null, lut:new Map() };
+const PROBE_LABEL = { cyan:'C', magenta:'M', yellow:'Y', black:'K' };
+const PROBE_CMYK = { cyan:[1,0,0,0], magenta:[0,1,0,0], yellow:[0,0,1,0], black:[0,0,0,1] };
+
+async function probeBuildLut(keys){
+  const need = keys.filter(k => !probe.lut.has(k));
+  if(!need.length) return;
+  const rows = need.map(k => {
+    const base = PROBE_CMYK[k], alt = SPOT_ALT.get(k);
+    if(base) return { k, at:(t) => base.map(v => v*t) };
+    if(alt) return { k, at:(t) => { try{ const c = alt(t); return c && c.length === 4 ? c : null; }catch(e){ return null; } } };
+    return { k, at:null };
+  });
+  const cal = rows.filter(r => r.at);
+  const CELL = 8;
+  if(cal.length){
+    const doc = await PDFLib.PDFDocument.create();
+    const page = doc.addPage([11*CELL, cal.length*CELL]);
+    cal.forEach((r, ri) => { for(let i = 0; i <= 10; i++){
+      const c = (r.at(i/10) || [0,0,0,0]).map(v => Math.max(0, Math.min(1, v)));
+      page.drawRectangle({ x:i*CELL, y:(cal.length-1-ri)*CELL, width:CELL, height:CELL, color:PDFLib.cmyk(c[0],c[1],c[2],c[3]) });
+    } });
+    const pd = await loadPdfiumDocument(await doc.save({ useObjectStreams:false }));
+    const pg = await pd.getPage(1);
+    const vp = pg.getViewport({ scale:1 });
+    const cv = document.createElement('canvas'); cv.width = 11*CELL; cv.height = cal.length*CELL;
+    const cx = cv.getContext('2d', { willReadFrequently:true });
+    cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height);
+    await pg.render({ canvasContext:cx, viewport:vp }).promise;
+    cal.forEach((r, ri) => {
+      const pts = [];
+      for(let i = 0; i <= 10; i++){ const d = cx.getImageData(i*CELL + CELL/2, ri*CELL + CELL/2, 1, 1).data; pts.push([d[0], d[1], d[2]]); }
+      probe.lut.set(r.k, [probeRamp(pts)]);
+    });
+    pd.destroy();
+    // A spot ink can reach the page through several PDFium paths (fills, images,
+    // shadings, blends) that do not convert the same CMYK alternate to RGB the same
+    // way, so spot inks are also matched against a plain CMYK->RGB ramp.
+    cal.forEach((r) => {
+      if(PROBE_CMYK[r.k]) return;
+      const pts = [];
+      for(let i = 0; i <= 10; i++){ const c = (r.at(i/10) || [0,0,0,0]); pts.push(swCmyk(c[0], c[1], c[2], c[3])); }
+      probe.lut.get(r.k).push(probeRamp(pts));
+    });
+  }
+  rows.filter(r => !r.at).forEach(r => {
+    // no CMYK alternate: straight line from paper to the swatch colour
+    const m = /rgb\((\d+),(\d+),(\d+)\)/.exec(SPOT_SWATCH.get(r.k) || '');
+    const full = m ? [+m[1], +m[2], +m[3]] : [0, 0, 0];
+    probe.lut.set(r.k, [probeRamp(Array.from({length:11}, (_, i) => full.map(v => 255 + (v-255)*i/10)))]);
+  });
+}
+function probeRamp(pts){ // 11 colours -> 101 interpolated
+  const out = [];
+  for(let i = 0; i <= 100; i++){
+    const f = i/10, a = Math.min(9, Math.floor(f)), t = f - a;
+    out.push([0,1,2].map(c => pts[a][c] + (pts[a+1][c] - pts[a][c])*t));
+  }
+  return out;
+}
+function probeTint(ramps, r, g, b){
+  if(r > 250 && g > 250 && b > 250) return 0;
+  let best = 0, bd = 1e12;
+  for(const ramp of ramps){
+    // weight each channel by how much this ink actually moves it, so channels the
+    // ink barely touches (and where blends add noise) count for little
+    if(!ramp.w){
+      const e = ramp[100], z = ramp[0];
+      const rg = [Math.abs(e[0]-z[0]), Math.abs(e[1]-z[1]), Math.abs(e[2]-z[2])];
+      const sum = rg[0]*rg[0] + rg[1]*rg[1] + rg[2]*rg[2] || 1;
+      ramp.w = rg.map(v => v*v/sum + 0.01);
+    }
+    const w = ramp.w;
+    for(let i = 0; i <= 100; i++){ const c = ramp[i]; const d = w[0]*(c[0]-r)*(c[0]-r) + w[1]*(c[1]-g)*(c[1]-g) + w[2]*(c[2]-b)*(c[2]-b); if(d < bd){ bd = d; best = i; } }
+  }
+  return best;
+}
+
+// Renders every plate at the viewer's alignment (capped to 1600 px wide).
+async function probePrepare(width){
+  const baseDoc = state.pdfA, key = [state.page, width, state.alignBox, state.overprint ? 'o' : 'k', state.fileA && state.fileA.name].join('|');
+  if(probe.key === key && probe.data) return probe.data;
+  if(probe.busy && probe.busyKey === key) return probe.busy;
+  probe.busyKey = key;
+  probe.busy = (async () => {
+    const pw = Math.min(1600, width);
+    const set = await getPlateSet(baseDoc, state.pdfLibA, state.fileA, state.page);
+    const src = state.overprint ? set : set.ko;
+    const keys = [...src.keys()].filter(k => k !== 'rgb');
+    await probeBuildLut(keys);
+    const plates = [];
+    for(const k of keys){
+      const wrap = { numPages:1, getPage:() => src.get(k).getPage(1) };
+      const res = await renderAlignedCanvas(wrap, state.pdfLibA, state.page, pw, state.alignBox);
+      const c = res.canvas, cx = c.getContext('2d', { willReadFrequently:true });
+      plates.push({ key:k, w:c.width, h:c.height, px:cx.getImageData(0, 0, c.width, c.height).data });
+    }
+    const data = { plates, w:plates.length ? plates[0].w : 0, h:plates.length ? plates[0].h : 0 };
+    probe.data = data; probe.key = key;
+    return data;
+  })();
+  try{ return await probe.busy; } finally { probe.busy = null; }
+}
+
+function probeInkLabel(k){
+  if(PROBE_LABEL[k]) return PROBE_LABEL[k];
+  const e = SPOT_SWATCH.has(k) ? k : k;
+  // keep the file's own spelling when we have it
+  return (probeNames.get(k) || k);
+}
+const probeNames = new Map();
+
+function probeSwatch(k){
+  const css = { cyan:'#00aeef', magenta:'#ec008c', yellow:'#fff200', black:'#231f20' }[k]
+    || (/^(white|opaque white|white ink)$/.test(k) ? '#ffffff' : SPOT_SWATCH.get(k)) || '#888';
+  return css;
+}
+
+function setupInkProbe(holder, canvas, width){
+  const tip = el('inkTip');
+  const hide = () => { tip.style.display = 'none'; };
+  holder.classList.toggle('probing', state.inkProbe);
+  if(!state.inkProbe){ hide(); return; }
+  let ready = null, tipHtmlMsg = null;
+  const msg = (t) => { tip.innerHTML = '<span class="it-note">' + t + '</span>'; tip.style.display = 'block'; };
+  ready = probePrepare(width).catch(err => { console.warn('[Redline] ink probe failed', err); return null; });
+  let last = null;
+  const show = (e) => {
+    last = e;
+    const d = probe.data && probe.key.startsWith(state.page + '|' + width + '|') ? probe.data : null;
+    if(!d){ msg('Measuring inks…'); place(e); return; }
+    const r = canvas.getBoundingClientRect();
+    const fx = (e.clientX - r.left)/r.width, fy = (e.clientY - r.top)/r.height;
+    if(fx < 0 || fy < 0 || fx > 1 || fy > 1){ hide(); return; }
+    const x = Math.min(d.w-1, Math.floor(fx*d.w)), y = Math.min(d.h-1, Math.floor(fy*d.h));
+    const rows = []; let tac = 0, any = false;
+    for(const pl of d.plates){
+      if(state.hiddenChannels.has(pl.key)) continue;
+      const i = (y*pl.w + x)*4;
+      const ramp = probe.lut.get(pl.key); if(!ramp) continue;
+      const t = probeTint(ramp, pl.px[i], pl.px[i+1], pl.px[i+2]);
+      if(t >= 1){ any = true; rows.push({ k:pl.key, t }); if(PROBE_LABEL[pl.key]) tac += t; }
+    }
+    const proc = rows.filter(r2 => PROBE_LABEL[r2.k]), spots = rows.filter(r2 => !PROBE_LABEL[r2.k]);
+    const esc = (t) => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+    const row = (r2) => '<div class="it-row"><span class="it-sw" style="background:' + probeSwatch(r2.k) + '"></span><span class="it-name">' + esc(PROBE_LABEL[r2.k] ? { C:'Cyan', M:'Magenta', Y:'Yellow', K:'Black' }[PROBE_LABEL[r2.k]] : (probeNames.get(r2.k) || r2.k)) + '</span><span class="it-val">' + r2.t + '%</span></div>';
+    tip.innerHTML = any
+      ? proc.map(row).join('') + (spots.length ? (proc.length ? '<div class="it-sep"></div>' : '') + spots.map(row).join('') : '') + (proc.length ? '<div class="it-row it-sep"><span class="it-name">Total (CMYK)</span><span class="it-val">' + tac + '%</span></div>' : '')
+      : '<span class="it-note">No ink (paper)</span>';
+    tip.style.display = 'block';
+    place(e);
+  };
+  const place = (e) => {
+    const w = tip.offsetWidth, h = tip.offsetHeight;
+    let x = e.clientX + 16, y = e.clientY + 16;
+    if(x + w > innerWidth - 8) x = e.clientX - w - 16;
+    if(y + h > innerHeight - 8) y = e.clientY - h - 16;
+    tip.style.left = Math.max(8, x) + 'px'; tip.style.top = Math.max(8, y) + 'px';
+  };
+  canvas.addEventListener('mousemove', show);
+  canvas.addEventListener('mouseleave', hide);
+  ready.then(() => { if(last && state.inkProbe) show(last); });
+}
+el('inkProbeToggle').addEventListener('change', (e) => {
+  state.inkProbe = e.target.checked;
+  if(!state.inkProbe) el('inkTip').style.display = 'none';
+  if(state.view === 'viewer' && state.pdfA) renderViewer();
+});
+
 // ---- Viewer mode: one file, rendered sharp at the current zoom ----
 let viewerToken = 0;
 async function renderViewer(){
@@ -4126,6 +4423,7 @@ async function renderViewer(){
     scroll.appendChild(holder);
     stage.appendChild(scroll);
     state.lastRender = null;
+    setupInkProbe(holder, res.canvas, width);
     renderOutputPreviewList(state.page - 1);
     renderViewerBoxes(state.page - 1);
     updatePager();
