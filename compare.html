@@ -700,6 +700,20 @@ function isImageFile(file){
 // two different colours. For the render copy these images are re-expressed as
 // Indexed-CMYK (the tint function pre-evaluated per sample), which PDFium
 // converts exactly like a fill. Plates and the original document are untouched.
+// Spots that exist to be seen, not printed (cut/crease/die lines). They never
+// knock out ink beneath them, whatever the file's overprint flag says.
+const NONPRINT_RE = /^(dieline|die ?line|die|die[- ]?cut|diecut|cutter|cutting|cut|cutcontour|cut ?contour|thru[- ]?cut|kiss[- ]?cut|crease|creasing|fold|folding|score|scoring|perf|perforation|bleed|trim|guide)\b|dieline|cutter|crease/i;
+function nonPrintSpots(pdfLibDoc){
+  if(!pdfLibDoc) return false;
+  if(pdfLibDoc.__np !== undefined) return pdfLibDoc.__np;
+  let found = false;
+  try{
+    const n = pdfLibDoc.getPageCount();
+    for(let i = 0; i < n && !found; i++) collectSpotColorants(pdfLibDoc, i).forEach((disp, lower) => { if(NONPRINT_RE.test(lower)) found = true; });
+  } catch(e){}
+  pdfLibDoc.__np = found;
+  return found;
+}
 function spotImageList(pdfLibDoc){
   if(!pdfLibDoc) return [];
   if(pdfLibDoc.__spotImgs) return pdfLibDoc.__spotImgs;
@@ -775,7 +789,7 @@ async function unifySpotImages(doc){
   });
   return jobs.length;
 }
-function needsUnify(pdfLibDoc){ return spotImageList(pdfLibDoc).length > 0; }
+function needsUnify(pdfLibDoc){ return spotImageList(pdfLibDoc).length > 0 || nonPrintSpots(pdfLibDoc); }
 
 async function buildVariantDoc(file, opts, baseDoc, pdfLibDoc){
   // Overprint preview: per-ink-plate composite (hidden inks are simply left
@@ -788,7 +802,7 @@ async function buildVariantDoc(file, opts, baseDoc, pdfLibDoc){
   }
   const fresh = await PDFLib.PDFDocument.load(await file.arrayBuffer(), { ignoreEncryption:true, updateMetadata:false });
   let hidN = 0;
-  if(opts.hidden && opts.hidden.size) hidN = hideChannelsInDoc(fresh, opts.hidden);
+  if((opts.hidden && opts.hidden.size) || nonPrintSpots(pdfLibDoc)) hidN = hideChannelsInDoc(fresh, opts.hidden || new Set());
   const uniN = needsUnify(pdfLibDoc) ? await unifySpotImages(fresh) : 0;
   if(opN + hidN + uniN === 0) return { doc:null, opN, hidN };
   const bytes = await fresh.save({ useObjectStreams:false });
@@ -2856,7 +2870,10 @@ function plateSpecified(desc, nums, opm){
 }
 let PLATE_KO = false; // build plates as if nothing overprinted (reference for the delta)
 function plateIsNoop(overprint, spec, P){
-  if(PLATE_KO || !overprint || !spec) return false;
+  if(!spec) return false;
+  const np = spec.size > 0 && [...spec].every(k => k !== '*' && NONPRINT_RE.test(k));
+  if(np) return !spec.has(P);
+  if(PLATE_KO || !overprint) return false;
   return !(spec.has('*') || spec.has(P));
 }
 
@@ -3113,16 +3130,20 @@ function plateRewriteContent(text, ctx, resources, P, env, inherited, isPage){
     else if((op === 'm' || op === 're') && !inPath){
       inPath = true;
       // look ahead for the operator that actually paints this path
-      let kind;
+      let kind, paintTok = null;
       for(let j = i+1; j < toks.length; j++){
-        if(toks[j].t === 'op' && Object.prototype.hasOwnProperty.call(PATH_PAINT, toks[j].v)){ kind = PATH_PAINT[toks[j].v]; break; }
+        if(toks[j].t === 'op' && Object.prototype.hasOwnProperty.call(PATH_PAINT, toks[j].v)){ kind = PATH_PAINT[toks[j].v]; paintTok = toks[j]; break; }
         if(toks[j].t === 'op' && ['BT','Do','sh','q','Q'].includes(toks[j].v)) break;
       }
       const fOwn = () => names(plateSpecified(st.fill.desc, st.fill.nums, st.opm));
       const sOwn = () => names(plateSpecified(st.stroke.desc, st.stroke.nums, st.opm));
-      if(kind === 'f') setBM(opStart, fillNoop(), fOwn());
-      else if(kind === 's') setBM(opStart, strokeNoop(), sOwn());
-      else if(kind === 'fs') setBM(opStart, fillNoop() && strokeNoop(), fOwn() && sOwn());
+      // cut/crease/die spots never mark other inks: skip painting them there at all
+      // (a blend trick would leak when the object sits inside a transparency group)
+      const npOf = (c) => { const sp = plateSpecified(c.desc, c.nums, st.opm); return !!sp && sp.size > 0 && [...sp].every(k => k !== '*' && NONPRINT_RE.test(k)); };
+      const skipF = () => paintTok && fillNoop() && npOf(st.fill), skipS = () => paintTok && strokeNoop() && npOf(st.stroke);
+      if(kind === 'f'){ if(skipF()) put(paintTok, 'n'); else setBM(opStart, fillNoop(), fOwn()); }
+      else if(kind === 's'){ if(skipS()) put(paintTok, 'n'); else setBM(opStart, strokeNoop(), sOwn()); }
+      else if(kind === 'fs'){ if(skipF() && skipS()) put(paintTok, 'n'); else setBM(opStart, fillNoop() && strokeNoop(), fOwn() && sOwn()); }
     }
     else if(Object.prototype.hasOwnProperty.call(PATH_PAINT, op)){ inPath = false; }
     else if(op === 'Tj' || op === 'TJ' || op === "'" || op === '"'){
@@ -3889,7 +3910,8 @@ function rewriteContentForHidden(text, ctx, resources, hidden, onForm){
     if(k){ edits.push({ s:pos, e:pos, text:'/' + k + ' gs ' }); bmEff = want; }
   };
   const isSpotCS = (cs) => !!cs && (cs.kind === 'sep' || cs.kind === 'devn') && !hiddenSpot(cs);
-  const bmFor = (spot) => (spot && bm === 'Multiply') ? 'Darken' : bm;
+  const isNP = (cs) => !!cs && (cs.kind === 'sep' || cs.kind === 'devn') && cs.names.length > 0 && cs.names.every(n => n && NONPRINT_RE.test(n.trim().toLowerCase()));
+  const bmFor = (spot, np) => np && bm === 'Normal' ? 'Multiply' : ((spot && bm === 'Multiply') ? 'Darken' : bm);
   for(const tok of toks){
     if(tok.t === 'aopen' || tok.t === 'dopen'){ depth++; continue; }
     if(tok.t === 'aclose' || tok.t === 'dclose'){ depth = Math.max(0, depth-1); continue; }
@@ -3930,9 +3952,9 @@ function rewriteContentForHidden(text, ctx, resources, hidden, onForm){
     else if(op === 'K'){ hideFor({ kind:'cmyk' }, nums); stroke = { kind:'cmyk' }; sth = false; }
     else if(op === 'sc' || op === 'scn'){ if(!nameTok) hideFor(fill, nums); else fh = patternHidden(nameTok.v); }
     else if(op === 'SC' || op === 'SCN'){ if(!nameTok) hideFor(stroke, nums); else sth = patternHidden(nameTok.v); }
-    else if(op === 'f' || op === 'F' || op === 'f*' || op === 'Tj' || op === 'TJ' || op === "'" || op === '"'){ setHid(opStart, fh); setBmEff(opStart, bmFor(isSpotCS(fill))); }
-    else if(op === 'S' || op === 's'){ setHid(opStart, sth); setBmEff(opStart, bmFor(isSpotCS(stroke))); }
-    else if(op === 'B' || op === 'B*' || op === 'b' || op === 'b*'){ setHid(opStart, fh && sth); setBmEff(opStart, bmFor(isSpotCS(fill) && isSpotCS(stroke))); }
+    else if(op === 'f' || op === 'F' || op === 'f*' || op === 'Tj' || op === 'TJ' || op === "'" || op === '"'){ setHid(opStart, fh); setBmEff(opStart, bmFor(isSpotCS(fill), isNP(fill))); }
+    else if(op === 'S' || op === 's'){ setHid(opStart, sth); setBmEff(opStart, bmFor(isSpotCS(stroke), isNP(stroke))); }
+    else if(op === 'B' || op === 'B*' || op === 'b' || op === 'b*'){ setHid(opStart, fh && sth); setBmEff(opStart, bmFor(isSpotCS(fill) && isSpotCS(stroke), isNP(fill) && isNP(stroke))); }
     else if(op === 'sh'){
       let hid = false, shSpot = false;
       try{
@@ -4000,7 +4022,8 @@ function latin1ToBytes(str){
 // streams changed. Pixels inside placed images and shading gradients are
 // not touched — those can't be separated at this level.
 function hideChannelsInDoc(pdfLibDoc, hidden){
-  if(!hidden || !hidden.size) return 0;
+  if(!hidden) hidden = new Set();
+  if(!hidden.size && !nonPrintSpots(pdfLibDoc)) return 0;
   const ctx = pdfLibDoc.context;
   const N = PDFLib.PDFName.of;
   const done = new Set();
