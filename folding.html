@@ -1,0 +1,1093 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fold Imposer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: controls column on the left, the two imposed sheets stacked on the right; one column on phones. */
+:root {
+  --bg: #eef1f4;
+  --surface: #ffffff;
+  --ink: #15202b;
+  --muted: #5a6876;
+  --line: #d3dae1;
+  --accent: #c8195f;
+  --accent-ink: #ffffff;
+  --accent-soft: #fbe3ec;
+  --sheet: #ffffff;
+  --panel: #e9eff6;
+  --fold: #2a7fa6;
+  --warn: #8a5a00;
+  --warn-bg: #fff3d6;
+  --bad: #a32020;
+  --bad-bg: #fde4e4;
+  --ok: #1d6b3d;
+  --font-display: "Bricolage Grotesque", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1419; --surface: #171e26; --ink: #e6ecf2; --muted: #93a1af; --line: #2b3641;
+    --accent: #ff5c9a; --accent-ink: #1a0610; --accent-soft: #3a1527; --sheet: #1f2832; --panel: #2a3846;
+    --fold: #62b5d9; --warn: #f0c36a; --warn-bg: #3a2e12; --bad: #ff9a9a; --bad-bg: #3b1818; --ok: #6fd69a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1419; --surface: #171e26; --ink: #e6ecf2; --muted: #93a1af; --line: #2b3641;
+  --accent: #ff5c9a; --accent-ink: #1a0610; --accent-soft: #3a1527; --sheet: #1f2832; --panel: #2a3846;
+  --fold: #62b5d9; --warn: #f0c36a; --warn-bg: #3a2e12; --bad: #ff9a9a; --bad-bg: #3b1818; --ok: #6fd69a;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: 1.9rem; letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
+header p { margin: 0; color: var(--muted); max-width: 60ch; }
+.grid { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+h2 { font-family: var(--font-display); font-size: 1.05rem; font-weight: 600; margin: 0; }
+.label { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.row { display: flex; gap: 12px; flex-wrap: wrap; }
+.row > .field { flex: 1 1 120px; }
+select, input[type="text"], input[type="number"] {
+  width: 100%; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line);
+  border-radius: 6px; padding: 8px 10px; min-width: 0;
+}
+input[type="text"] { font-family: var(--font-mono); font-size: 0.95rem; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hint { color: var(--muted); font-size: 0.85rem; margin: 0; }
+.drop {
+  border: 1.5px dashed var(--line); border-radius: 8px; padding: 18px 14px; text-align: center; cursor: pointer;
+  background: var(--bg); display: flex; flex-direction: column; gap: 4px; align-items: center;
+}
+.drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.drop strong { font-weight: 600; }
+.drop input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.fileinfo { font-family: var(--font-mono); font-size: 0.82rem; color: var(--muted); overflow-wrap: anywhere; }
+.fileinfo b { color: var(--ink); font-weight: 500; }
+.check { display: flex; align-items: center; gap: 8px; }
+.check input { width: 18px; height: 18px; accent-color: var(--accent); }
+button {
+  font: inherit; font-weight: 600; border-radius: 6px; padding: 10px 14px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+}
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+button.primary:hover { filter: brightness(1.06); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+.link { background: none; border: none; padding: 0; color: var(--accent); text-decoration: underline; font-weight: 500; cursor: pointer; text-align: left; }
+.status { font-size: 0.9rem; margin: 0; }
+.status.ok { color: var(--ok); }
+.status.err { color: var(--bad); }
+.notes { display: flex; flex-direction: column; gap: 8px; }
+.note { border-radius: 6px; padding: 8px 12px; font-size: 0.88rem; margin: 0; }
+.note.warn { background: var(--warn-bg); color: var(--warn); }
+.note.err { background: var(--bad-bg); color: var(--bad); }
+.sheets { display: flex; flex-direction: column; gap: 16px; }
+.sheethead { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.sheethead span { font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); }
+.tag { font-family: var(--font-mono); font-size: 0.72rem; border: 1px solid var(--line); border-radius: 4px; padding: 2px 6px; color: var(--muted); }
+svg.sheet { width: 100%; height: auto; display: block; max-width: 100%; }
+svg .paper { fill: var(--sheet); stroke: var(--line); stroke-width: 0.4; }
+svg .cellfill { fill: var(--panel); stroke: var(--sheet); stroke-width: 0.8; }
+svg .cellblank { fill: none; stroke: var(--line); stroke-width: 0.4; stroke-dasharray: 2 2; }
+.artrow { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; }
+svg .badge { fill: var(--accent); }
+svg .badgetxt { fill: var(--accent-ink); font-family: var(--font-mono); font-weight: 500; text-anchor: middle; dominant-baseline: central; }
+#sheets { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+svg .cell { cursor: grab; }
+svg .cell.blankcell { cursor: default; }
+svg .hit { fill: transparent; stroke: none; }
+svg .cell.dragging { opacity: 0.4; }
+svg .cell.over .hit { fill: var(--accent); fill-opacity: 0.22; stroke: var(--accent); stroke-width: 0.8; }
+body.dragging-cell, body.dragging-cell * { cursor: grabbing !important; }
+.dragchip { position: fixed; z-index: 50; pointer-events: none; background: var(--accent); color: var(--accent-ink); font: 500 12px var(--font-mono); padding: 4px 8px; border-radius: 4px; }
+svg .num { fill: var(--ink); font-family: var(--font-display); font-weight: 700; text-anchor: middle; dominant-baseline: central; }
+svg .dim { fill: var(--muted); font-family: var(--font-mono); text-anchor: middle; }
+svg .foldline { stroke: var(--fold); stroke-width: 0.5; stroke-dasharray: 1.5 1; }
+svg .foldline.score { stroke-dasharray: none; stroke-width: 0.9; }
+.widths { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+.widths .field span { font-size: 0.78rem; color: var(--muted); font-family: var(--font-mono); }
+svg .crop { stroke: var(--ink); stroke-width: 0.3; }
+svg .trim { fill: none; stroke: var(--ink); stroke-width: 0.35; }
+svg .cover { fill: var(--accent); font-family: var(--font-mono); text-anchor: middle; }
+.duplex { display: flex; gap: 10px; align-items: flex-start; font-size: 0.9rem; color: var(--muted); }
+.duplex b { color: var(--ink); font-weight: 600; }
+@media (prefers-reduced-motion: no-preference) { button, .drop { transition: border-color 0.15s, background 0.15s; } }
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <h1>Fold Imposer</h1>
+    <p>Turn a 1-up PDF into press-ready outside and inside sheets for a folded leaflet.</p>
+  </header>
+
+  <div class="grid">
+    <div class="col">
+      <section class="card" aria-labelledby="h-src">
+        <h2 id="h-src">1. Source PDF</h2>
+        <label class="drop" id="drop" for="file">
+          <strong id="droptitle">Drop a PDF here or choose a file</strong>
+          <span class="hint">One page per panel, already at panel size</span>
+          <input type="file" id="file" accept="application/pdf,.pdf">
+        </label>
+        <div class="fileinfo" id="fileinfo"></div>
+        <button type="button" class="link" id="sample">Use a numbered test PDF instead</button>
+      </section>
+
+      <section class="card" aria-labelledby="h-fold">
+        <h2 id="h-fold">2. Fold</h2>
+        <div class="field">
+          <label class="label" for="preset">Fold type</label>
+          <select id="preset"></select>
+        </div>
+        <p class="hint" id="presethint"></p>
+        <div class="field">
+          <label class="label" for="outside">Outside sheet, left to right</label>
+          <input type="text" id="outside" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="field">
+          <label class="label" for="inside">Inside sheet, left to right</label>
+          <input type="text" id="inside" autocomplete="off" spellcheck="false">
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="h-wid">
+        <h2 id="h-wid">3. Panel widths</h2>
+        <p class="hint">Panels run left to right on the outside sheet. Leave a width blank to use the page width from the PDF.</p>
+        <div class="widths" id="widths"></div>
+        <div class="field">
+          <label class="label" for="fit">When a page is not the panel width</label>
+          <select id="fit">
+            <option value="crop" selected>Crop it, or centre it if narrower</option>
+            <option value="scale">Scale it to the panel width</option>
+          </select>
+        </div>
+        <p class="hint">Scaling keeps the proportions, so the page also gets slightly shorter.</p>
+        <div class="row">
+          <button type="button" id="stdw">Standard widths</button>
+          <button type="button" id="resetw">Use PDF widths</button>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="h-opt">
+        <h2 id="h-opt">4. Marks and bleed</h2>
+        <label class="check"><input type="checkbox" id="crop" checked> Crop marks</label>
+        <div class="field">
+          <label class="label" for="foldmarks">Marks on the fold lines</label>
+          <select id="foldmarks">
+            <option value="fold" selected>Fold marks (dashed)</option>
+            <option value="score">Score marks (solid)</option>
+            <option value="none">None</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="label" for="bleed">Bleed to keep (mm)</label>
+          <input type="number" id="bleed" min="0" max="10" step="0.5" value="0">
+        </div>
+        <p class="hint">Pages with a TrimBox are sized by it and bleed is taken from outside it, up to this amount. Pages without a TrimBox are treated as trim size plus this much bleed on every side. Edges that meet at a fold are trimmed back to the TrimBox.</p>
+      </section>
+
+      <section class="card" aria-labelledby="h-out">
+        <h2 id="h-out">5. Output</h2>
+        <button type="button" class="primary" id="go">Impose PDF</button>
+        <p class="status" id="status" role="status"></p>
+        <button type="button" id="save" hidden>Save PDF</button>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="card" aria-labelledby="h-prev">
+        <div class="sheethead">
+          <h2 id="h-prev">Sheet preview</h2>
+          <span class="tag" id="previewtag"></span>
+        </div>
+        <div class="artrow" id="artrow" hidden>
+          <label class="check"><input type="checkbox" id="showart" checked> Show artwork</label>
+          <span class="hint" id="artnote" role="status"></span>
+        </div>
+        <svg id="artdefs" width="0" height="0" style="position:absolute" aria-hidden="true"></svg>
+        <div class="notes" id="notes"></div>
+        <p class="hint">Drag a page onto another panel to swap them. Double-click a page to turn it 180°.</p>
+        <div class="sheets" id="sheets"></div>
+        <p class="duplex"><span><b>Printing:</b> double-sided, flip on the short edge for a landscape sheet, so the inside sheet backs up the outside. Check the first run against a folded dummy.</span></p>
+      </section>
+    </div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+/* Fold imposition core: layout maths + PDF building. Works in the browser (global FoldImpose) and in Node. */
+(function (root) {
+  'use strict';
+
+  var MM = 72 / 25.4;
+
+  // Page numbers read left to right on each sheet, as the sheet lies in front of you.
+  // The inside sheet is turned over left-to-right (flip on the short edge of a landscape sheet).
+  var PRESETS = {
+    roll6: {
+      label: 'Roll fold · 6pp',
+      pages: 6,
+      outside: '5, 6, 1',
+      inside: '2, 3, 4',
+      hint: 'Same page order as a letter fold (C-fold). Pages 5 and 4 are the fold-in panel and should be the narrowest.'
+    },
+    z6: {
+      label: 'Z-fold · 6pp',
+      pages: 6,
+      outside: '5, 4, 1',
+      inside: '2, 3, 6',
+      hint: 'Cover on the right of the outside sheet. The back cover (page 6) prints on the inside sheet, which is normal for a Z-fold.'
+    },
+    half4: {
+      label: 'Half fold · 4pp',
+      pages: 4,
+      outside: '4, 1',
+      inside: '2, 3',
+      hint: 'One fold down the middle. Page 1 is the cover, page 4 the back.'
+    },
+    gate6: {
+      label: 'Gate fold · 6pp',
+      pages: 6,
+      outside: '2, 6, 1',
+      inside: '3, 4, 5',
+      hint: 'Two narrow door panels (about a quarter of the sheet each) around a double-width centre. Closed, the doors form the cover: page 1 on the left door, page 2 on the right. Pages 3–5 read left to right once opened, page 6 is the back. Numbering varies between printers, so check it against a dummy.'
+    },
+    roll8: {
+      label: 'Roll fold · 8pp',
+      pages: 8,
+      outside: '6, 7, 8, 1',
+      inside: '2, 3, 4, 5',
+      hint: 'Four panels rolled in a spiral. The panel for pages 6 and 5 folds in first and is the narrowest, each panel after it slightly wider.'
+    },
+    accordion8: {
+      label: 'Accordion · 8pp',
+      pages: 8,
+      outside: '1, 4, 5, 8',
+      inside: '7, 6, 3, 2',
+      hint: 'Four equal panels folded in alternating directions, so it opens like a concertina. Page 1 is the cover and page 8 the back.'
+    },
+    custom: {
+      label: 'Custom page map',
+      pages: 0,
+      outside: '3, 6, 1',
+      inside: '2, 4, 5',
+      hint: 'List page numbers left to right for each sheet. Use - for a blank panel and add r to turn a page 180° (for example 4r).'
+    }
+  };
+
+  function parseMap(str) {
+    var out = { tokens: [], errors: [] };
+    var parts = String(str || '').split(/[\s,;]+/).filter(Boolean);
+    parts.forEach(function (p) {
+      var m = /^(\d+|-)(r?)$/i.exec(p);
+      if (!m) { out.errors.push('"' + p + '" is not a page number'); return; }
+      var blank = m[1] === '-' || Number(m[1]) === 0;
+      out.tokens.push({ page: blank ? 0 : Number(m[1]), rot: m[2].toLowerCase() === 'r' && !blank, blank: blank });
+    });
+    return out;
+  }
+
+  /**
+   * sizes: [{w, h}] in mm for each source page (page 1 first).
+   * opts:  {outside, inside, bleed, crop (bool), foldMarks ('fold'|'score'|'none'),
+   *         widths (mm per physical panel, blank = from the PDF), fit ('crop'|'scale'), preset}
+   * Physical panel j is outside cell j and inside cell n-1-j.
+   * Returns {errors, warnings, sheets, n, srcWidths, panelWidths, panelPages}, all in mm.
+   */
+  function layout(sizes, opts) {
+    var res = { errors: [], warnings: [], sheets: [], n: 0, srcWidths: [], panelWidths: [], panelPages: [] };
+    var bleed = Math.max(0, Number(opts.bleed) || 0);
+    var fit = opts.fit === 'scale' ? 'scale' : 'crop';
+    var foldMarks = opts.foldMarks || 'none';
+    var crop = !!opts.crop;
+    var marks = crop || foldMarks !== 'none';
+    var o = parseMap(opts.outside), i = parseMap(opts.inside);
+    res.errors = res.errors.concat(o.errors, i.errors);
+    if (!o.tokens.length || !i.tokens.length) { res.errors.push('Both sheets need at least one panel.'); return res; }
+    if (o.tokens.length !== i.tokens.length) {
+      res.errors.push('Outside has ' + o.tokens.length + ' panels but inside has ' + i.tokens.length + '.');
+    }
+    if (res.errors.length) return res;
+
+    var n = o.tokens.length;
+    res.n = n;
+    var used = {};
+    o.tokens.concat(i.tokens).forEach(function (t) {
+      if (t.blank) return;
+      if (t.page > sizes.length) res.errors.push('Page ' + t.page + ' is not in the PDF (it has ' + sizes.length + ').');
+      if (used[t.page]) res.errors.push('Page ' + t.page + ' is used twice.');
+      used[t.page] = true;
+    });
+    if (res.errors.length) return res;
+    var unused = [];
+    for (var p = 1; p <= sizes.length; p++) if (!used[p]) unused.push(p);
+    if (unused.length) res.warnings.push('Not placed on any sheet: page ' + unused.join(', ') + '.');
+
+    function trimOf(tok) {
+      if (tok.blank) return null;
+      var s = sizes[tok.page - 1];
+      if (s.hasTrim) return { w: s.w, h: s.h };
+      return { w: Math.max(1, s.w - 2 * bleed), h: Math.max(1, s.h - 2 * bleed) };
+    }
+
+    var ov = opts.widths || [];
+    var panels = [], known = [], mismatch = [];
+    for (var j = 0; j < n; j++) {
+      var a = trimOf(o.tokens[j]), b = trimOf(i.tokens[n - 1 - j]);
+      var srcW = 0;
+      [a, b].forEach(function (t) { if (t) srcW = Math.max(srcW, t.w); });
+      var ovn = parseFloat(ov[j]);
+      var hasOv = isFinite(ovn) && ovn > 0;
+      if (!hasOv && a && b && Math.abs(a.w - b.w) > 0.3) {
+        mismatch.push('pages ' + o.tokens[j].page + ' and ' + i.tokens[n - 1 - j].page + ' (' + round1(a.w) + ' vs ' + round1(b.w) + ' mm)');
+      }
+      panels.push({ srcW: srcW, w: hasOv ? ovn : srcW, hasOv: hasOv, a: o.tokens[j], b: i.tokens[n - 1 - j], ta: a, tb: b });
+      if (srcW) known.push(srcW);
+    }
+    if (mismatch.length) res.warnings.push('Different widths on the same panel: ' + mismatch.join(', ') + '. The wider one sets the panel.');
+    var avgW = known.length ? known.reduce(function (x, y) { return x + y; }, 0) / known.length : 100;
+    panels.forEach(function (pn) {
+      if (!pn.srcW) pn.srcW = avgW;
+      if (!pn.w) pn.w = avgW;
+      res.srcWidths.push(pn.srcW);
+      res.panelWidths.push(pn.w);
+      res.panelPages.push([pn.a.blank ? 0 : pn.a.page, pn.b.blank ? 0 : pn.b.page]);
+    });
+
+    // Fit every page to its panel and find the tallest result.
+    var contentH = 0;
+    var fitNotes = { crop: {}, scale: {}, pad: [] };
+    function place(tok, t, pn) {
+      if (!t) return null;
+      var r = { scale: 1, crop: 0, pageW: t.w, pageH: t.h };
+      if (fit === 'scale') {
+        r.scale = pn.w / t.w; r.pageW = pn.w; r.pageH = t.h * r.scale;
+        if (Math.abs(r.scale - 1) > 0.005) {
+          var pct = Math.round(r.scale * 1000) / 10;
+          (fitNotes.scale[pct] = fitNotes.scale[pct] || []).push(tok.page);
+        }
+      } else if (t.w > pn.w + 0.01) {
+        r.crop = (t.w - pn.w) / 2; r.pageW = pn.w;
+        if (r.crop > 0.25) {
+          var amt = round1(r.crop);
+          (fitNotes.crop[amt] = fitNotes.crop[amt] || []).push(tok.page);
+        }
+      } else if (pn.w - t.w > 0.5) {
+        fitNotes.pad.push(tok.page);
+      }
+      contentH = Math.max(contentH, r.pageH);
+      return r;
+    }
+    panels.forEach(function (pn) { pn.pa = place(pn.a, pn.ta, pn); pn.pb = place(pn.b, pn.tb, pn); });
+    if (!contentH) contentH = 210;
+    function pageList(arr) {
+      var s = arr.slice().sort(function (x, y) { return x - y; });
+      return (s.length === 1 ? 'page ' : 'pages ') + s.join(', ');
+    }
+    var cropKeys = Object.keys(fitNotes.crop);
+    if (cropKeys.length) {
+      res.warnings.push('Cropped to fit the panel: ' + cropKeys.map(function (k) {
+        return pageList(fitNotes.crop[k]) + ' by ' + k + ' mm per side';
+      }).join('; ') + '.');
+    }
+    var scaleKeys = Object.keys(fitNotes.scale);
+    if (scaleKeys.length) {
+      res.warnings.push('Scaled to fit the panel: ' + scaleKeys.map(function (k) {
+        return pageList(fitNotes.scale[k]) + ' at ' + k + '%';
+      }).join('; ') + '.');
+    }
+    if (fitNotes.pad.length) res.warnings.push('Narrower than the panel, so centred: ' + pageList(fitNotes.pad) + '.');
+
+    var offset = Math.max(3, bleed + 1);
+    var margin = marks ? offset + 10 : 0;
+
+    if (opts.preset === 'roll6' && n === 3 && panels[0].w > panels[1].w + 0.2) {
+      res.warnings.push('The fold-in panel (' + round1(panels[0].w) + ' mm) is wider than the middle panel (' +
+        round1(panels[1].w) + ' mm). A roll fold normally has the fold-in panel 1–2 mm narrower.');
+    }
+
+    function side(name, toks, order, faceKey) {
+      var x = margin, cells = [], folds = [];
+      order.forEach(function (pi, idx) {
+        var pn = panels[pi], tok = toks[idx], pl = pn[faceKey];
+        var cell = {
+          index: idx, tok: tok, x: x, w: pn.w, panel: pi,
+          scale: pl ? pl.scale : 1, crop: pl ? pl.crop : 0,
+          pageW: pl ? pl.pageW : pn.w, h: pl ? pl.pageH : contentH
+        };
+        cell.pageX = pl ? x + (pn.w - pl.pageW) / 2 : x;
+        cell.y = margin + (contentH - cell.h) / 2;
+        cells.push(cell);
+        x += pn.w;
+        if (idx < n - 1) folds.push(x);
+      });
+      return {
+        name: name, W: x + margin, H: contentH + 2 * margin,
+        trim: { x: margin, y: margin, w: x - margin, h: contentH },
+        cells: cells, folds: folds, margin: margin, offset: offset
+      };
+    }
+
+    var outOrder = [], inOrder = [];
+    for (var k = 0; k < n; k++) { outOrder.push(k); inOrder.push(n - 1 - k); }
+    res.sheets.push(side('Outside', o.tokens, outOrder, 'pa'));
+    res.sheets.push(side('Inside', i.tokens, inOrder, 'pb'));
+    res.bleed = bleed;
+    res.marks = marks;
+    res.crop = crop;
+    res.foldMarks = foldMarks;
+    return res;
+  }
+
+  function round1(v) { return Math.round(v * 10) / 10; }
+
+  function rectOf(r) { return { x: r.x, y: r.y, w: r.width, h: r.height }; }
+
+  /** Per-page boxes in points. With a TrimBox, the trim size is the panel size and bleed lies between the TrimBox and the BleedBox (or MediaBox). */
+  function pageInfo(pg) {
+    var media = rectOf(pg.getMediaBox());
+    var tb = pg.node && pg.node.TrimBox ? pg.node.TrimBox() : null;
+    var hasTrim = !!tb;
+    var trim = hasTrim ? rectOf(pg.getTrimBox()) : media;
+    var bb = pg.node && pg.node.BleedBox ? pg.node.BleedBox() : null;
+    var bleedBox = bb ? rectOf(pg.getBleedBox()) : media;
+    // The bleed box cannot reach past the media box.
+    var bx0 = Math.max(bleedBox.x, media.x), by0 = Math.max(bleedBox.y, media.y);
+    var bx1 = Math.min(bleedBox.x + bleedBox.w, media.x + media.w), by1 = Math.min(bleedBox.y + bleedBox.h, media.y + media.h);
+    return {
+      w: trim.w / MM, h: trim.h / MM, hasTrim: hasTrim, media: media, trim: trim,
+      avail: hasTrim ? {
+        l: Math.max(0, trim.x - bx0), r: Math.max(0, bx1 - (trim.x + trim.w)),
+        b: Math.max(0, trim.y - by0), t: Math.max(0, by1 - (trim.y + trim.h))
+      } : null
+    };
+  }
+
+  /** Sizes (mm) for every page of a loaded pdf-lib document. */
+  function readSizes(doc) {
+    return doc.getPages().map(pageInfo);
+  }
+
+  /** Typical panel widths (mm) for a fold, given the total width of the folded sheet. Physical panel order, outside left to right. */
+  function standardWidths(presetKey, n, total) {
+    var r = function (arr) { return arr.map(round1); };
+    var eq = []; for (var q = 0; q < n; q++) eq.push(total / n);
+    if (presetKey === 'roll6' && n === 3) { var b3 = (total + 3) / 3; return r([b3 - 3, b3, b3]); }
+    if (presetKey === 'roll8' && n === 4) { var b4 = (total + 1) / 4; return r([b4 - 3.5, b4 - 1.5, b4 + 0.5, b4 + 3.5]); }
+    if (presetKey === 'gate6' && n === 3) return r([total / 4, total / 2, total / 4]);
+    return r(eq);
+  }
+
+  /** Build the imposed PDF. PDFLib is the pdf-lib namespace. Returns Uint8Array. */
+  async function buildPdf(PDFLib, srcBytes, opts) {
+    var src = await PDFLib.PDFDocument.load(srcBytes, { ignoreEncryption: true });
+    var srcPages = src.getPages();
+    var infos = srcPages.map(pageInfo);
+    var lay = layout(infos, opts);
+    if (lay.errors.length) throw new Error(lay.errors[0]);
+
+    var out = await PDFLib.PDFDocument.create();
+    var reg = PDFLib.cmyk(1, 1, 1, 1);
+    var bleedPt = lay.bleed * MM;
+
+    for (var s = 0; s < lay.sheets.length; s++) {
+      var sh = lay.sheets[s];
+      var page = out.addPage([sh.W * MM, sh.H * MM]);
+
+      for (var c = 0; c < sh.cells.length; c++) {
+        var cell = sh.cells[c];
+        if (cell.tok.blank) continue;
+        var sp = srcPages[cell.tok.page - 1];
+        var inf = infos[cell.tok.page - 1];
+        var tr = inf.hasTrim ? inf.trim : { x: inf.media.x + bleedPt, y: inf.media.y + bleedPt, w: inf.media.w - 2 * bleedPt, h: inf.media.h - 2 * bleedPt };
+        var av = inf.hasTrim ? inf.avail : { l: bleedPt, r: bleedPt, b: bleedPt, t: bleedPt };
+        var keepL = c === 0 ? Math.min(av.l, bleedPt) : 0;
+        var keepR = c === sh.cells.length - 1 ? Math.min(av.r, bleedPt) : 0;
+        var keepB = Math.min(av.b, bleedPt), keepT = Math.min(av.t, bleedPt);
+        var cropPt = cell.crop * MM;
+        var box = {
+          left: tr.x + cropPt - keepL,
+          bottom: tr.y - keepB,
+          right: tr.x + tr.w - cropPt + keepR,
+          top: tr.y + tr.h + keepT
+        };
+        var emb;
+        try { emb = await out.embedPage(sp, box); }
+        catch (err) { if (/missing Contents/i.test(String(err && err.message))) continue; throw err; }
+        var sc = cell.scale;
+        var drawX = cell.pageX * MM - keepL * sc;
+        var drawY = cell.y * MM - keepB * sc;
+        if (cell.tok.rot) {
+          page.drawPage(emb, { x: drawX + emb.width * sc, y: drawY + emb.height * sc, xScale: sc, yScale: sc, rotate: PDFLib.degrees(180) });
+        } else {
+          page.drawPage(emb, { x: drawX, y: drawY, xScale: sc, yScale: sc });
+        }
+      }
+
+      if (lay.marks) {
+        var t = sh.trim, off = sh.offset * MM, len = 5 * MM;
+        var x0 = t.x * MM, x1 = (t.x + t.w) * MM, y0 = t.y * MM, y1 = (t.y + t.h) * MM;
+        var line = function (ax, ay, bx, by, th, dash) {
+          var o = { start: { x: ax, y: ay }, end: { x: bx, y: by }, thickness: th, color: reg };
+          if (dash) o.dashArray = [2, 2];
+          page.drawLine(o);
+        };
+        if (lay.crop) {
+          [[x0, y0, -1, -1], [x1, y0, 1, -1], [x0, y1, -1, 1], [x1, y1, 1, 1]].forEach(function (cn) {
+            line(cn[0] + cn[2] * off, cn[1], cn[0] + cn[2] * (off + len), cn[1], 0.25);
+            line(cn[0], cn[1] + cn[3] * off, cn[0], cn[1] + cn[3] * (off + len), 0.25);
+          });
+        }
+        if (lay.foldMarks !== 'none') {
+          var score = lay.foldMarks === 'score';
+          sh.folds.forEach(function (fx) {
+            var x = fx * MM;
+            line(x, y0 - off, x, y0 - off - len, score ? 0.6 : 0.25, !score);
+            line(x, y1 + off, x, y1 + off + len, score ? 0.6 : 0.25, !score);
+          });
+        }
+      }
+
+      // The TrimBox is the folded area: total panel width by the tallest panel. BleedBox adds the bleed around it.
+      var tbx = sh.trim, bp = Math.min(bleedPt, sh.margin * MM);
+      page.setTrimBox(tbx.x * MM, tbx.y * MM, tbx.w * MM, tbx.h * MM);
+      page.setBleedBox(tbx.x * MM - bp, tbx.y * MM - bp, tbx.w * MM + 2 * bp, tbx.h * MM + 2 * bp);
+    }
+    return await out.save();
+  }
+
+  var api = { MM: MM, PRESETS: PRESETS, parseMap: parseMap, layout: layout, standardWidths: standardWidths, readSizes: readSizes, buildPdf: buildPdf };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.FoldImpose = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+
+<script>
+(function () {
+  'use strict';
+  var F = window.FoldImpose;
+  var MM = F.MM;
+  var $ = function (id) { return document.getElementById(id); };
+  var state = { file: null, result: null, presetKey: 'roll6', dl: null, widths: [], wsig: null, art: true };
+
+  function round1(v) { return Math.round(v * 10) / 10; }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  /* ---------- presets ---------- */
+  var sel = $('preset');
+  Object.keys(F.PRESETS).forEach(function (k) {
+    var o = document.createElement('option');
+    o.value = k; o.textContent = F.PRESETS[k].label;
+    sel.appendChild(o);
+  });
+  function applyPreset(k) {
+    state.presetKey = k;
+    state.widths = []; state.wsig = null;
+    sel.value = k;
+    var p = F.PRESETS[k];
+    $('outside').value = p.outside;
+    $('inside').value = p.inside;
+    $('presethint').textContent = p.hint;
+  }
+  function norm(s) { return F.parseMap(s).tokens.map(function (t) { return t.blank ? '-' : t.page + (t.rot ? 'r' : ''); }).join(','); }
+  function syncPresetFromText() {
+    var found = 'custom';
+    Object.keys(F.PRESETS).forEach(function (k) {
+      if (k === 'custom') return;
+      var p = F.PRESETS[k];
+      if (norm(p.outside) === norm($('outside').value) && norm(p.inside) === norm($('inside').value)) found = k;
+    });
+    state.presetKey = found;
+    sel.value = found;
+    $('presethint').textContent = F.PRESETS[found].hint;
+  }
+
+  /* ---------- sizes and options ---------- */
+  function maxPage() {
+    var m = 0;
+    F.parseMap($('outside').value).tokens.concat(F.parseMap($('inside').value).tokens).forEach(function (t) { m = Math.max(m, t.page); });
+    return m;
+  }
+  function exampleSizes() {
+    var p = F.PRESETS[state.presetKey];
+    var n = p.pages || maxPage() || 6;
+    var out = [];
+    var k = state.presetKey;
+    // Example widths per page for each preset (mm).
+    var byPage = {
+      roll6: { 5: 97, 4: 97 },
+      gate6: { 1: 74, 2: 74, 3: 74, 5: 74, 4: 148, 6: 148 },
+      roll8: { 6: 71, 5: 71, 7: 73, 4: 73, 8: 75, 3: 75, 1: 78, 2: 78 },
+      accordion8: { 1: 74, 2: 74, 3: 74, 4: 74, 5: 74, 6: 74, 7: 74, 8: 74 }
+    }[k] || {};
+    for (var i = 1; i <= n; i++) {
+      out.push({ w: byPage[i] || 100, h: 210 });
+    }
+    return out;
+  }
+  function currentSizes() { return state.file ? state.file.sizes : exampleSizes(); }
+  function opts() {
+    return {
+      outside: $('outside').value, inside: $('inside').value,
+      bleed: parseFloat($('bleed').value) || 0, crop: $('crop').checked, foldMarks: $('foldmarks').value,
+      widths: state.widths, fit: $('fit').value,
+      preset: state.presetKey, presetLabel: F.PRESETS[state.presetKey].label
+    };
+  }
+
+  /* ---------- artwork ---------- */
+  // Each source page is rendered once with pdf.js. The preview then places it with the same crop, scale and rotation as the output.
+  var PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  var art = { pages: [], token: 0, status: '' };
+
+  function artNote() {
+    var n = $('artnote');
+    n.textContent = art.status === 'rendering' ? 'Rendering artwork…'
+      : art.status === 'unavailable' ? 'Artwork preview is not available in this view.' : '';
+  }
+  function redrawPreview() {
+    var sizes = currentSizes();
+    var lay = F.layout(sizes, opts());
+    if (!lay.errors.length) drawSheets(lay, sizes);
+  }
+  async function startArt() {
+    var token = ++art.token;
+    art.pages = [];
+    $('artdefs').innerHTML = '';
+    if (!state.file) return;
+    if (!window.pdfjsLib) { art.status = 'unavailable'; artNote(); return; }
+    art.status = 'rendering'; artNote();
+    var pdf = null;
+    try {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+      // pdf.js takes ownership of the buffer it is given, so it gets a copy.
+      pdf = await window.pdfjsLib.getDocument({ data: state.file.bytes.slice(), isEvalSupported: false }).promise;
+      var defs = '';
+      for (var i = 1; i <= pdf.numPages; i++) {
+        var pg = await pdf.getPage(i);
+        if (token !== art.token) { pdf.destroy(); return; }
+        if (pg.rotate) { art.pages[i - 1] = null; continue; }
+        var v = pg.view, wPt = v[2] - v[0], hPt = v[3] - v[1];
+        var k = Math.min(4 * 25.4 / 72, 1600 / Math.max(wPt, hPt));
+        var vp = pg.getViewport({ scale: k });
+        var cv = document.createElement('canvas');
+        cv.width = Math.max(1, Math.round(vp.width)); cv.height = Math.max(1, Math.round(vp.height));
+        var ctx = cv.getContext('2d');
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, cv.width, cv.height);
+        await pg.render({ canvasContext: ctx, viewport: vp }).promise;
+        var wmm = wPt / MM, hmm = hPt / MM;
+        art.pages[i - 1] = { ox: v[0], oy: v[3] };
+        defs += '<image id="art' + (i - 1) + '" x="0" y="0" width="' + wmm + '" height="' + hmm + '" preserveAspectRatio="none" href="' + cv.toDataURL('image/jpeg', 0.85) + '"/>';
+        pg.cleanup();
+      }
+      if (token !== art.token) { pdf.destroy(); return; }
+      $('artdefs').innerHTML = defs;
+      art.status = '';
+      artNote();
+      redrawPreview();
+      pdf.destroy();
+    } catch (e) {
+      if (token !== art.token) return;
+      art.pages = []; $('artdefs').innerHTML = '';
+      art.status = 'unavailable'; artNote();
+      try { if (pdf) pdf.destroy(); } catch (e2) { /* ignore */ }
+    }
+  }
+  // SVG for one placed page: the rendered page positioned so its trim area fills the cell, clipped to the cell.
+  function artCell(c, top, si) {
+    if (!state.art || !state.file) return '';
+    var A = art.pages[c.tok.page - 1], inf = state.file.sizes[c.tok.page - 1];
+    if (!A || !inf || !inf.media || !$('artdefs').querySelector('#art' + (c.tok.page - 1))) return '';
+    var bleedPt = (parseFloat($('bleed').value) || 0) * MM;
+    var tr = inf.hasTrim ? inf.trim : { x: inf.media.x + bleedPt, y: inf.media.y + bleedPt, w: inf.media.w - 2 * bleedPt, h: inf.media.h - 2 * bleedPt };
+    var tw = tr.w / MM, th = tr.h / MM;
+    var tx = (tr.x - A.ox) / MM, ty = (A.oy - (tr.y + tr.h)) / MM;
+    var sx = (c.pageW + 2 * c.crop) / tw, sY = c.h / th;
+    var id = 'clip' + si + '_' + c.index;
+    return '<clipPath id="' + id + '"><rect x="' + c.pageX + '" y="' + top + '" width="' + c.pageW + '" height="' + c.h + '"/></clipPath>' +
+      '<g clip-path="url(#' + id + ')"><use href="#art' + (c.tok.page - 1) + '" transform="translate(' + (c.pageX - c.crop - tx * sx) + ' ' + (top - ty * sY) + ') scale(' + sx + ' ' + sY + ')"/></g>';
+  }
+
+  /* ---------- preview ---------- */
+  function sheetSvg(sh, lay, lastPage, si) {
+    var W = sh.W, H = sh.H;
+    function sy(y, h) { return H - (y + h); }
+    // Each cell is a group the drag handlers can find, with a transparent hit area over the whole panel.
+    function cellOpen(c) {
+      return '<g class="cell' + (c.tok.blank ? ' blankcell' : '') + '" data-s="' + si + '" data-i="' + c.index + '"' + (c.tok.blank ? ' data-blank="1"' : '') + '>' +
+        (c.tok.blank ? '' : '<title>Page ' + c.tok.page + ': drag onto another panel to swap, double-click to turn 180\u00b0</title>');
+    }
+    function cellHit(c) {
+      return '<rect class="hit" x="' + c.x + '" y="' + sy(sh.trim.y, sh.trim.h) + '" width="' + c.w + '" height="' + sh.trim.h + '"/></g>';
+    }
+    var s = '<svg class="sheet" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + sh.name + ' sheet, ' + round1(W) + ' by ' + round1(H) + ' millimetres">';
+    s += '<rect class="paper" x="0" y="0" width="' + W + '" height="' + H + '"/>';
+    sh.cells.forEach(function (c) {
+      var top = sy(c.y, c.h);
+      s += cellOpen(c);
+      if (c.tok.blank) {
+        s += '<rect class="cellblank" x="' + c.x + '" y="' + sy(sh.trim.y, sh.trim.h) + '" width="' + c.w + '" height="' + sh.trim.h + '"/>' + cellHit(c);
+        return;
+      }
+      s += '<rect class="cellfill" x="' + c.pageX + '" y="' + top + '" width="' + c.pageW + '" height="' + c.h + '"/>';
+      var cx = c.pageX + c.pageW / 2, cy = top + c.h / 2;
+      var fs = Math.min(c.pageW, c.h) * 0.34;
+      var g = c.tok.rot ? ' transform="rotate(180 ' + cx + ' ' + cy + ')"' : '';
+      var aw = artCell(c, top, si);
+      if (aw) {
+        // Artwork shown: a small page-number badge keeps the sequence readable. It turns with a rotated page.
+        var br = Math.min(5.5, c.pageW / 6);
+        s += '<g' + g + '>' + aw + '<circle class="badge" cx="' + (c.pageX + br + 2) + '" cy="' + (top + br + 2) + '" r="' + br + '"/>' +
+          '<text class="badgetxt" x="' + (c.pageX + br + 2) + '" y="' + (top + br + 2) + '" font-size="' + (br * 1.3) + '">' + c.tok.page + '</text></g>';
+      } else {
+        s += '<g' + g + '><text class="num" x="' + cx + '" y="' + cy + '" font-size="' + fs + '">' + c.tok.page + '</text>';
+        var tag = c.tok.page === 1 ? 'cover' : (c.tok.page === lastPage ? 'back' : '');
+        if (tag) s += '<text class="cover" x="' + cx + '" y="' + (cy + fs * 0.85) + '" font-size="5">' + tag + '</text>';
+        s += '<text class="dim" x="' + cx + '" y="' + (top + c.h - 5) + '" font-size="4.2">' + round1(c.pageW) + ' mm</text></g>';
+      }
+      s += cellHit(c);
+    });
+    s += '<rect class="trim" x="' + sh.trim.x + '" y="' + sy(sh.trim.y, sh.trim.h) + '" width="' + sh.trim.w + '" height="' + sh.trim.h + '"/>';
+    var t = sh.trim, ty = sy(t.y, t.h);
+    if (lay.foldMarks !== 'none') {
+      // Fold or score ticks sit outside the TrimBox only, above and below each fold.
+      var fcls = 'foldline' + (lay.foldMarks === 'score' ? ' score' : '');
+      sh.folds.forEach(function (fx) {
+        s += '<line class="' + fcls + '" x1="' + fx + '" y1="' + (ty - sh.offset) + '" x2="' + fx + '" y2="' + (ty - sh.offset - 5) + '"/>';
+        s += '<line class="' + fcls + '" x1="' + fx + '" y1="' + (ty + t.h + sh.offset) + '" x2="' + fx + '" y2="' + (ty + t.h + sh.offset + 5) + '"/>';
+      });
+    }
+    if (lay.crop) {
+      var o = sh.offset, l = 5, x0 = t.x, x1 = t.x + t.w, y0 = ty, y1 = ty + t.h;
+      [[x0, y0, -1, -1], [x1, y0, 1, -1], [x0, y1, -1, 1], [x1, y1, 1, 1]].forEach(function (c) {
+        s += '<line class="crop" x1="' + (c[0] + c[2] * o) + '" y1="' + c[1] + '" x2="' + (c[0] + c[2] * (o + l)) + '" y2="' + c[1] + '"/>';
+        s += '<line class="crop" x1="' + c[0] + '" y1="' + (c[1] + c[3] * o) + '" x2="' + c[0] + '" y2="' + (c[1] + c[3] * (o + l)) + '"/>';
+      });
+    }
+    return s + '</svg>';
+  }
+
+  function notes(list) {
+    var box = $('notes');
+    box.textContent = '';
+    list.forEach(function (n) {
+      var p = document.createElement('p');
+      p.className = 'note ' + n.kind;
+      p.textContent = n.text;
+      box.appendChild(p);
+    });
+  }
+
+  function syncWidths(lay) {
+    var box = $('widths');
+    var sig = lay.panelPages.map(function (p) { return p.join('/'); }).join('|');
+    if (sig !== state.wsig) {
+      state.wsig = sig;
+      box.textContent = '';
+      lay.panelPages.forEach(function (pp, j) {
+        var f = document.createElement('div'); f.className = 'field';
+        var lab = document.createElement('label'); lab.className = 'label'; lab.setAttribute('for', 'pw' + j);
+        lab.textContent = 'Panel ' + (j + 1);
+        var inp = document.createElement('input'); inp.type = 'number'; inp.id = 'pw' + j;
+        inp.min = '10'; inp.max = '600'; inp.step = '0.1';
+        inp.value = state.widths[j] === undefined || state.widths[j] === '' ? '' : state.widths[j];
+        inp.addEventListener('input', function () { state.widths[j] = inp.value; render(); });
+        var sp = document.createElement('span');
+        sp.textContent = 'pages ' + (pp[0] || '-') + ' / ' + (pp[1] || '-');
+        f.appendChild(lab); f.appendChild(inp); f.appendChild(sp);
+        box.appendChild(f);
+      });
+    }
+    lay.srcWidths.forEach(function (w, j) { var inp = $('pw' + j); if (inp) inp.placeholder = round1(w); });
+  }
+
+  function render() {
+    state.result = null;
+    $('save').hidden = true;
+    $('status').textContent = ''; $('status').className = 'status';
+    var sizes = currentSizes();
+    var lay = F.layout(sizes, opts());
+    var list = [];
+    $('previewtag').textContent = state.file ? state.file.name : 'Example: 100 × 210 mm panels';
+    if (lay.errors.length) {
+      lay.errors.forEach(function (e) { list.push({ kind: 'err', text: e }); });
+      notes(list);
+      $('sheets').innerHTML = '';
+      $('widths').textContent = ''; state.wsig = null;
+      return;
+    }
+    syncWidths(lay);
+    var p = F.PRESETS[state.presetKey];
+    if (state.file && p.pages && sizes.length !== p.pages) {
+      list.push({ kind: 'warn', text: p.label + ' expects ' + p.pages + ' pages, but the PDF has ' + sizes.length + '.' });
+    }
+    lay.warnings.forEach(function (w) { list.push({ kind: 'warn', text: w }); });
+    notes(list);
+    drawSheets(lay, sizes);
+  }
+  function drawSheets(lay, sizes) {
+    var last = sizes.length;
+    $('sheets').innerHTML = lay.sheets.map(function (sh, si) {
+      return '<div><div class="sheethead"><h2>' + esc(sh.name) + '</h2><span>TrimBox ' + round1(sh.trim.w) + ' × ' + round1(sh.trim.h) + ' · sheet ' + round1(sh.W) + ' × ' + round1(sh.H) + ' mm</span></div>' + sheetSvg(sh, lay, last, si) + '</div>';
+    }).join('');
+  }
+
+  /* ---------- file handling ---------- */
+  function describe(sizes) {
+    var ws = sizes.map(function (s) { return round1(s.w); }), hs = sizes.map(function (s) { return round1(s.h); });
+    var wmin = Math.min.apply(null, ws), wmax = Math.max.apply(null, ws);
+    var hmin = Math.min.apply(null, hs), hmax = Math.max.apply(null, hs);
+    return (wmin === wmax ? wmin : wmin + '–' + wmax) + ' × ' + (hmin === hmax ? hmin : hmin + '–' + hmax) + ' mm';
+  }
+  function setFile(name, bytes, sizes) {
+    state.file = { name: name, bytes: bytes, sizes: sizes };
+    state.widths = []; state.wsig = null;
+    var wt = sizes.filter(function (s) { return s.hasTrim; }).length;
+    var boxNote = !wt ? 'no TrimBox, using the page size' : (wt === sizes.length ? 'sized from each page\u2019s TrimBox' : 'TrimBox on ' + wt + ' of ' + sizes.length + ' pages');
+    $('fileinfo').innerHTML = '<b>' + esc(name) + '</b><br>' + sizes.length + ' pages, ' + esc(describe(sizes)) + '<br>' + boxNote;
+    $('droptitle').textContent = 'Replace the PDF';
+    $('artrow').hidden = false;
+    var n = sizes.length;
+    if (state.presetKey !== 'custom' && F.PRESETS[state.presetKey].pages !== n) {
+      var k = Object.keys(F.PRESETS).filter(function (key) { return F.PRESETS[key].pages === n; })[0];
+      if (k) applyPreset(k);
+    }
+    render();
+    startArt();
+  }
+  async function loadFile(f) {
+    if (!f) return;
+    try {
+      var bytes = new Uint8Array(await f.arrayBuffer());
+      var doc = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
+      var sizes = F.readSizes(doc);
+      if (!sizes.length) throw new Error('empty');
+      var withTrim = sizes.filter(function (s) { return s.hasTrim; }).length;
+      $('bleed').value = withTrim ? '3' : '0';
+      setFile(f.name, bytes, sizes);
+    } catch (e) {
+      $('status').className = 'status err';
+      $('status').textContent = 'That file could not be read as a PDF.';
+    }
+  }
+  async function makeTest() {
+    var sizes = exampleSizes();
+    var doc = await PDFLib.PDFDocument.create();
+    var font = await doc.embedFont(PDFLib.StandardFonts.HelveticaBold);
+    sizes.forEach(function (s, i) {
+      var pg = doc.addPage([s.w * MM, s.h * MM]);
+      pg.drawRectangle({ x: 0, y: 0, width: s.w * MM, height: s.h * MM, color: PDFLib.rgb(0.88, 0.93, 1) });
+      pg.drawRectangle({ x: 1, y: 1, width: s.w * MM - 2, height: s.h * MM - 2, borderColor: PDFLib.rgb(0.1, 0.2, 0.4), borderWidth: 1 });
+      pg.drawText(String(i + 1), { x: s.w * MM / 2 - 18, y: s.h * MM / 2, size: 72, font: font, color: PDFLib.rgb(0.08, 0.12, 0.2) });
+      pg.drawText('Page ' + (i + 1) + ' · ' + s.w + ' mm', { x: 12, y: 14, size: 9, font: font, color: PDFLib.rgb(0.08, 0.12, 0.2) });
+      pg.drawText('TOP', { x: s.w * MM / 2 - 10, y: s.h * MM - 22, size: 9, font: font, color: PDFLib.rgb(0.78, 0.1, 0.37) });
+    });
+    var bytes = await doc.save();
+    setFile('test-' + sizes.length + 'pp.pdf', bytes, F.readSizes(await PDFLib.PDFDocument.load(bytes)));
+  }
+
+  /* ---------- impose and save ---------- */
+  async function impose() {
+    var st = $('status');
+    if (!state.file) { st.className = 'status err'; st.textContent = 'Choose a PDF first, or load the numbered test PDF.'; return; }
+    var o = opts();
+    var lay = F.layout(state.file.sizes, o);
+    if (lay.errors.length) { st.className = 'status err'; st.textContent = lay.errors[0]; return; }
+    $('go').disabled = true;
+    st.className = 'status'; st.textContent = 'Imposing…';
+    try {
+      var out = await F.buildPdf(PDFLib, state.file.bytes, o);
+      state.result = out;
+      var sh = lay.sheets[0];
+      st.className = 'status ok';
+      st.textContent = 'Done: 2 sheets, TrimBox ' + round1(sh.trim.w) + ' × ' + round1(sh.trim.h) + ' mm, sheet ' + round1(sh.W) + ' × ' + round1(sh.H) + ' mm, ' + Math.max(1, Math.round(out.length / 1024)) + ' KB.';
+      updateSave();
+    } catch (e) {
+      st.className = 'status err';
+      st.textContent = 'Could not impose this PDF: ' + (e && e.message ? e.message : 'unknown error');
+    }
+    $('go').disabled = false;
+  }
+  function updateSave() {
+    var b = $('save');
+    b.hidden = !state.result;
+    if (!state.result) return;
+    if (state.dl) { b.disabled = false; b.textContent = 'Save PDF'; }
+    else if (!window.claude) { b.disabled = false; b.textContent = 'Save PDF'; }
+    else { b.disabled = true; b.textContent = 'Saving is not available in this view'; }
+  }
+  async function save() {
+    if (!state.result) return;
+    if (!state.dl) {
+      if (window.claude) return;
+      var link = document.createElement('a');
+      link.href = URL.createObjectURL(new Blob([state.result], { type: 'application/pdf' }));
+      link.download = (state.file.name || 'leaflet').replace(/\.pdf$/i, '') + '_imposed.pdf';
+      document.body.appendChild(link); link.click(); link.remove();
+      return;
+    }
+    var base = (state.file.name || 'leaflet').replace(/\.pdf$/i, '');
+    var st = $('status');
+    try {
+      await state.dl.save({ filename: base + '_imposed.pdf', data: new Blob([state.result], { type: 'application/pdf' }) });
+      st.className = 'status ok'; st.textContent = 'Saved ' + base + '_imposed.pdf';
+    } catch (e) {
+      st.className = e && e.code === 'declined' ? 'status' : 'status err';
+      st.textContent = e && e.code === 'declined' ? 'Save cancelled.' : 'The file could not be saved from this view.';
+    }
+  }
+
+  /* ---------- drag to swap ---------- */
+  // Pointer events cover mouse, pen and touch. A mouse or pen drags after a few pixels. A finger needs a short press, so scrolling still works.
+  var chip = document.createElement('div');
+  chip.className = 'dragchip'; chip.hidden = true;
+  document.body.appendChild(chip);
+  var drag = null;
+
+  function readMaps() { return [F.parseMap($('outside').value).tokens, F.parseMap($('inside').value).tokens]; }
+  function fmtMap(tokens) { return tokens.map(function (t) { return t.blank ? '-' : t.page + (t.rot ? 'r' : ''); }).join(', '); }
+  function writeMaps(maps) {
+    $('outside').value = fmtMap(maps[0]);
+    $('inside').value = fmtMap(maps[1]);
+    syncPresetFromText();
+    render();
+  }
+  function cellRef(el) {
+    var g = el && el.closest ? el.closest('.cell') : null;
+    return g ? { g: g, s: +g.getAttribute('data-s'), i: +g.getAttribute('data-i'), blank: g.hasAttribute('data-blank') } : null;
+  }
+  function moveChip(x, y) { chip.style.left = (x + 14) + 'px'; chip.style.top = (y + 14) + 'px'; }
+  function endDrag() {
+    if (!drag) return;
+    clearTimeout(drag.timer);
+    if (drag.over) drag.over.classList.remove('over');
+    drag.src.g.classList.remove('dragging');
+    document.body.classList.remove('dragging-cell');
+    chip.hidden = true;
+    try { if (drag.started) $('sheets').releasePointerCapture(drag.id); } catch (e) { /* ignore */ }
+    drag = null;
+  }
+  function beginDrag() {
+    drag.started = true;
+    drag.src.g.classList.add('dragging');
+    document.body.classList.add('dragging-cell');
+    try { $('sheets').setPointerCapture(drag.id); } catch (e) { /* ignore */ }
+    chip.textContent = 'Page ' + drag.page;
+    chip.hidden = false;
+    moveChip(drag.x, drag.y);
+  }
+  $('sheets').addEventListener('pointerdown', function (e) {
+    if (drag || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    var ref = cellRef(e.target);
+    if (!ref || ref.blank) return;
+    var tok = readMaps()[ref.s][ref.i];
+    if (!tok) return;
+    drag = { id: e.pointerId, src: ref, page: tok.page, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, started: false, over: null, touch: e.pointerType === 'touch', timer: 0 };
+    if (drag.touch) drag.timer = setTimeout(function () { if (drag) beginDrag(); }, 300);
+  });
+  document.addEventListener('pointermove', function (e) {
+    if (!drag || e.pointerId !== drag.id) return;
+    drag.x = e.clientX; drag.y = e.clientY;
+    if (!drag.started) {
+      var moved = Math.abs(e.clientX - drag.x0) + Math.abs(e.clientY - drag.y0);
+      if (drag.touch) { if (moved > 10) endDrag(); }
+      else if (moved > 5) beginDrag();
+      if (!drag || !drag.started) return;
+    }
+    moveChip(e.clientX, e.clientY);
+    var ref = cellRef(document.elementFromPoint(e.clientX, e.clientY));
+    var over = ref && !(ref.s === drag.src.s && ref.i === drag.src.i) ? ref.g : null;
+    if (over !== drag.over) {
+      if (drag.over) drag.over.classList.remove('over');
+      if (over) over.classList.add('over');
+      drag.over = over;
+    }
+  });
+  document.addEventListener('pointerup', function (e) {
+    if (!drag || e.pointerId !== drag.id) return;
+    var started = drag.started, src = drag.src, target = drag.over ? cellRef(drag.over) : null;
+    endDrag();
+    if (!started || !target) return;
+    var maps = readMaps(), a = maps[src.s][src.i], b = maps[target.s][target.i];
+    if (!a || !b) return;
+    maps[src.s][src.i] = b; maps[target.s][target.i] = a;
+    writeMaps(maps);
+  });
+  document.addEventListener('pointercancel', function (e) { if (drag && e.pointerId === drag.id) endDrag(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') endDrag(); });
+  document.addEventListener('touchmove', function (e) { if (drag && drag.started && e.cancelable) e.preventDefault(); }, { passive: false });
+  $('sheets').addEventListener('dblclick', function (e) {
+    var ref = cellRef(e.target);
+    if (!ref || ref.blank) return;
+    var maps = readMaps(), t = maps[ref.s][ref.i];
+    if (!t) return;
+    t.rot = !t.rot;
+    writeMaps(maps);
+  });
+
+  /* ---------- wiring ---------- */
+  sel.addEventListener('change', function () {
+    if (sel.value === 'custom') { state.presetKey = 'custom'; $('presethint').textContent = F.PRESETS.custom.hint; }
+    else applyPreset(sel.value);
+    render();
+  });
+  ['outside', 'inside'].forEach(function (id) {
+    $(id).addEventListener('input', function () { syncPresetFromText(); render(); });
+  });
+  $('bleed').addEventListener('input', render);
+  $('crop').addEventListener('change', render);
+  $('foldmarks').addEventListener('change', render);
+  $('fit').addEventListener('change', render);
+  $('resetw').addEventListener('click', function () { state.widths = []; state.wsig = null; render(); });
+  $('stdw').addEventListener('click', function () {
+    var base = opts(); base.widths = [];
+    var l0 = F.layout(currentSizes(), base);
+    if (l0.errors.length) return;
+    var total = l0.srcWidths.reduce(function (a, b) { return a + b; }, 0);
+    state.widths = F.standardWidths(state.presetKey, l0.n, total);
+    state.wsig = null;
+    render();
+  });
+  $('showart').addEventListener('change', function () { state.art = $('showart').checked; redrawPreview(); });
+  $('go').addEventListener('click', impose);
+  $('save').addEventListener('click', save);
+  $('sample').addEventListener('click', function () { makeTest(); });
+  $('file').addEventListener('change', function (e) { loadFile(e.target.files[0]); e.target.value = ''; });
+  var drop = $('drop');
+  ['dragenter', 'dragover'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('over'); }); });
+  ['dragleave', 'drop'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('over'); }); });
+  drop.addEventListener('drop', function (e) { loadFile(e.dataTransfer && e.dataTransfer.files[0]); });
+
+  try {
+    if (window.claude && window.claude.use) {
+      window.claude.use('downloads').then(function (d) { state.dl = d || null; updateSave(); }).catch(function () {});
+    }
+  } catch (e) { /* downloads unavailable */ }
+
+  applyPreset('roll6');
+  render();
+})();
+</script>
+
+</body>
+</html>
