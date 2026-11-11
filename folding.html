@@ -128,6 +128,31 @@ svg .cover { fill: var(--accent); font-family: var(--font-mono); text-anchor: mi
 .duplex { display: flex; gap: 10px; align-items: flex-start; font-size: 0.9rem; color: var(--muted); }
 .duplex b { color: var(--ink); font-weight: 600; }
 @media (prefers-reduced-motion: no-preference) { button, .drop { transition: border-color 0.15s, background 0.15s; } }
+
+.grid[hidden] { display: none; }
+.modes { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface); margin-left: auto; }
+.modes button { border: none; border-radius: 0; background: none; padding: 8px 14px; font-weight: 600; color: var(--muted); }
+.modes button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.modes button:hover { border-color: transparent; }
+.choice { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; cursor: pointer; background: var(--bg); }
+.choice:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.choice input { margin-top: 4px; accent-color: var(--accent); }
+.choice b { font-weight: 600; display: block; }
+.choice span { color: var(--muted); font-size: 0.85rem; }
+.line { margin: 0; font-size: 0.88rem; }
+.line.ok { color: var(--ok); }
+.line.warn { color: var(--warn); }
+.reads { font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); margin: 0; }
+svg .addmargin { fill: var(--panel); stroke: var(--line); stroke-width: 0.4; }
+svg .ko { stroke: #fff; stroke-width: 0.35; fill: none; }
+svg .mark { stroke: var(--ink); stroke-width: 0.3; fill: none; }
+svg .mark.dash { stroke-dasharray: 1.5 1; }
+svg .mark.score { stroke-width: 0.8; }
+svg .mark.skip { stroke: var(--bad); }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 0.82rem; color: var(--muted); margin: 0; }
+.legend i { display: inline-block; width: 14px; height: 10px; vertical-align: -1px; margin-right: 6px; border: 1px solid var(--line); background: var(--panel); }
+.legend i.t { background: none; border-color: var(--ink); }
+.legend i.s { background: none; border: none; border-top: 2px solid var(--bad); height: 0; vertical-align: 3px; }
 </style>
 </head>
 <body>
@@ -136,10 +161,14 @@ svg .cover { fill: var(--accent); font-family: var(--font-mono); text-anchor: mi
 <div class="wrap">
   <header>
     <h1>Fold Imposer</h1>
-    <p>Turn a 1-up PDF into press-ready outside and inside sheets for a folded leaflet.</p>
+    <p id="subtitle">Turn a 1-up PDF into press-ready outside and inside sheets for a folded leaflet.</p>
+    <div class="modes" role="group" aria-label="Mode">
+      <button type="button" id="modeimpose" aria-pressed="true">Impose from 1-up</button>
+      <button type="button" id="modemarks" aria-pressed="false">Add marks only</button>
+    </div>
   </header>
 
-  <div class="grid">
+  <div class="grid" id="imposegrid">
     <div class="col">
       <section class="card" aria-labelledby="h-src">
         <h2 id="h-src">1. Source PDF</h2>
@@ -199,6 +228,11 @@ svg .cover { fill: var(--accent); font-family: var(--font-mono); text-anchor: mi
           </select>
         </div>
         <div class="field">
+          <label class="label" for="cropoff">Mark offset from the TrimBox (mm)</label>
+          <input type="number" id="cropoff" min="0" max="20" step="0.5" placeholder="Auto">
+        </div>
+        <label class="check"><input type="checkbox" id="knockout" checked> White knockout behind marks</label>
+        <div class="field">
           <label class="label" for="bleed">Bleed to keep (mm)</label>
           <input type="number" id="bleed" min="0" max="10" step="0.5" value="0">
         </div>
@@ -231,7 +265,89 @@ svg .cover { fill: var(--accent); font-family: var(--font-mono); text-anchor: mi
       </section>
     </div>
   </div>
+
+  <div class="grid" id="marksgrid" hidden>
+    <div class="col">
+      <section class="card" aria-labelledby="mh-src">
+        <h2 id="mh-src">1. Imposed PDF</h2>
+        <label class="drop" id="mdrop" for="mfile">
+          <strong id="mdroptitle">Drop an imposed PDF here or choose a file</strong>
+          <span class="hint">Outside sheet first, then inside sheet</span>
+          <input type="file" id="mfile" accept="application/pdf,.pdf">
+        </label>
+        <div class="fileinfo" id="mfileinfo"></div>
+        <p class="note warn" id="mnote" hidden></p>
+        <button type="button" class="link" id="msample">Use a sample imposed PDF instead</button>
+      </section>
+
+      <section class="card" aria-labelledby="mh-fold">
+        <h2 id="mh-fold">2. Fold</h2>
+        <div class="field">
+          <label class="label" for="mpreset">Fold type</label>
+          <select id="mpreset"></select>
+        </div>
+        <div class="label">Panel widths, outside sheet left to right (mm)</div>
+        <div class="widths" id="mwidths"></div>
+        <p class="line" id="mtotal"></p>
+        <div class="row">
+          <button type="button" id="mstd">Standard widths</button>
+          <button type="button" id="meven">Even widths</button>
+        </div>
+        <p class="reads" id="mfolds"></p>
+      </section>
+
+      <section class="card" aria-labelledby="mh-opt">
+        <h2 id="mh-opt">3. Marks</h2>
+        <label class="check"><input type="checkbox" id="mcrop" checked> Crop marks</label>
+        <div class="field">
+          <label class="label" for="mcropoff">Mark offset from the TrimBox (mm)</label>
+          <input type="number" id="mcropoff" min="0" max="20" step="0.5" value="2" placeholder="Auto">
+        </div>
+        <label class="check"><input type="checkbox" id="mknockout" checked> White knockout behind marks</label>
+        <div class="field">
+          <label class="label" for="mfoldmarks">Marks on the fold lines</label>
+          <select id="mfoldmarks">
+            <option value="fold" selected>Fold marks (dashed)</option>
+            <option value="score">Score marks (solid)</option>
+            <option value="none">None</option>
+          </select>
+        </div>
+        <div class="label">Room for the marks</div>
+        <label class="choice"><input type="radio" name="mroom" id="mroom1" value="enlarge">
+          <div><b>Enlarge each page</b><span>Your sheet stays centred and untouched, with extra margin around it.</span></div></label>
+        <div class="field" id="mmarginrow">
+          <label class="label" for="mmargin">Margin added on every side (mm)</label>
+          <input type="number" id="mmargin" min="0" max="100" step="0.5" value="14">
+        </div>
+        <label class="choice"><input type="radio" name="mroom" id="mroom2" value="keep" checked>
+          <div><b>Keep the page size (default)</b><span>Marks that fall outside the page are skipped.</span></div></label>
+        <p class="hint" id="mroomhint"></p>
+      </section>
+
+      <section class="card" aria-labelledby="mh-out">
+        <h2 id="mh-out">4. Output</h2>
+        <button type="button" class="primary" id="mgo">Add marks</button>
+        <p class="status" id="mstatus" role="status"></p>
+        <button type="button" id="msave" hidden>Save PDF</button>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="card" aria-labelledby="mh-prev">
+        <div class="sheethead">
+          <h2 id="mh-prev">Sheet preview</h2>
+          <span class="tag" id="mpreviewtag"></span>
+        </div>
+        <svg id="martdefs" width="0" height="0" style="position:absolute" aria-hidden="true"></svg>
+        <div class="notes" id="mnotes"></div>
+        <div class="sheets" id="msheets"></div>
+        <p class="legend"><span><i></i>Margin added</span><span><i class="t"></i>TrimBox</span><span><i class="s"></i>Skipped mark</span></p>
+        <p class="duplex"><span><b>Folds:</b> the inside sheet is mirrored for you. Check the first run against a folded dummy.</span></p>
+      </section>
+    </div>
+  </div>
 </div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
@@ -418,8 +534,13 @@ svg .cover { fill: var(--accent); font-family: var(--font-mono); text-anchor: mi
     }
     if (fitNotes.pad.length) res.warnings.push('Narrower than the panel, so centred: ' + pageList(fitNotes.pad) + '.');
 
-    var offset = Math.max(3, bleed + 1);
+    var offset = Math.max(3, bleed + 1);   // distance of the marks from the TrimBox
+    // Crop marks can sit further from (or nearer to) the TrimBox than the fold marks.
+    if (!(opts.cropOffset === '' || opts.cropOffset == null || isNaN(+opts.cropOffset))) offset = Math.max(0, +opts.cropOffset);
+    var cropOffset = offset;
+    var knockout = opts.knockout !== false;
     var margin = marks ? offset + 10 : 0;
+    if (marks && offset < bleed - 0.01) res.warnings.push('Mark offset (' + round1(cropOffset) + ' mm) is smaller than the bleed (' + round1(bleed) + ' mm), so the marks sit inside the bleed.');
 
     if (opts.preset === 'roll6' && n === 3 && panels[0].w > panels[1].w + 0.2) {
       res.warnings.push('The fold-in panel (' + round1(panels[0].w) + ' mm) is wider than the middle panel (' +
@@ -444,7 +565,7 @@ svg .cover { fill: var(--accent); font-family: var(--font-mono); text-anchor: mi
       return {
         name: name, W: x + margin, H: contentH + 2 * margin,
         trim: { x: margin, y: margin, w: x - margin, h: contentH },
-        cells: cells, folds: folds, margin: margin, offset: offset
+        cells: cells, folds: folds, margin: margin, offset: offset, cropOffset: cropOffset
       };
     }
 
@@ -454,7 +575,7 @@ svg .cover { fill: var(--accent); font-family: var(--font-mono); text-anchor: mi
     res.sheets.push(side('Inside', i.tokens, inOrder, 'pb'));
     res.bleed = bleed;
     res.marks = marks;
-    res.crop = crop;
+    res.crop = crop; res.knockout = knockout;
     res.foldMarks = foldMarks;
     return res;
   }
@@ -475,7 +596,7 @@ svg .cover { fill: var(--accent); font-family: var(--font-mono); text-anchor: mi
     var bx0 = Math.max(bleedBox.x, media.x), by0 = Math.max(bleedBox.y, media.y);
     var bx1 = Math.min(bleedBox.x + bleedBox.w, media.x + media.w), by1 = Math.min(bleedBox.y + bleedBox.h, media.y + media.h);
     return {
-      w: trim.w / MM, h: trim.h / MM, hasTrim: hasTrim, media: media, trim: trim,
+      w: trim.w / MM, h: trim.h / MM, hasTrim: hasTrim, media: media, trim: trim, rot: ((pg.getRotation().angle % 360) + 360) % 360,
       avail: hasTrim ? {
         l: Math.max(0, trim.x - bx0), r: Math.max(0, bx1 - (trim.x + trim.w)),
         b: Math.max(0, trim.y - by0), t: Math.max(0, by1 - (trim.y + trim.h))
@@ -507,7 +628,14 @@ svg .cover { fill: var(--accent); font-family: var(--font-mono); text-anchor: mi
     if (lay.errors.length) throw new Error(lay.errors[0]);
 
     var out = await PDFLib.PDFDocument.create();
-    var reg = PDFLib.cmyk(1, 1, 1, 1);
+    var reg = PDFLib.cmyk(1, 1, 1, 1);   // fallback only
+    // Registration colour is the Separation colour space named All: it prints on every plate at 100%.
+    var regRef = null;
+    try {
+      var ctx = out.context;
+      var fnRef = ctx.register(ctx.obj({ FunctionType: 2, Domain: [0, 1], C0: [0, 0, 0, 0], C1: [1, 1, 1, 1], N: 1 }));
+      regRef = ctx.register(ctx.obj(['Separation', 'All', 'DeviceCMYK', fnRef]));
+    } catch (err) { regRef = null; }
     var bleedPt = lay.bleed * MM;
 
     for (var s = 0; s < lay.sheets.length; s++) {
@@ -545,21 +673,59 @@ svg .cover { fill: var(--accent); font-family: var(--font-mono); text-anchor: mi
       }
 
       if (lay.marks) {
-        var t = sh.trim, off = sh.offset * MM, len = 5 * MM;
+        var t = sh.trim, off = sh.offset * MM, coff = sh.cropOffset * MM, len = 5 * MM;
         var x0 = t.x * MM, x1 = (t.x + t.w) * MM, y0 = t.y * MM, y1 = (t.y + t.h) * MM;
-        var line = function (ax, ay, bx, by, th, dash) {
+        var useReg = false;
+        if (regRef) {
+          try {
+            var res = page.node.normalizedEntries().Resources;
+            var csd = res.lookupMaybe(PDFLib.PDFName.of('ColorSpace'), PDFLib.PDFDict);
+            if (!csd) { csd = out.context.obj({}); res.set(PDFLib.PDFName.of('ColorSpace'), csd); }
+            csd.set(PDFLib.PDFName.of('Reg'), regRef);
+            useReg = true;
+          } catch (err) { useReg = false; }
+        }
+        var line = function (ax, ay, bx, by, th, dash, white) {
+          if (white) {
+            th = th + 0.75;
+            page.pushOperators(PDFLib.pushGraphicsState(), PDFLib.setStrokingColor(PDFLib.cmyk(0, 0, 0, 0)), PDFLib.setLineWidth(th),
+              PDFLib.moveTo(ax, ay), PDFLib.lineTo(bx, by), PDFLib.stroke(), PDFLib.popGraphicsState());
+            return;
+          }
+          if (useReg) {
+            var ops = [
+              PDFLib.pushGraphicsState(),
+              PDFLib.PDFOperator.of(PDFLib.PDFOperatorNames.StrokingColorspace, [PDFLib.PDFName.of('Reg')]),
+              PDFLib.PDFOperator.of(PDFLib.PDFOperatorNames.StrokingColorN, [PDFLib.PDFNumber.of(1)]),
+              PDFLib.setLineWidth(th)
+            ];
+            if (dash) ops.push(PDFLib.setDashPattern([2, 2], 0));
+            ops.push(PDFLib.moveTo(ax, ay), PDFLib.lineTo(bx, by), PDFLib.stroke(), PDFLib.popGraphicsState());
+            page.pushOperators.apply(page, ops);
+            return;
+          }
           var o = { start: { x: ax, y: ay }, end: { x: bx, y: by }, thickness: th, color: reg };
           if (dash) o.dashArray = [2, 2];
           page.drawLine(o);
         };
         if (lay.crop) {
-          [[x0, y0, -1, -1], [x1, y0, 1, -1], [x0, y1, -1, 1], [x1, y1, 1, 1]].forEach(function (cn) {
-            line(cn[0] + cn[2] * off, cn[1], cn[0] + cn[2] * (off + len), cn[1], 0.25);
-            line(cn[0], cn[1] + cn[3] * off, cn[0], cn[1] + cn[3] * (off + len), 0.25);
+          var cn4 = [[x0, y0, -1, -1], [x1, y0, 1, -1], [x0, y1, -1, 1], [x1, y1, 1, 1]];
+          if (lay.knockout) cn4.forEach(function (cn) {
+            line(cn[0] + cn[2] * coff, cn[1], cn[0] + cn[2] * (coff + len), cn[1], 0.25, false, true);
+            line(cn[0], cn[1] + cn[3] * coff, cn[0], cn[1] + cn[3] * (coff + len), 0.25, false, true);
+          });
+          cn4.forEach(function (cn) {
+            line(cn[0] + cn[2] * coff, cn[1], cn[0] + cn[2] * (coff + len), cn[1], 0.25);
+            line(cn[0], cn[1] + cn[3] * coff, cn[0], cn[1] + cn[3] * (coff + len), 0.25);
           });
         }
         if (lay.foldMarks !== 'none') {
           var score = lay.foldMarks === 'score';
+          if (lay.knockout) sh.folds.forEach(function (fx) {
+            var x = fx * MM;
+            line(x, y0 - off, x, y0 - off - len, score ? 0.6 : 0.25, false, true);
+            line(x, y1 + off, x, y1 + off + len, score ? 0.6 : 0.25, false, true);
+          });
           sh.folds.forEach(function (fx) {
             var x = fx * MM;
             line(x, y0 - off, x, y0 - off - len, score ? 0.6 : 0.25, !score);
@@ -576,10 +742,133 @@ svg .cover { fill: var(--accent); font-family: var(--font-mono); text-anchor: mi
     return await out.save();
   }
 
-  var api = { MM: MM, PRESETS: PRESETS, parseMap: parseMap, layout: layout, standardWidths: standardWidths, readSizes: readSizes, buildPdf: buildPdf };
+
+  /**
+   * Marks-only mode: the pages are already imposed. opts = {widths[] (mm, physical panels, outside left to right),
+   * foldMarks 'fold'|'score'|'none', crop bool, room 'enlarge'|'keep', margin (mm, added on every side when enlarging)}.
+   * Even page indexes are outside sheets, odd ones are inside sheets (widths reversed). All geometry is in PDF points.
+   */
+  function marksLayout(infos, opts) {
+    var widths = (opts.widths || []).slice();
+    var enlarge = opts.room === 'enlarge';
+    var marginPt = enlarge ? Math.max(0, +opts.margin || 0) * MM : 0;
+    var errors = [], warnings = [], pages = [];
+    var len = 5 * MM;
+    infos.forEach(function (inf, i) {
+      if (inf.rot) errors.push('Page ' + (i + 1) + ' is rotated (/Rotate ' + inf.rot + '). Rotated pages are not supported.');
+      var side = i % 2 === 0 ? 'outside' : 'inside';
+      var tr = inf.trim, md = inf.media;
+      var bleedMm = inf.hasTrim ? Math.max(inf.avail.l, inf.avail.r, inf.avail.b, inf.avail.t) / MM : 0;
+      var offset = Math.min(8, Math.max(3, Math.ceil(bleedMm) + 1));
+      var room = { l: tr.x - md.x, r: md.x + md.w - (tr.x + tr.w), b: tr.y - md.y, t: md.y + md.h - (tr.y + tr.h) };
+      var roomMin = Math.min(room.l, room.r, room.b, room.t) / MM;
+      if (!(opts.cropOffset === '' || opts.cropOffset == null || isNaN(+opts.cropOffset))) offset = Math.max(0, +opts.cropOffset);
+      var need = offset + 5;
+      var nm = { x: md.x - marginPt, y: md.y - marginPt, w: md.w + 2 * marginPt, h: md.h + 2 * marginPt };
+      var ws = side === 'outside' ? widths : widths.slice().reverse();
+      var total = ws.reduce(function (a, b) { return a + b; }, 0);
+      var folds = [], acc = 0;
+      for (var k = 0; k < ws.length - 1; k++) { acc += ws[k]; folds.push(tr.x + acc * MM); }
+      if (ws.length && Math.abs(total - tr.w / MM) > 0.2 && i < 2)
+        warnings.push('Panel widths total ' + round1(total) + ' mm, but the TrimBox is ' + round1(tr.w / MM) + ' mm wide.');
+      var allow = enlarge ? nm : md, tol = 0.5;
+      var inside = function (x, y) { return x >= allow.x - tol && x <= allow.x + allow.w + tol && y >= allow.y - tol && y <= allow.y + allow.h + tol; };
+      var off = offset * MM, marks = [];
+      var coff = offset * MM;
+      var add = function (kind, x1, y1, x2, y2, th, dash) {
+        marks.push({ kind: kind, x1: x1, y1: y1, x2: x2, y2: y2, th: th, dash: !!dash, ko: opts.knockout !== false, fits: inside(x1, y1) && inside(x2, y2) });
+      };
+      var x0 = tr.x, x1 = tr.x + tr.w, y0 = tr.y, y1 = tr.y + tr.h;
+      if (opts.crop) {
+        [[x0, y0, -1, -1], [x1, y0, 1, -1], [x0, y1, -1, 1], [x1, y1, 1, 1]].forEach(function (cn) {
+          add('crop', cn[0] + cn[2] * coff, cn[1], cn[0] + cn[2] * (coff + len), cn[1], 0.25, false);
+          add('crop', cn[0], cn[1] + cn[3] * coff, cn[0], cn[1] + cn[3] * (coff + len), 0.25, false);
+        });
+      }
+      if (opts.foldMarks && opts.foldMarks !== 'none') {
+        var score = opts.foldMarks === 'score';
+        folds.forEach(function (x) {
+          add('fold', x, y0 - coff, x, y0 - coff - len, score ? 0.6 : 0.25, !score);
+          add('fold', x, y1 + coff, x, y1 + coff + len, score ? 0.6 : 0.25, !score);
+        });
+      }
+      var skipped = marks.filter(function (m) { return !m.fits; }).length;
+      pages.push({ side: side, oldMedia: md, newMedia: enlarge ? nm : md, trim: tr, room: room, roomMin: roomMin, need: need,
+        offset: offset, folds: folds, marks: marks, skipped: skipped, hasTrim: inf.hasTrim });
+    });
+    var sk = pages.reduce(function (a, p) { return a + p.skipped; }, 0);
+    if (sk) warnings.push(sk + ' mark' + (sk === 1 ? '' : 's') + ' fall outside the page and will be skipped.');
+    return { pages: pages, warnings: warnings, errors: errors, enlarge: enlarge };
+  }
+
+  /** Add marks to an already imposed PDF. Returns Uint8Array. */
+  async function buildMarks(PDFLib, srcBytes, opts) {
+    var doc = await PDFLib.PDFDocument.load(srcBytes, { ignoreEncryption: true });
+    var pgs = doc.getPages();
+    var lay = marksLayout(pgs.map(pageInfo), opts);
+    if (lay.errors.length) throw new Error(lay.errors[0]);
+    var ctx = doc.context, regRef = null;
+    try {
+      var fnRef = ctx.register(ctx.obj({ FunctionType: 2, Domain: [0, 1], C0: [0, 0, 0, 0], C1: [1, 1, 1, 1], N: 1 }));
+      regRef = ctx.register(ctx.obj(['Separation', 'All', 'DeviceCMYK', fnRef]));
+    } catch (err) { regRef = null; }
+    pgs.forEach(function (page, i) {
+      var L = lay.pages[i];
+      var hadCrop = page.node.CropBox && page.node.CropBox();
+      if (lay.enlarge) {
+        var m = L.newMedia;
+        // Keep the original content isolated from the added marks, then grow the page.
+        try {
+          page.node.wrapContentStreams(ctx.register(ctx.stream('q\n')), ctx.register(ctx.stream('\nQ\n')));
+        } catch (err) { /* content left as is */ }
+        page.setMediaBox(m.x, m.y, m.w, m.h);
+        if (hadCrop) page.setCropBox(m.x, m.y, m.w, m.h);
+      }
+      var useReg = false;
+      if (regRef) {
+        try {
+          var res = page.node.normalizedEntries().Resources;
+          var csd = res.lookupMaybe(PDFLib.PDFName.of('ColorSpace'), PDFLib.PDFDict);
+          if (!csd) { csd = ctx.obj({}); res.set(PDFLib.PDFName.of('ColorSpace'), csd); }
+          csd.set(PDFLib.PDFName.of('Reg'), regRef);
+          useReg = true;
+        } catch (err) { useReg = false; }
+      }
+      L.marks.forEach(function (mk) {
+        if (mk.fits && mk.ko) {
+          page.pushOperators(PDFLib.pushGraphicsState(), PDFLib.setStrokingColor(PDFLib.cmyk(0, 0, 0, 0)), PDFLib.setLineWidth(mk.th + 0.75),
+            PDFLib.moveTo(mk.x1, mk.y1), PDFLib.lineTo(mk.x2, mk.y2), PDFLib.stroke(), PDFLib.popGraphicsState());
+        }
+      });
+      L.marks.forEach(function (mk) {
+        if (!mk.fits) return;
+        if (useReg) {
+          var ops = [
+            PDFLib.pushGraphicsState(),
+            PDFLib.PDFOperator.of(PDFLib.PDFOperatorNames.StrokingColorspace, [PDFLib.PDFName.of('Reg')]),
+            PDFLib.PDFOperator.of(PDFLib.PDFOperatorNames.StrokingColorN, [PDFLib.PDFNumber.of(1)]),
+            PDFLib.setLineWidth(mk.th)
+          ];
+          if (mk.dash) ops.push(PDFLib.setDashPattern([2, 2], 0));
+          ops.push(PDFLib.moveTo(mk.x1, mk.y1), PDFLib.lineTo(mk.x2, mk.y2), PDFLib.stroke(), PDFLib.popGraphicsState());
+          page.pushOperators.apply(page, ops);
+        } else {
+          var o = { start: { x: mk.x1, y: mk.y1 }, end: { x: mk.x2, y: mk.y2 }, thickness: mk.th, color: PDFLib.cmyk(1, 1, 1, 1) };
+          if (mk.dash) o.dashArray = [2, 2];
+          page.drawLine(o);
+        }
+      });
+      var t = L.trim;
+      page.setTrimBox(t.x, t.y, t.w, t.h);
+    });
+    return await doc.save();
+  }
+
+  var api = { marksLayout: marksLayout, buildMarks: buildMarks, MM: MM, PRESETS: PRESETS, parseMap: parseMap, layout: layout, standardWidths: standardWidths, readSizes: readSizes, buildPdf: buildPdf };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.FoldImpose = api;
 })(typeof window !== 'undefined' ? window : globalThis);
+
 </script>
 
 <script>
@@ -649,7 +938,7 @@ svg .cover { fill: var(--accent); font-family: var(--font-mono); text-anchor: mi
   function opts() {
     return {
       outside: $('outside').value, inside: $('inside').value,
-      bleed: parseFloat($('bleed').value) || 0, crop: $('crop').checked, foldMarks: $('foldmarks').value,
+      bleed: parseFloat($('bleed').value) || 0, crop: $('crop').checked, foldMarks: $('foldmarks').value, cropOffset: $('cropoff').value, knockout: $('knockout').checked,
       widths: state.widths, fit: $('fit').value,
       preset: state.presetKey, presetLabel: F.PRESETS[state.presetKey].label
     };
@@ -772,14 +1061,23 @@ svg .cover { fill: var(--accent); font-family: var(--font-mono); text-anchor: mi
     if (lay.foldMarks !== 'none') {
       // Fold or score ticks sit outside the TrimBox only, above and below each fold.
       var fcls = 'foldline' + (lay.foldMarks === 'score' ? ' score' : '');
+      if (lay.knockout) sh.folds.forEach(function (fx) {
+        s += '<line class="ko" x1="' + fx + '" y1="' + (ty - sh.offset) + '" x2="' + fx + '" y2="' + (ty - sh.offset - 5) + '"/>';
+        s += '<line class="ko" x1="' + fx + '" y1="' + (ty + t.h + sh.offset) + '" x2="' + fx + '" y2="' + (ty + t.h + sh.offset + 5) + '"/>';
+      });
       sh.folds.forEach(function (fx) {
         s += '<line class="' + fcls + '" x1="' + fx + '" y1="' + (ty - sh.offset) + '" x2="' + fx + '" y2="' + (ty - sh.offset - 5) + '"/>';
         s += '<line class="' + fcls + '" x1="' + fx + '" y1="' + (ty + t.h + sh.offset) + '" x2="' + fx + '" y2="' + (ty + t.h + sh.offset + 5) + '"/>';
       });
     }
     if (lay.crop) {
-      var o = sh.offset, l = 5, x0 = t.x, x1 = t.x + t.w, y0 = ty, y1 = ty + t.h;
-      [[x0, y0, -1, -1], [x1, y0, 1, -1], [x0, y1, -1, 1], [x1, y1, 1, 1]].forEach(function (c) {
+      var o = sh.cropOffset, l = 5, x0 = t.x, x1 = t.x + t.w, y0 = ty, y1 = ty + t.h;
+      var cn4 = [[x0, y0, -1, -1], [x1, y0, 1, -1], [x0, y1, -1, 1], [x1, y1, 1, 1]];
+      if (lay.knockout) cn4.forEach(function (c) {
+        s += '<line class="ko" x1="' + (c[0] + c[2] * o) + '" y1="' + c[1] + '" x2="' + (c[0] + c[2] * (o + l)) + '" y2="' + c[1] + '"/>';
+        s += '<line class="ko" x1="' + c[0] + '" y1="' + (c[1] + c[3] * o) + '" x2="' + c[0] + '" y2="' + (c[1] + c[3] * (o + l)) + '"/>';
+      });
+      cn4.forEach(function (c) {
         s += '<line class="crop" x1="' + (c[0] + c[2] * o) + '" y1="' + c[1] + '" x2="' + (c[0] + c[2] * (o + l)) + '" y2="' + c[1] + '"/>';
         s += '<line class="crop" x1="' + c[0] + '" y1="' + (c[1] + c[3] * o) + '" x2="' + c[0] + '" y2="' + (c[1] + c[3] * (o + l)) + '"/>';
       });
@@ -937,19 +1235,13 @@ svg .cover { fill: var(--accent); font-family: var(--font-mono); text-anchor: mi
     else { b.disabled = true; b.textContent = 'Saving is not available in this view'; }
   }
   async function save() {
-    if (!state.result) return;
-    if (!state.dl) {
-      if (window.claude) return;
-      var link = document.createElement('a');
-      link.href = URL.createObjectURL(new Blob([state.result], { type: 'application/pdf' }));
-      link.download = (state.file.name || 'leaflet').replace(/\.pdf$/i, '') + '_imposed.pdf';
-      document.body.appendChild(link); link.click(); link.remove();
-      return;
-    }
+    if (!state.result || (!state.dl && window.claude)) return;
     var base = (state.file.name || 'leaflet').replace(/\.pdf$/i, '');
     var st = $('status');
     try {
-      await state.dl.save({ filename: base + '_imposed.pdf', data: new Blob([state.result], { type: 'application/pdf' }) });
+      var blob0 = new Blob([state.result], { type: 'application/pdf' });
+      if (state.dl) await state.dl.save({ filename: base + '_imposed.pdf', data: blob0 });
+      else { var a0 = document.createElement('a'); a0.href = URL.createObjectURL(blob0); a0.download = base + '_imposed.pdf'; document.body.appendChild(a0); a0.click(); a0.remove(); }
       st.className = 'status ok'; st.textContent = 'Saved ' + base + '_imposed.pdf';
     } catch (e) {
       st.className = e && e.code === 'declined' ? 'status' : 'status err';
@@ -1056,6 +1348,8 @@ svg .cover { fill: var(--accent); font-family: var(--font-mono); text-anchor: mi
   });
   $('bleed').addEventListener('input', render);
   $('crop').addEventListener('change', render);
+  $('cropoff').addEventListener('input', render);
+  $('knockout').addEventListener('change', render);
   $('foldmarks').addEventListener('change', render);
   $('fit').addEventListener('change', render);
   $('resetw').addEventListener('click', function () { state.widths = []; state.wsig = null; render(); });
@@ -1086,6 +1380,296 @@ svg .cover { fill: var(--accent); font-family: var(--font-mono); text-anchor: mi
 
   applyPreset('roll6');
   render();
+})();
+</script>
+
+<script>
+/* Add marks only: the pages are already imposed (outside sheet, then inside sheet). */
+(function () {
+  'use strict';
+  var F = window.FoldImpose, MM = F.MM;
+  var $ = function (id) { return document.getElementById(id); };
+  function round1(v) { return Math.round(v * 10) / 10; }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  var ms = { file: null, widths: [], key: 'roll6', result: null, dl: null, sig: null, roomSet: false, token: 0, art: [], sampleTried: false };
+
+  /* ---------- mode switch ---------- */
+  var SUB = {
+    impose: 'Turn a 1-up PDF into press-ready outside and inside sheets for a folded leaflet.',
+    marks: 'Add crop and fold marks to a PDF that is already imposed for a folded product.'
+  };
+  function setMode(m, push) {
+    var marks = m === 'marks';
+    $('imposegrid').hidden = marks; $('marksgrid').hidden = !marks;
+    $('modeimpose').setAttribute('aria-pressed', String(!marks));
+    $('modemarks').setAttribute('aria-pressed', String(marks));
+    $('subtitle').textContent = marks ? SUB.marks : SUB.impose;
+    if (push) { try { history.replaceState(null, '', marks ? '#marks' : '#'); } catch (e) { /* ignore */ } }
+    if (marks && !ms.file && !ms.sampleTried) { ms.sampleTried = true; sample(); }
+  }
+  $('modeimpose').addEventListener('click', function () { setMode('impose', true); });
+  $('modemarks').addEventListener('click', function () { setMode('marks', true); });
+
+  /* ---------- fold presets (those with a fixed page count) ---------- */
+  var psel = $('mpreset');
+  Object.keys(F.PRESETS).forEach(function (k) {
+    if (!F.PRESETS[k].pages) return;
+    var o = document.createElement('option'); o.value = k; o.textContent = F.PRESETS[k].label; psel.appendChild(o);
+  });
+  psel.value = ms.key;
+  function panelCount() { return F.PRESETS[ms.key].pages / 2; }
+  function trimW() { return ms.file ? ms.file.sizes[0].trim.w / MM : 0; }
+
+  function setWidths(arr) { ms.widths = arr.slice(); ms.sig = null; }
+  function standard() { setWidths(F.standardWidths(ms.key, panelCount(), trimW())); }
+  function even() { var n = panelCount(), a = []; for (var i = 0; i < n; i++) a.push(round1(trimW() / n)); setWidths(a); }
+
+  function drawWidths() {
+    var n = panelCount(), sig = ms.key + '|' + n;
+    var box = $('mwidths');
+    if (ms.sig !== sig) {
+      ms.sig = sig; box.textContent = '';
+      for (var j = 0; j < n; j++) {
+        (function (j) {
+          var f = document.createElement('div'); f.className = 'field';
+          var lab = document.createElement('label'); lab.className = 'label'; lab.setAttribute('for', 'mw' + j); lab.textContent = 'Panel ' + (j + 1);
+          var inp = document.createElement('input'); inp.type = 'number'; inp.id = 'mw' + j; inp.min = '10'; inp.max = '800'; inp.step = '0.1';
+          inp.addEventListener('input', function () { ms.widths[j] = parseFloat(inp.value) || 0; refresh(); });
+          f.appendChild(lab); f.appendChild(inp); box.appendChild(f);
+        })(j);
+      }
+    }
+    for (var q = 0; q < n; q++) { var el = $('mw' + q); if (el && document.activeElement !== el) el.value = ms.widths[q] === undefined ? '' : ms.widths[q]; }
+  }
+
+  function opts() {
+    var n = panelCount(), w = [];
+    for (var i = 0; i < n; i++) w.push(+ms.widths[i] || 0);
+    return { widths: w, foldMarks: $('mfoldmarks').value, crop: $('mcrop').checked,
+      cropOffset: $('mcropoff').value, knockout: $('mknockout').checked, room: $('mroom1').checked ? 'enlarge' : 'keep', margin: parseFloat($('mmargin').value) || 0 };
+  }
+
+  /* ---------- preview ---------- */
+  function mmv(v) { return Math.round(v * 1000) / 1000; }
+  function pageSvg(L, i) {
+    var nm = L.newMedia, W = nm.w / MM, H = nm.h / MM;
+    var X = function (x) { return mmv((x - nm.x) / MM); }, Y = function (y) { return mmv((nm.y + nm.h - y) / MM); };
+    var om = L.oldMedia;
+    var out = '<svg class="sheet" viewBox="0 0 ' + mmv(W) + ' ' + mmv(H) + '" role="img" aria-label="' + esc(L.side) + ' sheet with marks">';
+    out += '<rect class="addmargin" x="0" y="0" width="' + mmv(W) + '" height="' + mmv(H) + '"/>';
+    var a = ms.art[i];
+    if (a) {
+      out += '<svg x="' + X(om.x) + '" y="' + Y(om.y + om.h) + '" width="' + mmv(om.w / MM) + '" height="' + mmv(om.h / MM) + '" viewBox="0 0 ' + mmv(om.w / MM) + ' ' + mmv(om.h / MM) + '"><use href="#mart' + i + '"/></svg>';
+    } else {
+      out += '<rect fill="var(--sheet)" stroke="var(--line)" stroke-width="0.4" x="' + X(om.x) + '" y="' + Y(om.y + om.h) + '" width="' + mmv(om.w / MM) + '" height="' + mmv(om.h / MM) + '"/>';
+    }
+    var t = L.trim;
+    out += '<rect class="trim" x="' + X(t.x) + '" y="' + Y(t.y + t.h) + '" width="' + mmv(t.w / MM) + '" height="' + mmv(t.h / MM) + '"/>';
+    L.marks.forEach(function (m) {
+      if (m.ko && m.fits) out += '<line class="ko" x1="' + X(m.x1) + '" y1="' + Y(m.y1) + '" x2="' + X(m.x2) + '" y2="' + Y(m.y2) + '"/>';
+    });
+    L.marks.forEach(function (m) {
+      var cls = 'mark' + (m.kind === 'fold' ? (m.dash ? ' dash' : ' score') : '') + (m.fits ? '' : ' skip');
+      out += '<line class="' + cls + '" x1="' + X(m.x1) + '" y1="' + Y(m.y1) + '" x2="' + X(m.x2) + '" y2="' + Y(m.y2) + '"/>';
+    });
+    return out + '</svg>';
+  }
+
+  async function startArt() {
+    var token = ++ms.token;
+    ms.art = []; $('martdefs').innerHTML = '';
+    if (!ms.file || !window.pdfjsLib) return;
+    var pdf = null;
+    try {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      pdf = await window.pdfjsLib.getDocument({ data: ms.file.bytes.slice(), isEvalSupported: false }).promise;
+      var defs = '', n = Math.min(pdf.numPages, 4);
+      for (var i = 1; i <= n; i++) {
+        var pg = await pdf.getPage(i);
+        if (token !== ms.token) { pdf.destroy(); return; }
+        if (pg.rotate) continue;
+        var v = pg.view, wPt = v[2] - v[0], hPt = v[3] - v[1];
+        var k = Math.min(3 * 25.4 / 72, 1800 / Math.max(wPt, hPt));
+        var vp = pg.getViewport({ scale: k });
+        var cv = document.createElement('canvas');
+        cv.width = Math.max(1, Math.round(vp.width)); cv.height = Math.max(1, Math.round(vp.height));
+        var ctx = cv.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, cv.width, cv.height);
+        await pg.render({ canvasContext: ctx, viewport: vp }).promise;
+        ms.art[i - 1] = true;
+        defs += '<image id="mart' + (i - 1) + '" x="0" y="0" width="' + mmv(wPt / MM) + '" height="' + mmv(hPt / MM) + '" preserveAspectRatio="none" href="' + cv.toDataURL('image/jpeg', 0.85) + '"/>';
+        pg.cleanup();
+      }
+      if (token !== ms.token) { pdf.destroy(); return; }
+      $('martdefs').innerHTML = defs;
+      pdf.destroy();
+      drawPreview(F.marksLayout(ms.file.sizes, opts()));
+    } catch (e) {
+      if (token !== ms.token) return;
+      ms.art = []; $('martdefs').innerHTML = '';
+      try { if (pdf) pdf.destroy(); } catch (e2) { /* ignore */ }
+    }
+  }
+
+  function drawPreview(lay) {
+    var shown = lay.pages.slice(0, 4);
+    $('msheets').innerHTML = shown.map(function (L, i) {
+      var info = lay.enlarge ? ' · page ' + round1(L.newMedia.w / MM) + ' × ' + round1(L.newMedia.h / MM) + ' mm' : '';
+      return '<div><div class="sheethead"><h2>' + (L.side === 'outside' ? 'Outside' : 'Inside') + (lay.pages.length > 2 ? ' ' + (Math.floor(i / 2) + 1) : '') + '</h2><span>TrimBox ' + round1(L.trim.w / MM) + ' × ' + round1(L.trim.h / MM) + info + '</span></div>' + pageSvg(L, i) + '</div>';
+    }).join('');
+  }
+
+  function notes(list) {
+    var box = $('mnotes'); box.textContent = '';
+    list.forEach(function (n) { var p = document.createElement('p'); p.className = 'note ' + n.kind; p.textContent = n.text; box.appendChild(p); });
+  }
+
+  /* ---------- refresh ---------- */
+  function refresh(keepResult) {
+    if (!keepResult) { ms.result = null; $('msave').hidden = true; $('mstatus').textContent = ''; $('mstatus').className = 'status'; }
+    var has = !!ms.file;
+    $('mgo').disabled = !has;
+    $('mpreviewtag').textContent = has ? ms.file.name : '';
+    $('mmarginrow').hidden = !$('mroom1').checked;
+    if (!has) { $('msheets').innerHTML = ''; notes([]); $('mtotal').textContent = ''; $('mfolds').textContent = ''; drawWidths(); return; }
+    drawWidths();
+    var o = opts(), tw = trimW(), total = o.widths.reduce(function (a, b) { return a + b; }, 0);
+    var tl = $('mtotal');
+    if (Math.abs(total - tw) <= 0.2) { tl.className = 'line ok'; tl.textContent = 'Total ' + round1(total) + ' mm, matches the TrimBox'; }
+    else { tl.className = 'line warn'; tl.textContent = 'Total ' + round1(total) + ' mm, the TrimBox is ' + round1(tw) + ' mm wide'; }
+    var lay = F.marksLayout(ms.file.sizes, o);
+    var L0 = lay.pages[0], L1 = lay.pages[1] || lay.pages[0];
+    var fm = function (L) { return L.folds.map(function (f) { return round1((f - L.trim.x) / MM); }).join(' and '); };
+    $('mfolds').textContent = o.widths.length > 1 ? 'Outside: folds at ' + fm(L0) + ' mm\nInside: folds at ' + fm(L1) + ' mm' : '';
+    $('mfolds').style.whiteSpace = 'pre-line';
+    $('mroomhint').textContent = lay.enlarge
+      ? 'Each page grows to ' + round1(L0.newMedia.w / MM) + ' × ' + round1(L0.newMedia.h / MM) + ' mm.'
+      : (L0.skipped || (L1 && L1.skipped) ? 'Some marks fall outside the page and are skipped.' : 'All marks fit inside the current page.');
+    var nt = $('mnote');
+    if (L0.roomMin < L0.need) { nt.hidden = false; nt.textContent = 'There is only ' + round1(Math.max(0, L0.roomMin)) + ' mm outside the trim, and marks need about ' + L0.need + ' mm. Choose how to add room in step 3.'; }
+    else { nt.hidden = true; }
+    var list = [];
+    lay.errors.forEach(function (e) { list.push({ kind: 'err', text: e }); });
+    lay.warnings.forEach(function (w) { list.push({ kind: 'warn', text: w }); });
+    if (!ms.file.sizes.some(function (s) { return s.hasTrim; })) list.push({ kind: 'warn', text: 'This PDF has no TrimBox, so the whole page is treated as the trim area.' });
+    notes(list);
+    if (lay.errors.length) { $('msheets').innerHTML = ''; return; }
+    drawPreview(lay);
+  }
+
+  /* ---------- file ---------- */
+  function setFile(name, bytes, sizes) {
+    ms.file = { name: name, bytes: bytes, sizes: sizes };
+    var s0 = sizes[0], hasT = sizes.filter(function (s) { return s.hasTrim; }).length;
+    var tb = !hasT ? 'no TrimBox, using the page size' : hasT === sizes.length ? 'sized from each page’s TrimBox' : 'TrimBox on ' + hasT + ' of ' + sizes.length + ' pages';
+    $('mfileinfo').innerHTML = '<b>' + esc(name) + '</b><br>' + sizes.length + ' page' + (sizes.length === 1 ? '' : 's') + ', ' + round1(s0.w) + ' × ' + round1(s0.h) + ' mm<br>' + tb;
+    $('mdroptitle').textContent = 'Replace the PDF';
+    standard();
+    // Default the room choice from what the file already has around the trim.
+    var L = F.marksLayout(sizes, { widths: ms.widths, foldMarks: 'fold', crop: true, room: 'keep', cropOffset: $('mcropoff').value }).pages[0];
+    $('mroom1').checked = false; $('mroom2').checked = true;
+    $('mmargin').value = Math.max(0, Math.ceil(L.need - Math.max(0, L.roomMin)) + 6);
+    refresh();
+    startArt();
+  }
+  async function loadFile(f) {
+    if (!f) return;
+    try {
+      var bytes = new Uint8Array(await f.arrayBuffer());
+      var doc = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
+      var sizes = F.readSizes(doc);
+      if (!sizes.length) throw new Error('empty');
+      setFile(f.name, bytes, sizes);
+    } catch (e) {
+      $('mstatus').className = 'status err'; $('mstatus').textContent = 'That file could not be read as a PDF.';
+    }
+  }
+  async function sample() {
+    try {
+      var doc = await PDFLib.PDFDocument.create();
+      var font = await doc.embedFont(PDFLib.StandardFonts.HelveticaBold);
+      var W = 630 * MM, H = 297 * MM;
+      var ws = [[208, 211, 211], [211, 211, 208]];
+      var nums = [[5, 6, 1], [2, 3, 4]];
+      var cols = [PDFLib.rgb(0.88, 0.93, 1), PDFLib.rgb(0.93, 0.97, 0.88), PDFLib.rgb(1, 0.92, 0.9)];
+      for (var s = 0; s < 2; s++) {
+        var pg = doc.addPage([W, H]), x = 0;
+        for (var j = 0; j < 3; j++) {
+          var w = ws[s][j] * MM;
+          pg.drawRectangle({ x: x, y: 0, width: w, height: H, color: cols[(j + s) % 3] });
+          pg.drawText(String(nums[s][j]), { x: x + w / 2 - 36, y: H / 2 - 20, size: 140, font: font, color: PDFLib.rgb(0.08, 0.12, 0.2) });
+          x += w;
+        }
+        pg.drawText(s ? 'INSIDE' : 'OUTSIDE', { x: 20, y: 20, size: 22, font: font, color: PDFLib.rgb(0.78, 0.1, 0.37) });
+        pg.setTrimBox(0, 0, W, H);
+      }
+      var bytes = await doc.save();
+      setFile('leaflet_imposed.pdf', bytes, F.readSizes(await PDFLib.PDFDocument.load(bytes)));
+    } catch (e) { /* sample is optional */ }
+  }
+
+  /* ---------- output ---------- */
+  async function go() {
+    var st = $('mstatus');
+    if (!ms.file) { st.className = 'status err'; st.textContent = 'Choose a PDF first.'; return; }
+    var o = opts(), lay = F.marksLayout(ms.file.sizes, o);
+    if (lay.errors.length) { st.className = 'status err'; st.textContent = lay.errors[0]; return; }
+    $('mgo').disabled = true; st.className = 'status'; st.textContent = 'Adding marks…';
+    try {
+      var out = await F.buildMarks(PDFLib, ms.file.bytes, o);
+      ms.result = out;
+      var L = lay.pages[0];
+      st.className = 'status ok';
+      st.textContent = 'Done: ' + lay.pages.length + ' page' + (lay.pages.length === 1 ? '' : 's') + ', ' + round1(L.newMedia.w / MM) + ' × ' + round1(L.newMedia.h / MM) + ' mm, TrimBox ' + round1(L.trim.w / MM) + ' × ' + round1(L.trim.h / MM) + ' mm, ' + Math.max(1, Math.round(out.length / 1024)) + ' KB.';
+      updateSave();
+    } catch (e) {
+      st.className = 'status err'; st.textContent = 'Could not add marks: ' + (e && e.message ? e.message : 'unknown error');
+    }
+    $('mgo').disabled = false;
+  }
+  function updateSave() {
+    var b = $('msave'); b.hidden = !ms.result;
+    if (!ms.result) return;
+    if (ms.dl || !window.claude) { b.disabled = false; b.textContent = 'Save PDF'; }
+    else { b.disabled = true; b.textContent = 'Saving is not available in this view'; }
+  }
+  async function save() {
+    if (!ms.result) return;
+    var base = (ms.file.name || 'leaflet').replace(/\.pdf$/i, '').replace(/_imposed$/i, '');
+    var name = base + '_marks.pdf', st = $('mstatus');
+    var blob = new Blob([ms.result], { type: 'application/pdf' });
+    try {
+      if (ms.dl) { await ms.dl.save({ filename: name, data: blob }); }
+      else {
+        var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+      }
+      st.className = 'status ok'; st.textContent = 'Saved ' + name;
+    } catch (e) {
+      st.className = e && e.code === 'declined' ? 'status' : 'status err';
+      st.textContent = e && e.code === 'declined' ? 'Save cancelled.' : 'The file could not be saved from this view.';
+    }
+  }
+
+  /* ---------- wiring ---------- */
+  psel.addEventListener('change', function () { ms.key = psel.value; if (ms.file) standard(); refresh(); });
+  $('mstd').addEventListener('click', function () { if (ms.file) { standard(); refresh(); } });
+  $('meven').addEventListener('click', function () { if (ms.file) { even(); refresh(); } });
+  ['mcrop', 'mknockout', 'mcropoff', 'mfoldmarks', 'mroom1', 'mroom2', 'mmargin'].forEach(function (id) { $(id).addEventListener((id === 'mmargin' || id === 'mcropoff') ? 'input' : 'change', function () { refresh(); }); });
+  $('mgo').addEventListener('click', go);
+  $('msave').addEventListener('click', save);
+  $('msample').addEventListener('click', sample);
+  $('mfile').addEventListener('change', function (e) { loadFile(e.target.files[0]); e.target.value = ''; });
+  var md = $('mdrop');
+  ['dragenter', 'dragover'].forEach(function (ev) { md.addEventListener(ev, function (e) { e.preventDefault(); md.classList.add('over'); }); });
+  ['dragleave', 'drop'].forEach(function (ev) { md.addEventListener(ev, function (e) { e.preventDefault(); md.classList.remove('over'); }); });
+  md.addEventListener('drop', function (e) { loadFile(e.dataTransfer && e.dataTransfer.files[0]); });
+  try {
+    if (window.claude && window.claude.use) window.claude.use('downloads').then(function (d) { ms.dl = d || null; updateSave(); }).catch(function () {});
+  } catch (e) { /* downloads unavailable */ }
+
+  refresh();
+  if (/#marks/.test(location.hash || '')) setMode('marks', false);
 })();
 </script>
 
