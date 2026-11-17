@@ -644,6 +644,15 @@
           <p style="font-size:11.5px;color:var(--ink-soft);margin:6px 0 0;">Saddle-stitch, 2 pages per side. Pages are padded to a multiple of 4.</p>
         </div>
         <div class="section-block">
+          <div class="section-label">Book Binding</div>
+          <div class="field">
+            <label for="saddleSize">Saddle size</label>
+            <input type="number" id="saddleSize" min="0" step="1" placeholder="0 = one saddle"> <span style="font-size:12px;color:var(--ink-soft);">sheets</span>
+          </div>
+          <label class="checkline"><input type="checkbox" id="fillLastSaddle"> Fill last saddle</label>
+          <p style="font-size:11.5px;color:var(--ink-soft);margin:6px 0 0;">Splits the book into saddles of this many folded sheets (4 pages per sheet). Leave empty or 0 to keep the whole book as one saddle. Fill last saddle pads the final saddle to full size with blank pages at the end.</p>
+        </div>
+        <div class="section-block">
           <label class="checkline"><input type="checkbox" id="bookletWhiteSpace"> Add white space (margins &amp; spine gutter)</label>
           <p style="font-size:11.5px;color:var(--ink-soft);margin:6px 0 0;">Off: each spread sits at its real size, centered on the Paper Size sheet — the TrimBox still records the spread's true size. On: the spread is fit into the paper using the White Space settings below.</p>
         </div>
@@ -1508,7 +1517,7 @@ function defaultGridStep(){
     cropMarks:false, gutterMarks:false, centerMarks:false, markLength:5, markThickness:0.25, markDistance:2, knockout:false};
 }
 function defaultBookletStep(){
-  return {type:'booklet', duplexMode:'auto', rtl:false,
+  return {type:'booklet', duplexMode:'auto', rtl:false, saddleSize:0, fillLastSaddle:false,
     paperSize:'SRA3', customW:210, customH:297, landscape:true,
     marginL:8, marginT:8, gutterH:3, gutterV:3, rotate:0, rotateApply:'all'};
 }
@@ -1601,7 +1610,10 @@ function impositionFieldsHtml(step, i){
           </select>
         </div>
         <label class="checkline"><input type="checkbox" data-field="rtl" data-idx="${i}" ${step.rtl?'checked':''}> Right-to-left reading order</label>
-        <p style="font-size:11.5px;color:var(--ink-soft);margin:6px 0 0;">Saddle-stitch, 2 pages per side, padded to a multiple of 4.</p>
+        <div class="subgrid-title">Book Binding</div>
+        <div class="field"><label>Saddle size (sheets)</label><input type="number" min="0" step="1" placeholder="0 = one saddle" data-field="saddleSize" data-numtype="float" data-idx="${i}" value="${step.saddleSize||''}"></div>
+        <label class="checkline"><input type="checkbox" data-field="fillLastSaddle" data-idx="${i}" ${step.fillLastSaddle?'checked':''}> Fill last saddle</label>
+        <p style="font-size:11.5px;color:var(--ink-soft);margin:6px 0 0;">Saddle-stitch, 2 pages per side, padded to a multiple of 4. Fill last saddle pads the final saddle with blanks at the end.</p>
       `}
 
       <div class="subgrid-title">White space (mm)</div>
@@ -1874,7 +1886,7 @@ const STEP1_FIELD_IDS = [
   'autoFit','autoscale','bookletWhiteSpace','centerMarks','centerOnPage','cols','cropMarks','customH','customW',
   'doubleSided','duplexMode','gutterH','gutterMarks','gutterV','knockout','landscape','marginL','marginT',
   'markDistance','markLength','markThickness','paperSize','preserveAspect','registrationColor','repeatCount','repeatMode',
-  'rotateApply','rotatePage','rows','rtl','rtlBooklet','rotateBookletSheet','trimAsPaperSize'
+  'rotateApply','rotatePage','rows','rtl','rtlBooklet','rotateBookletSheet','trimAsPaperSize','saddleSize','fillLastSaddle'
 ];
 
 function bufToBase64(buf){
@@ -2391,7 +2403,7 @@ function ensureExtGState(page, opts){
 
 
 [ 'rows','cols','landscape','margin','marginL','marginT','gutterH','gutterV',
-  'rtl','rtlBooklet','rotateBookletSheet','cropMarks','gutterMarks','centerMarks','markLength','markThickness','markDistance',
+  'rtl','rtlBooklet','rotateBookletSheet','saddleSize','fillLastSaddle','cropMarks','gutterMarks','centerMarks','markLength','markThickness','markDistance',
   'registrationColor','knockout','duplexMode','repeatMode','doubleSided','preserveAspect','centerOnPage','rotatePage','rotateApply','repeatCount','trimAsPaperSize','autoFit'
 ].forEach(id=>{ const el=$(id); if(el) el.addEventListener('input', update); });
 
@@ -2917,25 +2929,43 @@ function buildBookletSheets(numPages, params){
   if (!numPages) return [];
   const duplexMode = params.duplexMode || 'auto';
   const rtl = !!params.rtl;
-  const N = Math.ceil(numPages/4)*4;
-  const nSheets = N/4;
-  const toIdx = p => (p>=1 && p<=numPages) ? p-1 : null;
-  const arr = [];
-  for(let k=1;k<=nSheets;k++){
-    const fl=N-2*k+2, fr=2*k-1, bl=2*k, br=N-2*k+1;
-    arr.push({front:[toIdx(fl),toIdx(fr)], back:[toIdx(bl),toIdx(br)]});
+  // Saddles: the book is cut into groups of `saddleSize` folded sheets (4 pages
+  // each); every group is imposed as its own booklet and they follow one after
+  // another. 0/empty = a single saddle holding the whole book. With "Fill last
+  // saddle" the final group is padded to full size with blank pages at the end.
+  const saddleSheets = Math.max(0, Math.floor(Number(params.saddleSize)||0));
+  const fillLast = !!params.fillLastSaddle;
+  const P = saddleSheets*4;
+  const groups = [];
+  if (P > 0){
+    for (let st=0; st<numPages; st+=P){
+      const count = Math.min(P, numPages-st);
+      groups.push({start:st, count, N: (count<P && !fillLast) ? Math.ceil(count/4)*4 : P});
+    }
+  } else {
+    groups.push({start:0, count:numPages, N:Math.ceil(numPages/4)*4});
   }
   const mkCells = c => rtl ? reverseRows(c,1,2) : c;
   const out = [];
-  if (duplexMode === 'auto'){
-    arr.forEach((sh,i)=>{
-      out.push({rows:1,cols:2,cells:mkCells(sh.front), tag:`Sheet ${i+1} · front`});
-      out.push({rows:1,cols:2,cells:mkCells(sh.back), tag:`Sheet ${i+1} · back`, fold:true});
-    });
-  } else {
-    arr.forEach((sh,i)=> out.push({rows:1,cols:2,cells:mkCells(sh.front), tag:`Sheet ${i+1} · front`}));
-    for(let i=arr.length-1;i>=0;i--) out.push({rows:1,cols:2,cells:mkCells(arr[i].back), tag:`Sheet ${i+1} · back`});
-  }
+  groups.forEach((g, gi)=>{
+    const N = g.N, nSheets = N/4;
+    const toIdx = p => (p>=1 && p<=g.count) ? g.start+p-1 : null;
+    const pre = groups.length>1 ? `Saddle ${gi+1} · ` : '';
+    const arr = [];
+    for(let k=1;k<=nSheets;k++){
+      const fl=N-2*k+2, fr=2*k-1, bl=2*k, br=N-2*k+1;
+      arr.push({front:[toIdx(fl),toIdx(fr)], back:[toIdx(bl),toIdx(br)]});
+    }
+    if (duplexMode === 'auto'){
+      arr.forEach((sh,i)=>{
+        out.push({rows:1,cols:2,cells:mkCells(sh.front), tag:`${pre}Sheet ${i+1} · front`});
+        out.push({rows:1,cols:2,cells:mkCells(sh.back), tag:`${pre}Sheet ${i+1} · back`, fold:true});
+      });
+    } else {
+      arr.forEach((sh,i)=> out.push({rows:1,cols:2,cells:mkCells(sh.front), tag:`${pre}Sheet ${i+1} · front`}));
+      for(let i=arr.length-1;i>=0;i--) out.push({rows:1,cols:2,cells:mkCells(arr[i].back), tag:`${pre}Sheet ${i+1} · back`});
+    }
+  });
   return out;
 }
 
@@ -2957,6 +2987,8 @@ function buildLayout(numPages){
   } else {
     return buildBookletSheets(numPages, {
       duplexMode: $('duplexMode').value,
+      saddleSize: parseInt($('saddleSize').value)||0,
+      fillLastSaddle: $('fillLastSaddle').checked,
       rtl
     });
   }
@@ -3833,12 +3865,9 @@ function strokeRegistrationLine(page, x1,y1,x2,y2, thickness){
 
 function drawTick(page, x1,y1,x2,y2, knockout, thickness){
   if (knockout){
-    const pad = mm2pt(0.2125);
-    page.drawRectangle({
-      x: Math.min(x1,x2)-pad, y: Math.min(y1,y2)-pad,
-      width: Math.abs(x2-x1)+pad*2 || pad*2, height: Math.abs(y2-y1)+pad*2 || pad*2,
-      color: PDFLib.rgb(1,1,1)
-    });
+    // White line, same length as the mark (flat ends), thicker by 0.2 mm each side.
+    const pad = mm2pt(0.2);
+    page.drawLine({start:{x:x1,y:y1}, end:{x:x2,y:y2}, thickness: thickness + pad*2, color: PDFLib.rgb(1,1,1)});
   }
   const registration = $('registrationColor').checked;
   // Try the real /Separation /All colorant first; only fall back to a
