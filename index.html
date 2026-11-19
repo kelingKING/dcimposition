@@ -193,6 +193,10 @@
   .vdp svg { stroke: #1A56C4; }
   .folding { background: #FFF4DB; }
   .folding svg { stroke: #A66A00; }
+  .foldviz { background: #E6F4FA; }
+  .foldviz svg { stroke: #0B6E8F; }
+  .boxviz { background: #F1ECFA; }
+  .boxviz svg { stroke: #6B3FB5; }
 
   .empty-state {
     display: none;
@@ -313,6 +317,30 @@
       </div>
       <h3>Folding</h3>
       <p>Plan folds and panel layouts for folded jobs</p>
+    </a>
+
+    <a class="card" href="fold-visualizer.html" data-name="folding visualizer fold 3d" style="animation-delay:0.35s">
+      <div class="icon-circle foldviz">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 8l5-3 5 3v10l-5 3-5-3z"/>
+          <path d="M8 5v13"/>
+          <path d="M13 8l8-3v10l-8 3"/>
+        </svg>
+      </div>
+      <h3>Folding Visualizer</h3>
+      <p>Preview folded jobs in 3D</p>
+    </a>
+
+    <a class="card" href="box-visualizer.html" data-name="box visualizer 3d carton" style="animation-delay:0.4s">
+      <div class="icon-circle boxviz">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/>
+          <path d="M4 7.5l8 4.5 8-4.5"/>
+          <path d="M12 12v9"/>
+        </svg>
+      </div>
+      <h3>Box Visualizer</h3>
+      <p>Preview boxes and cartons in 3D</p>
     </a>
 
   </div>
