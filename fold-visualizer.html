@@ -1,0 +1,630 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Fold Visualiser</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a fixed control column on the left, the 3D model filling everything else. */
+:root {
+  --stage: #e8e9ed; --stage-ink: #1b2230; --stage-muted: #5b6574; --card: rgba(255,255,255,.86); --card-line: #cfd4dc;
+  --paper: #ffffff; --paper-in: #e6edf7; --paper-edge: #aeb7c4; --paper-ink: #1b2230; --line: #d3d9e2; --muted: #5b6574;
+  --accent: #c8195f; --accent-ink: #ffffff; --shadow: rgba(20,30,50,.22);
+  --side: #1b1e24; --side-ink: #e8ebf0; --side-muted: #9aa3b2; --side-line: #2c313a; --side-field: #262a32; --side-accent: #ff6aa2;
+  --font-display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --font-body: 'Instrument Sans', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --stage: #20242c; --stage-ink: #eef1f6; --stage-muted: #9aa5b6; --card: rgba(27,31,39,.86); --card-line: #3a4352;
+  --paper: #2b3240; --paper-in: #232a37; --paper-edge: #566074; --paper-ink: #eef1f6; --line: #3a4352; --muted: #9aa5b6;
+  --accent: #ff5c97; --accent-ink: #1a0610; --shadow: rgba(0,0,0,.55);
+  --side: #14171c; --side-line: #262b33; --side-field: #1e2229; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --stage: #20242c; --stage-ink: #eef1f6; --stage-muted: #9aa5b6; --card: rgba(27,31,39,.86); --card-line: #3a4352;
+  --paper: #2b3240; --paper-in: #232a37; --paper-edge: #566074; --paper-ink: #eef1f6; --line: #3a4352; --muted: #9aa5b6;
+  --accent: #ff5c97; --accent-ink: #1a0610; --shadow: rgba(0,0,0,.55);
+  --side: #14171c; --side-line: #262b33; --side-field: #1e2229; color-scheme: dark; }
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--stage); color: var(--stage-ink); font-family: var(--font-body); font-size: 13.5px; line-height: 1.4; overflow: hidden; }
+.app { display: grid; grid-template-columns: 340px minmax(0, 1fr); height: 100%; }
+.side { background: var(--side); color: var(--side-ink); overflow-y: auto; min-width: 0; padding-left: env(safe-area-inset-left, 0px); }
+.side header { padding: 14px 16px 12px; border-bottom: 1px solid var(--side-line); }
+.side h1 { font-family: var(--font-display); font-size: 1.2rem; margin: 0; letter-spacing: -.005em; }
+.side header p { margin: 2px 0 0; color: var(--side-muted); font-size: 12.5px; }
+details { border-bottom: 1px solid var(--side-line); }
+summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 12px 16px; font-weight: 600; letter-spacing: .08em; font-size: 12px; text-transform: uppercase; }
+summary::-webkit-details-marker { display: none; }
+summary::before { content: ''; width: 7px; height: 7px; border-right: 2px solid var(--side-muted); border-bottom: 2px solid var(--side-muted); transform: rotate(-45deg); transition: transform .15s; margin-right: 2px; }
+details[open] > summary::before { transform: rotate(45deg); }
+summary:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--side-accent); outline-offset: 2px; }
+.body { padding: 2px 16px 16px; display: flex; flex-direction: column; gap: 10px; }
+.row { display: grid; grid-template-columns: 92px minmax(0, 1fr) 74px; align-items: center; gap: 8px; }
+.row > label { color: var(--side-muted); font-size: 12.5px; }
+.row > span { display: flex; align-items: center; gap: 4px; }
+.row .unit { color: var(--side-muted); font-size: 12px; }
+.row.sel { grid-template-columns: 92px minmax(0, 1fr); }
+.btns { display: flex; flex-wrap: wrap; gap: 6px; }
+select, input[type=number], button { font: inherit; font-size: 13px; color: var(--side-ink); background: var(--side-field); border: 1px solid var(--side-line); border-radius: 7px; padding: 6px 9px; }
+select { width: 100%; }
+input[type=number] { width: 100%; text-align: center; padding: 5px 4px; }
+button { cursor: pointer; font-weight: 500; }
+button:hover { border-color: var(--side-accent); }
+button.primary { background: var(--side-accent); border-color: var(--side-accent); color: #1a0610; font-weight: 600; }
+input[type=range] { width: 100%; accent-color: var(--side-accent); }
+.check { display: flex; align-items: center; gap: 8px; color: var(--side-ink); font-size: 13px; }
+.check input { accent-color: var(--side-accent); }
+.drop { display: flex; align-items: center; justify-content: space-between; gap: 8px; border: 1px dashed var(--side-line); border-radius: 8px; padding: 10px 10px 10px 12px; color: var(--side-muted); font-size: 13px; }
+.drop.over { border-color: var(--side-accent); color: var(--side-ink); }
+.drop input { display: none; }
+.hint { color: var(--side-muted); font-size: 12px; margin: 0; }
+.hint.bad { color: var(--side-accent); }
+.maps { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.maps h3 { margin: 0 0 6px; font-size: 12px; color: var(--side-muted); font-weight: 600; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { color: var(--side-muted); font-size: 12.5px; }
+input[type=text] { font: inherit; font-family: var(--font-mono); font-size: 12.5px; color: var(--side-ink); background: var(--side-field); border: 1px solid var(--side-line); border-radius: 7px; padding: 7px 9px; width: 100%; }
+input[type=text].bad { border-color: var(--side-accent); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+details[hidden] { display: none; }
+.foldlist { display: flex; flex-direction: column; gap: 6px; }
+.fr { display: grid; grid-template-columns: 18px minmax(0, 1fr) minmax(0, 1.3fr) 30px; gap: 6px; align-items: center; }
+.fr > b { color: var(--side-muted); font-size: 12px; font-weight: 500; }
+.fr button { padding: 5px 0; }
+.mapgrid { display: grid; gap: 3px; }
+.mapgrid div { aspect-ratio: var(--ar); display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 700; font-size: 1rem; border: 1px solid var(--side-line); background: var(--side-field); border-radius: 3px; }
+.mapgrid div.cover { border-color: var(--side-accent); color: var(--side-accent); }
+.mapgrid div.turn span { display: inline-block; transform: rotate(180deg); }
+
+.main { position: relative; background: var(--stage); overflow: hidden; perspective: 1700px; perspective-origin: 50% 42%; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; min-width: 0; }
+.main.drag { cursor: grabbing; }
+.rot { position: absolute; left: 50%; top: 46%; width: 0; height: 0; transform-style: preserve-3d; }
+.rot.ease { transition: transform .7s cubic-bezier(.3,.7,.2,1); }
+.scene { position: absolute; left: 0; top: 0; transform-style: preserve-3d; }
+.panel { position: absolute; left: 0; top: 0; transform-origin: 0 0; transform-style: preserve-3d; }
+.face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; border: 1px solid var(--paper-edge);
+  background: var(--paper); color: var(--paper-ink); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 1px 3px var(--shadow); overflow: hidden; }
+.face.back { transform: rotateY(180deg); background: var(--paper-in); }
+.face .in { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; width: 100%; height: 100%; padding: 10px 8px; }
+.face .in.turn { transform: rotate(180deg); }
+.face .head, .face .tag { font-family: var(--font-mono); font-size: 10px; letter-spacing: .07em; color: var(--muted); text-transform: uppercase; }
+.face .num { font-family: var(--font-display); font-weight: 700; line-height: 1; }
+.face .lines { width: 70%; display: flex; flex-direction: column; gap: 5px; margin-top: 4px; }
+.face .lines i { display: block; height: 3px; border-radius: 2px; background: var(--line); }
+.face.cover { box-shadow: inset 0 0 0 3px var(--accent), 0 1px 3px var(--shadow); }
+.face.cover .num { color: var(--accent); }
+.face .art { position: absolute; inset: 0; background-size: 100% 100%; background-repeat: no-repeat; }
+.face .art.turn { transform: rotate(180deg); }
+.face .badge { position: absolute; left: 6px; top: 6px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; display: flex; align-items: center; justify-content: center;
+  background: var(--accent); color: var(--accent-ink); font-family: var(--font-mono); font-size: 11px; font-weight: 500; }
+.main.nonum .face .num, .main.nonum .face .badge { display: none; }
+.float { position: absolute; top: max(12px, env(safe-area-inset-top, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); display: flex; gap: 8px; z-index: 5; }
+.float button { background: #1e2229; color: #eef1f6; border-color: #3a4352; }
+.cap { position: absolute; left: 50%; bottom: max(16px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: min(560px, calc(100% - 32px)); z-index: 4;
+  background: var(--card); border: 1px solid var(--card-line); border-radius: 10px; padding: 10px 14px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); pointer-events: none; }
+.cap b { display: block; font-family: var(--font-display); font-size: 1.02rem; }
+.cap span { color: var(--stage-muted); }
+.hintline { position: absolute; left: 14px; top: 14px; font-family: var(--font-mono); font-size: 11px; color: var(--stage-muted); pointer-events: none; z-index: 3; }
+@media (max-width: 800px) {
+  .app { grid-template-columns: 1fr; grid-template-rows: minmax(320px, 62%) minmax(0, 1fr); }
+  .main { order: 1; } .side { order: 2; padding-left: max(0px, env(safe-area-inset-left, 0px)); }
+  .hintline { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .rot.ease { transition: none; } }
+</style>
+
+<div class="app">
+  <aside class="side" aria-label="Controls">
+    <header><h1>Fold Visualiser</h1><p>Fold an imposed sheet in 3D</p></header>
+
+    <details open><summary>Fold</summary><div class="body">
+      <div class="row sel"><label for="preset">Fold type</label><select id="preset"></select></div>
+      <p class="hint" id="info"></p>
+      <div class="btns"><button type="button" id="makeCustom">Customise this fold</button></div>
+    </div></details>
+
+    <details open id="builder" hidden><summary>Custom fold</summary><div class="body">
+      <div class="two">
+        <div class="field"><label for="cbCols">Panels across</label><input type="number" id="cbCols" min="1" max="8" step="1"></div>
+        <div class="field"><label for="cbRows">Panels down</label><input type="number" id="cbRows" min="1" max="4" step="1"></div>
+      </div>
+      <div class="field"><label>Folds, in order</label><div id="foldList" class="foldlist"></div></div>
+      <div class="btns"><button type="button" id="cbAdd">Add fold</button></div>
+      <p class="hint" id="cbMsg">Each fold swings everything on the left (or top) side of its line back behind the rest. Set the page order in Page map below.</p>
+    </div></details>
+
+    <details open><summary>Artwork</summary><div class="body">
+      <div class="drop" id="dropOne"><span>Drop 1-up PDF</span><button type="button" id="artOne">Browse</button><input type="file" id="fileOne" accept="application/pdf,.pdf"></div>
+      <div class="drop" id="dropImp"><span>Drop imposed PDF</span><button type="button" id="artImp">Browse</button><input type="file" id="fileImp" accept="application/pdf,.pdf"></div>
+      <div class="btns"><button type="button" id="artClear" hidden>Clear artwork</button></div>
+      <p class="hint" id="artNote">A 1-up PDF has one page per panel. An imposed PDF has the outside sheet first, then the inside sheet. Your file stays in this browser. The TrimBox is used when the page has one.</p>
+    </div></details>
+
+    <details open><summary>Folding</summary><div class="body">
+      <div class="row"><label for="prog">Fold</label><input type="range" id="prog" min="0" max="100" value="0"><span><input type="number" id="progNum" min="0" max="100" value="0" aria-label="Fold percent"></span></div>
+      <div class="btns">
+        <button type="button" id="play" class="primary">Play</button><button type="button" id="stop">Stop</button>
+        <button type="button" id="prev">Back</button><button type="button" id="next">Next</button>
+        <button type="button" id="flat">Flat</button><button type="button" id="folded">Folded</button>
+      </div>
+      <div class="row"><label for="dur">Fold duration</label><input type="range" id="dur" min="2" max="20" step="0.5" value="6"><span><input type="number" id="durNum" min="2" max="20" step="0.5" value="6" aria-label="Fold duration in seconds"><span class="unit">s</span></span></div>
+      <label class="check"><input type="checkbox" id="loop"> Loop</label>
+      <label class="check"><input type="checkbox" id="spin" checked> Turn to show all sides when folded</label>
+      <div class="row"><label for="spinDur">Turn duration</label><input type="range" id="spinDur" min="3" max="30" step="1" value="10"><span><input type="number" id="spinDurNum" min="3" max="30" step="1" value="10" aria-label="Turn duration in seconds"><span class="unit">s</span></span></div>
+    </div></details>
+
+    <details open><summary>View</summary><div class="body">
+      <div class="row"><label for="zoom">Zoom</label><input type="range" id="zoom" min="0.4" max="3" step="0.05" value="1"><span><input type="number" id="zoomNum" min="0.4" max="3" step="0.05" value="1" aria-label="Zoom"></span></div>
+      <label class="check"><input type="checkbox" id="showNum" checked> Show page numbers</label>
+      <div class="btns"><button type="button" id="flip">Turn over</button><button type="button" id="reset">Reset view</button></div>
+    </div></details>
+
+    <details open><summary>Page map</summary><div class="body">
+      <div class="maps"><div><h3>Outside sheet</h3><div class="mapgrid" id="mapOut"></div></div><div><h3>Inside sheet</h3><div class="mapgrid" id="mapIn"></div></div></div>
+      <div class="field"><label for="mapOutIn">Outside page order</label><input type="text" id="mapOutIn" spellcheck="false" autocomplete="off"></div>
+      <div class="field"><label for="mapInIn">Inside page order</label><input type="text" id="mapInIn" spellcheck="false" autocomplete="off"></div>
+      <div class="btns"><button type="button" id="mapReset">Reset to default</button></div>
+      <p class="hint" id="mapMsg">Type your own page order. Separate pages with commas, add r to turn a page upside down, use - for a blank. Pages run left to right, row by row from the top, as on the imposed sheet.</p>
+      <p class="hint">The 10pp and 12pp orders are starting points, check them against a folded dummy. Roll fold panels are drawn the same width here, a real fold-in panel is slightly narrower.</p>
+    </div></details>
+  </aside>
+
+  <main class="main" id="stage" tabindex="0" aria-label="3D fold preview. Drag to orbit, scroll to zoom.">
+    <div class="hintline">Drag: orbit · Wheel or pinch: zoom · Double-click: reset</div>
+    <div class="float"><button type="button" id="viewFlat">Flat</button><button type="button" id="reset2">Reset view</button></div>
+    <div class="rot" id="rot"><div class="scene" id="scene"></div></div>
+    <div class="cap" aria-live="polite"><b id="stepTitle"></b><span id="stepText"></span></div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+
+  // Pages are listed row by row from the top, as on the imposed sheet. "r" turns the page upside down.
+  var FOLDS = {
+    roll6: { label: 'Roll fold · 6pp', cols: 3, rows: 1, pw: 96, ph: 200, out: '5, 6, 1', inn: '2, 3, 4',
+      steps: [
+        { axis: 'v', at: 1, title: 'Fold the left panel back', text: 'The narrow fold-in panel goes behind the middle panel.' },
+        { axis: 'v', at: 2, title: 'Fold the stack back behind the cover', text: 'The cover panel stays in front. The folded pair rolls in behind it.' }],
+      end: 'Closed: page 1 is the cover. Open the cover to find pages 2, 3 and 4 on the inside.' },
+    roll8: { label: 'Roll fold · 8pp', cols: 4, rows: 1, pw: 74, ph: 190, out: '6, 7, 8, 1', inn: '2, 3, 4, 5',
+      steps: [
+        { axis: 'v', at: 1, title: 'Fold the first panel back', text: 'The narrowest panel, pages 6 and 5, goes behind its neighbour.' },
+        { axis: 'v', at: 2, title: 'Roll the stack behind the next panel', text: 'The panels roll in a spiral, each a little wider than the one inside it.' },
+        { axis: 'v', at: 3, title: 'Roll the stack behind the cover', text: 'The cover stays in front.' }],
+      end: 'Closed: page 1 is the cover.' },
+    roll10: { label: 'Roll fold · 10pp', cols: 5, rows: 1, pw: 70, ph: 190, out: '7, 8, 9, 10, 1', inn: '2, 3, 4, 5, 6',
+      steps: [
+        { axis: 'v', at: 1, title: 'Fold the first panel back', text: 'The narrowest panel, the one that rolls in first, goes behind its neighbour.' },
+        { axis: 'v', at: 2, title: 'Roll the stack behind the next panel', text: 'The panels roll in a spiral, each a little wider than the one inside it.' },
+        { axis: 'v', at: 3, title: 'Roll the stack behind the next panel', text: 'The panels roll in a spiral, each a little wider than the one inside it.' },
+        { axis: 'v', at: 4, title: 'Roll the stack behind the cover', text: 'The cover stays in front.' }],
+      end: 'Closed: page 1 is the cover. The page order extends the 6pp and 8pp roll folds, check it against a dummy.' },
+    roll12: { label: 'Roll fold · 12pp', cols: 6, rows: 1, pw: 70, ph: 190, out: '8, 9, 10, 11, 12, 1', inn: '2, 3, 4, 5, 6, 7',
+      steps: [
+        { axis: 'v', at: 1, title: 'Fold the first panel back', text: 'The narrowest panel, the one that rolls in first, goes behind its neighbour.' },
+        { axis: 'v', at: 2, title: 'Roll the stack behind the next panel', text: 'The panels roll in a spiral, each a little wider than the one inside it.' },
+        { axis: 'v', at: 3, title: 'Roll the stack behind the next panel', text: 'The panels roll in a spiral, each a little wider than the one inside it.' },
+        { axis: 'v', at: 4, title: 'Roll the stack behind the next panel', text: 'The panels roll in a spiral, each a little wider than the one inside it.' },
+        { axis: 'v', at: 5, title: 'Roll the stack behind the cover', text: 'The cover stays in front.' }],
+      end: 'Closed: page 1 is the cover. The page order extends the 6pp and 8pp roll folds, check it against a dummy.' },
+    cross8: { label: 'Cross fold · 8pp', cols: 2, rows: 2, pw: 138, ph: 195, out: '3r, 2r, 8, 1', inn: '4, 5, 6, 7',
+      steps: [
+        { axis: 'h', at: 1, title: 'Fold the top row back along the middle', text: 'The upside-down row goes behind the bottom row, so the sheet is half its height.' },
+        { axis: 'v', at: 1, title: 'Fold the left half back at a right angle', text: 'The second fold crosses the first. The back cover, page 8, goes behind page 1.' }],
+      end: 'Closed: page 1 is the cover and page 8 the back. Open it to find 6 and 7 inside, and 4 and 5 on the other side of the middle fold.' },
+    cross12: { label: 'Cross fold + roll · 12pp', cols: 3, rows: 2, pw: 94, ph: 198, out: '4r, 3r, 2r, 11, 12, 1', inn: '5, 6, 7, 8, 9, 10',
+      steps: [
+        { axis: 'h', at: 1, title: 'Fold the top row back along the middle', text: 'The upside-down row goes behind the bottom row. The strip is now one row of three panels.' },
+        { axis: 'v', at: 1, title: 'Fold the fold-in panel back', text: 'The left panel goes behind the middle one, the first turn of the roll.' },
+        { axis: 'v', at: 2, title: 'Roll the stack behind the cover', text: 'The cover panel stays in front.' }],
+      end: 'Closed: page 1 is the cover. The page order is a starting point, check it against a dummy.' }
+  };
+
+  function parse(s) {
+    return s.split(',').map(function (t) { t = t.trim(); if (t === '-' || t === '') return { n: 0, r: false, blank: true }; return { n: parseInt(t, 10), r: /r$/i.test(t), bad: !/^\d+r?$/i.test(t) }; });
+  }
+  var custom = {};   // per fold type: { out, inn } typed by the user
+
+  // ---- matrices (row-major 4x4, applied to column vectors) ----
+  var I4 = [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1];
+  function mul(A, B) { var o = new Array(16), r, c, k; for (r = 0; r < 4; r++) for (c = 0; c < 4; c++) { var s = 0; for (k = 0; k < 4; k++) s += A[r*4+k] * B[k*4+c]; o[r*4+c] = s; } return o; }
+  function trans(x, y, z) { return [1,0,0,x, 0,1,0,y, 0,0,1,z, 0,0,0,1]; }
+  // Rotation about a line in the sheet plane. The part on the low side swings behind (away from the viewer).
+  function rotAbout(axis, f, th) {
+    var c = Math.cos(th), s = Math.sin(th);
+    if (axis === 'v') return [c,0,-s,f - f*c, 0,1,0,0, s,0,c,-f*s, 0,0,0,1];
+    return [1,0,0,0, 0,c,-s,f - f*c, 0,s,c,-f*s, 0,0,0,1];
+  }
+  function css(M) { return 'matrix3d(' + [M[0],M[4],M[8],M[12], M[1],M[5],M[9],M[13], M[2],M[6],M[10],M[14], M[3],M[7],M[11],M[15]].map(function (v) { return Math.abs(v) < 1e-9 ? 0 : +v.toFixed(5); }).join(',') + ')'; }
+  function apply(M, x, y, z) { return [M[0]*x + M[1]*y + M[2]*z + M[3], M[4]*x + M[5]*y + M[6]*z + M[7], M[8]*x + M[9]*y + M[10]*z + M[11]]; }
+
+  var LIFT = 5;                     // px each fold lifts the moving layers behind the rest, so the stack does not z-fight
+  var cur = null, art = null, st = { key: 'cross8', p: 0, target: 0, yaw: 22, pitch: -16, zoom: 1, anim: 0, last: 0, playing: false, dur: 6, spinDur: 10, hold: 0, dragging: false };
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function ease(t) { return t < 0 ? 0 : t > 1 ? 1 : t * t * (3 - 2 * t); }
+
+  function build(key) {
+    var F = Object.assign({}, FOLDS[key]); if (custom[key]) { F.out = custom[key].out; F.inn = custom[key].inn; } if (art && art.ratio) F.pw = Math.round(F.ph * art.ratio * 10) / 10;
+    var out = parse(F.out), inn = parse(F.inn), cols = F.cols, rows = F.rows;
+    var panels = [], r, c;
+    for (r = 0; r < rows; r++) for (c = 0; c < cols; c++) {
+      var oi = r * cols + c, ii = r * cols + (cols - 1 - c);
+      panels.push({ r: r, c: c, x: c * F.pw, y: r * F.ph, front: out[oi], back: inn[ii], moves: [] });
+    }
+    // Decide which panels each fold moves by folding the ones before it all the way.
+    F.steps.forEach(function (S, k) {
+      var line = S.at * (S.axis === 'v' ? F.pw : F.ph);
+      panels.forEach(function (P) {
+        var M = matFor(P, F, k, function (j) { return 1; });
+        var ctr = apply(M, F.pw / 2, F.ph / 2, 0);
+        P.moves[k] = (S.axis === 'v' ? ctr[0] : ctr[1]) < line;
+      });
+    });
+    return { F: F, panels: panels, el: [] };
+  }
+  // Transform of one panel when steps before "upTo" have progress tOf(j).
+  function matFor(P, F, upTo, tOf) {
+    var M = trans(P.x, P.y, 0);
+    for (var j = 0; j < upTo; j++) {
+      if (!P.moves[j]) continue;
+      var S = F.steps[j], line = S.at * (S.axis === 'v' ? F.pw : F.ph), t = tOf(j);
+      M = mul(trans(0, 0, -LIFT * t), mul(rotAbout(S.axis, line, Math.PI * t), M));
+    }
+    return M;
+  }
+
+  function faceHtml(side, tok, F, isCover, url, turn) {
+    if (tok.blank) return '<div class="face ' + side + '"><div class="in"><span class="tag">blank</span></div></div>';
+    if (url) return '<div class="face ' + side + (isCover ? ' cover' : '') + '"><div class="art' + (turn ? ' turn' : '') + '" style="background-image:url(' + url + ')"></div><span class="badge">' + tok.n + '</span></div>';
+    var size = Math.round(Math.min(F.pw, F.ph) * 0.52);
+    var lines = '<div class="lines"><i></i><i style="width:84%"></i><i style="width:92%"></i><i style="width:60%"></i></div>';
+    return '<div class="face ' + side + (isCover ? ' cover' : '') + '"><div class="in' + (tok.r ? ' turn' : '') + '">' +
+      '<span class="head">&#9650; head</span><span class="num" style="font-size:' + size + 'px">' + tok.n + '</span>' +
+      '<span class="tag">' + (isCover ? 'cover' : (side === 'front' ? 'outside' : 'inside')) + '</span>' + lines + '</div></div>';
+  }
+
+  function mount(key) {
+    st.key = key; cur = build(key);
+    var F = cur.F, scene = $('scene');
+    scene.textContent = '';
+    cur.panels.forEach(function (P) {
+      var d = document.createElement('div');
+      d.className = 'panel'; d.style.width = F.pw + 'px'; d.style.height = F.ph + 'px';
+      var fu = null, bu = null, ft = false, bt = false;
+      if (art && art.mode === 'oneup') { fu = art.pages[P.front.n - 1]; bu = art.pages[P.back.n - 1]; ft = P.front.r; bt = P.back.r; }
+      else if (art && art.mode === 'imposed') { fu = art.out[P.r * F.cols + P.c]; bu = art.inn[P.r * F.cols + (F.cols - 1 - P.c)]; }
+      d.innerHTML = faceHtml('front', P.front, F, P.front.n === 1, fu, ft) + faceHtml('back', P.back, F, false, bu, bt);
+      scene.appendChild(d); P.el = d;
+    });
+    st.p = 0; st.target = 0; st.playing = false;
+    $('info').textContent = F.cols * F.rows * 2 + ' pages · ' + F.cols + ' × ' + F.rows + ' panels per side · ' + F.steps.length + ' fold' + (F.steps.length === 1 ? '' : 's') + '.';
+    renderBuilder(); renderMaps(); if (document.activeElement !== $('mapOutIn') && document.activeElement !== $('mapInIn')) syncMapInputs(); layout(); draw(); syncPlay();
+  }
+
+  function layout() {
+    var m = $('stage'), F = cur.F, w = m.clientWidth || 800, h = m.clientHeight || 600;
+    var sheetW = F.cols * F.pw, sheetH = F.rows * F.ph;
+    st.scale = Math.max(0.3, Math.min(2.2, (w - 90) / sheetW, (h - 190) / sheetH));
+  }
+
+  function draw() {
+    var F = cur.F, n = F.steps.length, minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
+    var tOf = function (j) { return ease(st.p - j); };
+    cur.panels.forEach(function (P) {
+      var M = matFor(P, F, n, tOf);
+      P.el.style.transform = css(M);
+      [[0,0],[F.pw,0],[0,F.ph],[F.pw,F.ph]].forEach(function (q) {
+        var a = apply(M, q[0], q[1], 0);
+        minX = Math.min(minX, a[0]); maxX = Math.max(maxX, a[0]); minY = Math.min(minY, a[1]); maxY = Math.max(maxY, a[1]);
+      });
+    });
+    var cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+    $('scene').style.transform = 'translate(' + (-cx).toFixed(2) + 'px,' + (-cy).toFixed(2) + 'px)';
+    $('rot').style.transform = 'scale(' + ((st.scale || 1) * st.zoom).toFixed(4) + ') rotateX(' + st.pitch.toFixed(2) + 'deg) rotateY(' + st.yaw.toFixed(2) + 'deg)';
+    var done = st.p >= n - 0.001;
+    if (st.p < 0.02) { $('stepTitle').textContent = 'Flat sheet, outside up'; $('stepText').textContent = F.label + '. Press Play to fold it, or drag the Fold slider.'; }
+    else if (done) { $('stepTitle').textContent = 'Folded'; $('stepText').textContent = F.end; }
+    else { var si = Math.max(0, Math.min(n - 1, Math.ceil(st.p - 0.0001) - 1)), S = F.steps[si]; $('stepTitle').textContent = 'Fold ' + (si + 1) + ' of ' + n + ': ' + S.title; $('stepText').textContent = S.text; }
+    var pct = Math.round(st.p / n * 100);
+    if (document.activeElement !== $('prog')) $('prog').value = String(st.p / n * 100);
+    if (document.activeElement !== $('progNum')) $('progNum').value = String(pct);
+    var z = $('zoom'); if (document.activeElement !== z && Math.abs(+z.value - st.zoom) > 0.001) { z.value = String(st.zoom); $('zoomNum').value = String(Math.round(st.zoom * 100) / 100); }
+  }
+
+  function renderMaps() {
+    var F = cur.F;
+    function fill(el, list) {
+      el.textContent = '';
+      el.style.gridTemplateColumns = 'repeat(' + F.cols + ', 1fr)';
+      el.style.setProperty('--ar', (F.pw / F.ph).toFixed(3));
+      list.forEach(function (t) {
+        var d = document.createElement('div');
+        if (t.n === 1) d.className = 'cover'; if (t.r) d.className += ' turn';
+        d.innerHTML = '<span>' + (t.blank ? '–' : t.n) + '</span>'; el.appendChild(d);
+      });
+    }
+    fill($('mapOut'), parse(F.out)); fill($('mapIn'), parse(F.inn));
+  }
+
+  // ---- animation ----
+  function loop(ts) {
+    if (!st.last) st.last = ts;
+    var dt = Math.min(0.05, (ts - st.last) / 1000); st.last = ts;
+    var n = cur.F.steps.length, speed = n / st.dur;
+    if (st.playing) {
+      st.target = n;
+      st.p = Math.min(n, st.p + dt * speed);
+      if (st.p >= n) {
+        if ($('loop').checked) { st.hold += dt; if (st.hold > 1.2) { st.hold = 0; st.p = 0; } }
+        else { st.playing = false; syncPlay(); }
+      }
+    } else if (Math.abs(st.p - st.target) > 0.0005) {
+      st.p += (st.target > st.p ? 1 : -1) * Math.min(Math.abs(st.target - st.p), dt * speed * 1.4);
+    } else { st.p = st.target; }
+    if (!reduce && $('spin').checked && st.p >= n - 0.001 && !st.dragging) st.yaw += dt * 360 / st.spinDur;
+    draw();
+    st.anim = requestAnimationFrame(loop);
+  }
+  function syncPlay() { $('play').textContent = st.playing ? 'Pause' : (st.p >= cur.F.steps.length - 0.001 ? 'Replay' : 'Play'); }
+  function go(target) { st.playing = false; st.hold = 0; st.target = Math.max(0, Math.min(cur.F.steps.length, target)); if (reduce) st.p = st.target; syncPlay(); }
+
+  // ---- custom page map ----
+  function fmt(list) { return list.map(function (t) { return t.blank ? '-' : t.n + (t.r ? 'r' : ''); }).join(', '); }
+  function syncMapInputs() { var F = cur.F; $('mapOutIn').value = F.out; $('mapInIn').value = F.inn; $('mapOutIn').classList.remove('bad'); $('mapInIn').classList.remove('bad'); }
+  function mapMsg(t, bad) { var m = $('mapMsg'); m.textContent = t; m.className = 'hint' + (bad ? ' bad' : ''); }
+  function applyMap() {
+    var F = cur.F, need = F.cols * F.rows, o = parse($('mapOutIn').value), i = parse($('mapInIn').value), bad = false, msg = '';
+    [['mapOutIn', o, 'Outside'], ['mapInIn', i, 'Inside']].forEach(function (q) {
+      var el = $(q[0]), t = q[1], err = '';
+      if (t.length !== need) err = q[2] + ' needs ' + need + ' entries, you have ' + t.length + '.';
+      else if (t.some(function (x) { return x.bad; })) err = q[2] + ' has an entry that is not a number, such as 5, 3r or -.';
+      el.classList.toggle('bad', !!err); if (err) { bad = true; msg = msg || err; }
+    });
+    if (bad) { mapMsg(msg + ' The 3D view keeps the last valid order.', true); return; }
+    var all = o.concat(i).filter(function (x) { return !x.blank; }).map(function (x) { return x.n; }), seen = {}, dup = [];
+    all.forEach(function (n) { if (seen[n]) dup.push(n); seen[n] = true; });
+    custom[st.key] = { out: $('mapOutIn').value.trim(), inn: $('mapInIn').value.trim() };
+    var keep = st.p; mount(st.key); st.p = st.target = keep;
+    mapMsg(dup.length ? 'Applied. Page ' + dup.filter(function (n, k) { return dup.indexOf(n) === k; }).join(', ') + ' appears more than once.' : 'Applied. ' + all.length + ' pages placed.', false);
+  }
+  $('mapOutIn').addEventListener('input', applyMap); $('mapInIn').addEventListener('input', applyMap);
+  $('mapReset').addEventListener('click', function () { delete custom[st.key]; var keep = st.p; mount(st.key); st.p = st.target = keep; mapMsg('Back to the default order for this fold.', false); });
+
+  // ---- custom fold builder ----
+  function cloneFold(F) { var c = Object.assign({}, F); c.steps = F.steps.map(function (x) { return Object.assign({}, x); }); return c; }
+  function stepText(S) {
+    if (S.axis === 'v') return { title: 'Fold the left side back', text: 'Everything left of this line swings behind the rest.' };
+    return { title: 'Fold the top back', text: 'Everything above this line swings behind the rest.' };
+  }
+  function seqList(a, b) { var o = []; for (var i = a; i <= b; i++) o.push(i); return o.join(', '); }
+  function seedCustom() {
+    var F = cloneFold(cur.F);
+    F.label = 'Custom fold'; F.custom = true;
+    F.end = 'Closed. Turn it with the orbit controls to see every side.';
+    FOLDS.custom = F; delete custom.custom;
+    F.out = cur.F.out; F.inn = cur.F.inn;
+    F.steps.forEach(function (S) { var t = stepText(S); S.title = t.title; S.text = t.text; });
+  }
+  function builderOn() { return st.key === 'custom'; }
+  function renderBuilder() {
+    $('builder').hidden = !builderOn(); $('makeCustom').hidden = builderOn();
+    if (!builderOn()) return;
+    var F = FOLDS.custom;
+    if (document.activeElement !== $('cbCols')) $('cbCols').value = F.cols;
+    if (document.activeElement !== $('cbRows')) $('cbRows').value = F.rows;
+    var box = $('foldList'); box.textContent = '';
+    F.steps.forEach(function (S, k) {
+      var row = document.createElement('div'); row.className = 'fr';
+      var ax = document.createElement('select'); ax.setAttribute('aria-label', 'Fold ' + (k + 1) + ' direction');
+      [['v', 'Vertical line'], ['h', 'Horizontal line']].forEach(function (o) { var e = document.createElement('option'); e.value = o[0]; e.textContent = o[1]; ax.appendChild(e); });
+      ax.value = S.axis;
+      var at = document.createElement('select'); at.setAttribute('aria-label', 'Fold ' + (k + 1) + ' position');
+      var cnt = S.axis === 'v' ? F.cols : F.rows;
+      for (var i = 1; i < cnt; i++) { var e = document.createElement('option'); e.value = i; e.textContent = 'after ' + (S.axis === 'v' ? 'column ' : 'row ') + i; at.appendChild(e); }
+      at.value = S.at;
+      var del = document.createElement('button'); del.type = 'button'; del.textContent = '×'; del.setAttribute('aria-label', 'Remove fold ' + (k + 1)); del.disabled = F.steps.length < 2;
+      var num = document.createElement('b'); num.textContent = k + 1;
+      ax.addEventListener('change', function () { S.axis = ax.value; S.at = Math.min(S.at, (S.axis === 'v' ? F.cols : F.rows) - 1) || 1; var t = stepText(S); S.title = t.title; S.text = t.text; customChanged(false); });
+      at.addEventListener('change', function () { S.at = +at.value; customChanged(false); });
+      del.addEventListener('click', function () { F.steps.splice(k, 1); customChanged(false); });
+      row.appendChild(num); row.appendChild(ax); row.appendChild(at); row.appendChild(del); box.appendChild(row);
+    });
+  }
+  function fixSteps(F) {
+    F.steps = F.steps.filter(function (S) { var c = S.axis === 'v' ? F.cols : F.rows; return c > 1; });
+    F.steps.forEach(function (S) { var c = S.axis === 'v' ? F.cols : F.rows; if (S.at > c - 1) S.at = c - 1; if (S.at < 1) S.at = 1; });
+    if (!F.steps.length) { var S = F.cols > 1 ? { axis: 'v', at: F.cols - 1 } : { axis: 'h', at: 1 }; var t = stepText(S); S.title = t.title; S.text = t.text; F.steps.push(S); }
+  }
+  // sizeChanged: panel counts changed, so the page order starts again as 1..n outside, then the inside.
+  function customChanged(sizeChanged) {
+    var F = FOLDS.custom; fixSteps(F);
+    if (sizeChanged) {
+      var n = F.cols * F.rows; F.out = seqList(1, n); F.inn = seqList(n + 1, 2 * n); delete custom.custom;
+      if (art && art.mode === 'imposed') { art = null; $('artClear').hidden = true; note('Imposed artwork is split for one layout, so it was cleared. Add it again.'); }
+    }
+    var keep = st.p; mount('custom'); st.p = st.target = Math.min(keep, F.steps.length);
+    if (sizeChanged) mapMsg('Panel count changed, so the page order was set to 1, 2, 3 and so on. Edit it below.', false);
+  }
+  function sizeInput(id, key, max) {
+    $(id).addEventListener('change', function () {
+      var v = Math.max(1, Math.min(max, Math.round(+$(id).value) || 1)), F = FOLDS.custom;
+      F[key] = v; if (F.cols * F.rows < 2) F.cols = 2;
+      $(id).value = F[key]; customChanged(true);
+    });
+  }
+  sizeInput('cbCols', 'cols', 8); sizeInput('cbRows', 'rows', 4);
+  $('cbAdd').addEventListener('click', function () {
+    var F = FOLDS.custom, S = F.cols > 1 ? { axis: 'v', at: 1 } : { axis: 'h', at: 1 };
+    var t = stepText(S); S.title = t.title; S.text = t.text; F.steps.push(S); customChanged(false);
+  });
+  $('makeCustom').addEventListener('click', function () {
+    seedCustom();
+    if (art && art.mode === 'imposed') { art = null; $('artClear').hidden = true; note('Imposed artwork is split for one fold type, so it was cleared. Add it again.'); }
+    sel.value = 'custom'; mount('custom');
+  });
+
+  // ---- wiring ----
+  var sel = $('preset');
+  Object.keys(FOLDS).forEach(function (k) { var o = document.createElement('option'); o.value = k; o.textContent = FOLDS[k].label; sel.appendChild(o); });
+  (function () { var o = document.createElement('option'); o.value = 'custom'; o.textContent = 'Custom fold'; sel.appendChild(o); })();
+  sel.value = 'cross8';
+  sel.addEventListener('change', function () {
+    if (art && art.mode === 'imposed') { art = null; $('artClear').hidden = true; note('Imposed artwork is split for one fold type, so it was cleared. Add it again for this fold.'); }
+    if (sel.value === 'custom' && !FOLDS.custom) { var prev = st.key; seedCustom(); }
+    mount(sel.value);
+  });
+  $('play').addEventListener('click', function () {
+    var n = cur.F.steps.length;
+    if (st.playing) { st.playing = false; st.target = st.p; }
+    else { if (st.p >= n - 0.001) { st.p = 0; st.target = 0; } if (reduce) { st.p = n; st.target = n; } else { st.playing = true; st.hold = 0; } }
+    syncPlay();
+  });
+  $('stop').addEventListener('click', function () { st.playing = false; st.target = st.p; syncPlay(); });
+  $('flat').addEventListener('click', function () { go(0); });
+  $('folded').addEventListener('click', function () { go(cur.F.steps.length); });
+  $('next').addEventListener('click', function () { go(Math.floor(st.target + 0.001) + 1); });
+  $('prev').addEventListener('click', function () { go(Math.ceil(st.target - 0.001) - 1); });
+  $('prog').addEventListener('input', function (e) { st.playing = false; st.p = st.target = (+e.target.value) / 100 * cur.F.steps.length; syncPlay(); });
+  $('progNum').addEventListener('input', function (e) { var v = Math.max(0, Math.min(100, +e.target.value || 0)); st.playing = false; st.p = st.target = v / 100 * cur.F.steps.length; syncPlay(); });
+  function pair(rangeId, numId, apply) {
+    $(rangeId).addEventListener('input', function (e) { $(numId).value = e.target.value; apply(+e.target.value); });
+    $(numId).addEventListener('input', function (e) { var v = +e.target.value; if (!isFinite(v)) return; var r = $(rangeId); v = Math.max(+r.min, Math.min(+r.max, v)); r.value = String(v); apply(v); });
+  }
+  pair('dur', 'durNum', function (v) { st.dur = v; });
+  pair('spinDur', 'spinDurNum', function (v) { st.spinDur = v; });
+  pair('zoom', 'zoomNum', function (v) { st.zoom = v; });
+
+  var easeTimer = 0;
+  function smooth(fn) { var r = $('rot'); r.classList.add('ease'); fn(); clearTimeout(easeTimer); easeTimer = setTimeout(function () { r.classList.remove('ease'); }, 800); }
+  $('flip').addEventListener('click', function () {
+    var back = Math.abs((((st.yaw % 360) + 360) % 360) - 180) < 90;
+    smooth(function () { st.yaw += back ? -180 : 180; });
+  });
+  function resetView() { smooth(function () { st.yaw = 22; st.pitch = -16; st.zoom = 1; }); }
+  $('reset').addEventListener('click', resetView); $('reset2').addEventListener('click', resetView);
+  $('viewFlat').addEventListener('click', function () { smooth(function () { st.yaw = Math.round(st.yaw / 360) * 360; st.pitch = 0; }); });
+  $('showNum').addEventListener('change', function (e) { $('stage').classList.toggle('nonum', !e.target.checked); });
+  window.addEventListener('resize', layout);
+  if (window.ResizeObserver) new ResizeObserver(layout).observe($('stage'));
+
+  // ---- orbit: drag to rotate, wheel or pinch to zoom ----
+  var stage = $('stage'), ptrs = {}, pinch = 0;
+  function clampZoom() { st.zoom = Math.max(0.4, Math.min(3, st.zoom)); }
+  stage.addEventListener('pointerdown', function (e) {
+    if (e.target.closest && e.target.closest('.float')) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    ptrs[e.pointerId] = { x: e.clientX, y: e.clientY };
+    try { stage.setPointerCapture(e.pointerId); } catch (x) { /* ignore */ }
+    stage.classList.add('drag'); st.dragging = true; $('rot').classList.remove('ease');
+    var ids = Object.keys(ptrs); if (ids.length === 2) pinch = Math.hypot(ptrs[ids[0]].x - ptrs[ids[1]].x, ptrs[ids[0]].y - ptrs[ids[1]].y);
+  });
+  stage.addEventListener('pointermove', function (e) {
+    var q = ptrs[e.pointerId]; if (!q) return;
+    var ids = Object.keys(ptrs);
+    if (ids.length >= 2) {
+      ptrs[e.pointerId] = { x: e.clientX, y: e.clientY };
+      var d = Math.hypot(ptrs[ids[0]].x - ptrs[ids[1]].x, ptrs[ids[0]].y - ptrs[ids[1]].y);
+      if (pinch) { st.zoom *= d / pinch; clampZoom(); } pinch = d; return;
+    }
+    st.yaw += (e.clientX - q.x) * 0.45; st.pitch -= (e.clientY - q.y) * 0.45;
+    st.pitch = Math.max(-89, Math.min(89, st.pitch));
+    ptrs[e.pointerId] = { x: e.clientX, y: e.clientY };
+  });
+  function endPtr(e) { delete ptrs[e.pointerId]; pinch = 0; if (!Object.keys(ptrs).length) { stage.classList.remove('drag'); st.dragging = false; } }
+  stage.addEventListener('pointerup', endPtr); stage.addEventListener('pointercancel', endPtr);
+  stage.addEventListener('wheel', function (e) { e.preventDefault(); st.zoom *= Math.exp(-e.deltaY * 0.0012); clampZoom(); }, { passive: false });
+  stage.addEventListener('dblclick', resetView);
+  stage.addEventListener('keydown', function (e) {
+    var k = e.key, m = { ArrowLeft: [-8, 0], ArrowRight: [8, 0], ArrowUp: [0, 8], ArrowDown: [0, -8] }[k];
+    if (m) { e.preventDefault(); st.yaw += m[0]; st.pitch = Math.max(-89, Math.min(89, st.pitch + m[1])); }
+    else if (k === '+' || k === '=') { st.zoom *= 1.1; clampZoom(); } else if (k === '-') { st.zoom /= 1.1; clampZoom(); }
+  });
+
+  // ---- artwork: pdf.js renders each page, pdf-lib reads the TrimBox so only the trimmed area is shown ----
+  var WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  function note(t, bad) { var n = $('artNote'); n.textContent = t; n.className = 'hint' + (bad ? ' bad' : ''); }
+  async function renderPages(bytes, limit) {
+    if (!window.pdfjsLib) throw new Error('The PDF viewer library did not load.');
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = WORKER;
+    var trims = [];
+    try {
+      if (window.PDFLib) {
+        var doc = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
+        doc.getPages().forEach(function (pg) {
+          var tb = pg.node && pg.node.TrimBox ? pg.node.TrimBox() : null;
+          trims.push(tb ? { x: pg.getTrimBox().x, y: pg.getTrimBox().y, w: pg.getTrimBox().width, h: pg.getTrimBox().height } : null);
+        });
+      }
+    } catch (e) { trims = []; }
+    var pdf = await window.pdfjsLib.getDocument({ data: bytes.slice(), isEvalSupported: false }).promise;
+    var out = [], n = Math.min(pdf.numPages, limit);
+    for (var i = 1; i <= n; i++) {
+      var pg = await pdf.getPage(i), v = pg.view, t = (!pg.rotate && trims[i - 1]) || null;
+      var areaW = t ? t.w : v[2] - v[0], areaH = t ? t.h : v[3] - v[1];
+      var k = Math.min(900 / areaH, 1400 / areaW);
+      var vp = pg.getViewport({ scale: k }), cv = document.createElement('canvas');
+      cv.width = Math.max(1, Math.round(vp.width)); cv.height = Math.max(1, Math.round(vp.height));
+      var cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height);
+      await pg.render({ canvasContext: cx, viewport: vp }).promise;
+      var crop = t ? { l: (t.x - v[0]) * k, t: (v[3] - (t.y + t.h)) * k, w: t.w * k, h: t.h * k } : { l: 0, t: 0, w: cv.width, h: cv.height };
+      out.push({ cv: cv, crop: crop, w: areaW, h: areaH });
+      pg.cleanup();
+    }
+    pdf.destroy();
+    return out;
+  }
+  function cut(src, fx, fy, fw, fh) {
+    var c = document.createElement('canvas'), w = Math.max(1, Math.round(src.crop.w * fw)), h = Math.max(1, Math.round(src.crop.h * fh));
+    c.width = w; c.height = h;
+    c.getContext('2d').drawImage(src.cv, src.crop.l + src.crop.w * fx, src.crop.t + src.crop.h * fy, src.crop.w * fw, src.crop.h * fh, 0, 0, w, h);
+    return c.toDataURL('image/jpeg', 0.86);
+  }
+  async function loadArt(file, mode) {
+    if (!file) return;
+    note('Reading ' + file.name + '…');
+    try {
+      var bytes = new Uint8Array(await file.arrayBuffer());
+      var F = cur.F, need = 0;
+      parse(F.out).concat(parse(F.inn)).forEach(function (t) { need = Math.max(need, t.n); });
+      var pages = await renderPages(bytes, mode === 'oneup' ? need : 2);
+      if (!pages.length) throw new Error('The PDF has no pages.');
+      var a;
+      if (mode === 'oneup') {
+        a = { mode: 'oneup', pages: pages.map(function (p) { return cut(p, 0, 0, 1, 1); }), ratio: pages[0].w / pages[0].h, name: file.name };
+        note(file.name + ': ' + pages.length + ' page' + (pages.length === 1 ? '' : 's') + (pages.length < need ? '. This fold needs ' + need + ', missing pages stay blank.' : '.'), pages.length < need);
+      } else {
+        if (pages.length < 2) throw new Error('An imposed PDF needs two pages, the outside sheet and the inside sheet.');
+        var cols = F.cols, rows = F.rows, cells = function (p) { var l = []; for (var r = 0; r < rows; r++) for (var c = 0; c < cols; c++) l.push(cut(p, c / cols, r / rows, 1 / cols, 1 / rows)); return l; };
+        a = { mode: 'imposed', out: cells(pages[0]), inn: cells(pages[1]), ratio: (pages[0].w / cols) / (pages[0].h / rows), name: file.name };
+        note(file.name + ': sheet split into ' + cols + ' × ' + rows + ' equal panels.');
+      }
+      art = a; $('artClear').hidden = false;
+      var keep = st.p; mount(st.key); st.p = st.target = keep;
+    } catch (e) { note(e && e.message ? e.message : 'That PDF could not be read.', true); }
+  }
+  $('artOne').addEventListener('click', function () { $('fileOne').click(); });
+  $('artImp').addEventListener('click', function () { $('fileImp').click(); });
+  $('fileOne').addEventListener('change', function (e) { loadArt(e.target.files[0], 'oneup'); e.target.value = ''; });
+  $('fileImp').addEventListener('change', function (e) { loadArt(e.target.files[0], 'imposed'); e.target.value = ''; });
+  $('artClear').addEventListener('click', function () { art = null; $('artClear').hidden = true; note('Artwork cleared.'); var keep = st.p; mount(st.key); st.p = st.target = keep; });
+  [['dropOne', 'oneup'], ['dropImp', 'imposed']].forEach(function (d) {
+    var z = $(d[0]);
+    ['dragenter', 'dragover'].forEach(function (ev) { z.addEventListener(ev, function (e) { e.preventDefault(); z.classList.add('over'); }); });
+    ['dragleave', 'drop'].forEach(function (ev) { z.addEventListener(ev, function (e) { e.preventDefault(); z.classList.remove('over'); }); });
+    z.addEventListener('drop', function (e) { loadArt(e.dataTransfer && e.dataTransfer.files[0], d[1]); });
+  });
+
+  mount('cross8');
+  // Open part way through the first fold so the first thing seen is the folding itself.
+  st.p = st.target = 0.55;
+  st.anim = requestAnimationFrame(loop);
+})();
+</script>
+
+</body></html>
