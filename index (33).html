@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home</title>
+<style>
+  :root{
+    --bg: #fefcfe;
+    --ink: #1f2430;
+    --muted: #6b7280;
+    --card: #ffffff;
+    --border: #eaeaea;
+    --ring: rgba(83, 74, 183, 0.18);
+    /* used by the session gate / chip (same look as the Impose tool) */
+    --paper:#f4f6f9; --line:#dde2eb; --press:#2953d1; --press-soft:#eaf0ff;
+    --white:#ffffff; --ink-soft:#68728a;
+    --sans:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --shadow-md:0 4px 16px rgba(20,30,60,.08);
+    --shadow-lg:0 16px 40px rgba(20,30,60,.14);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 48px 24px 64px;
+    background: #fefcfe;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    min-height: 100vh;
+  }
+
+  h1 {
+    font-size: 22px;
+    font-weight: 600;
+    margin: 0 0 6px;
+    animation: fadeDown 0.5s ease both;
+  }
+
+  .subtitle {
+    font-size: 13.5px;
+    color: var(--muted);
+    margin: 0 0 28px;
+    animation: fadeDown 0.5s ease both 0.05s;
+  }
+
+  .toolbar {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 28px;
+    animation: fadeDown 0.5s ease both 0.1s;
+  }
+
+  .search-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 340px;
+  }
+
+  .search-wrap svg {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    stroke: var(--muted);
+    pointer-events: none;
+  }
+
+  #search {
+    width: 100%;
+    padding: 10px 14px 10px 38px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    font-size: 13.5px;
+    color: var(--ink);
+    outline: none;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+  }
+  #search:focus {
+    border-color: #b9b4ef;
+    box-shadow: 0 0 0 4px var(--ring);
+  }
+  #search::placeholder { color: #a3a7b0; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 24px;
+    max-width: 900px;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .card {
+    position: relative;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 32px 20px 24px;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease, opacity 0.25s ease;
+    transform-style: preserve-3d;
+    will-change: transform;
+    opacity: 0;
+    animation: cardIn 0.5s ease forwards;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(220px circle at var(--mx, 50%) var(--my, 0%), rgba(0,0,0,0.05), transparent 60%);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+  }
+  .card:hover::before { opacity: 1; }
+
+  .card:hover {
+    box-shadow: 0 14px 30px rgba(31,36,48,0.10);
+    border-color: #e2e2e8;
+  }
+
+  .card:active { transform: translateY(0) scale(0.98) !important; }
+
+  .card.hidden { display: none; }
+
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .icon-circle {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    transition: transform 0.25s cubic-bezier(.34,1.56,.64,1);
+    position: relative;
+    z-index: 2;
+  }
+  .card:hover .icon-circle {
+    transform: scale(1.08) rotate(-4deg);
+  }
+  .icon-circle svg {
+    width: 28px;
+    height: 28px;
+    transition: transform 0.25s ease;
+  }
+
+  .card h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 6px;
+    position: relative;
+    z-index: 2;
+  }
+  .card p {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+    margin: 0;
+    position: relative;
+    z-index: 2;
+  }
+
+  a.card {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+
+  .impose  { background: #EEEDFE; }
+  .impose  svg { stroke: #534AB7; }
+  .rename  { background: #E1F5EE; }
+  .rename  svg { stroke: #0F6E56; }
+  .compare { background: #FAECE7; }
+  .compare svg { stroke: #993C1D; }
+  .colorcount { background: #FDECF2; }
+  .colorcount svg { stroke: #B2295C; }
+  .vdp { background: #E8F0FE; }
+  .vdp svg { stroke: #1A56C4; }
+  .folding { background: #FFF4DB; }
+  .folding svg { stroke: #A66A00; }
+  .foldviz { background: #E6F4FA; }
+  .foldviz svg { stroke: #0B6E8F; }
+  .boxviz { background: #F1ECFA; }
+  .boxviz svg { stroke: #6B3FB5; }
+
+  .empty-state {
+    display: none;
+    color: var(--muted);
+    font-size: 13.5px;
+    margin-top: 12px;
+    animation: fadeDown 0.3s ease both;
+  }
+
+  .ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(31,36,48,0.12);
+    transform: scale(0);
+    animation: rippleAnim 0.5s ease-out forwards;
+    pointer-events: none;
+    z-index: 5;
+  }
+  @keyframes rippleAnim {
+    to { transform: scale(2.6); opacity: 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card, .icon-circle, h1, .subtitle, .toolbar { animation: none !important; transition: none !important; }
+  }
+
+  /* --- Session check splash + session chip (sign-in itself lives in login.html) --- */
+  .auth-gate{
+    position:fixed; inset:0; z-index:10000; display:flex; align-items:center; justify-content:center; padding:24px;
+    background:linear-gradient(160deg,#141b30,#1c2540 60%,#202b4d); font-family:var(--sans); overflow-y:auto;
+  }
+  .auth-wrap{width:100%; max-width:380px;}
+  .auth-wordmark{
+    font-weight:700; font-size:13px; letter-spacing:2px; text-transform:uppercase;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    color:rgba(255,255,255,.65); margin-bottom:22px;
+  }
+  .auth-card{background:var(--white); border-radius:16px; padding:32px 30px 28px; box-shadow:var(--shadow-lg); text-align:center;}
+  .auth-checking{margin:6px 0; font-size:13px; line-height:1.5; color:var(--ink-soft);}
+  .auth-retry{
+    margin-top:14px; padding:10px 20px; border:none; border-radius:10px; background:var(--press); color:var(--white);
+    font:inherit; font-weight:700; font-size:13px; cursor:pointer;
+  }
+  .auth-retry:hover{background:#2147b5;}
+  .session-chip{
+    position:fixed; top:14px; right:14px; z-index:999; display:none; align-items:center; gap:8px;
+    font-family:var(--sans); font-size:11.5px; font-weight:600; color:var(--ink);
+    background:var(--white); border:1px solid var(--line); border-radius:8px; padding:4px 5px 4px 10px; box-shadow:var(--shadow-md);
+  }
+  .session-chip a, .session-chip button{
+    font:inherit; font-size:11.5px; font-weight:600; border-radius:6px; padding:4px 9px; cursor:pointer; text-decoration:none;
+  }
+  .session-chip a{color:var(--press); background:var(--press-soft); border:none;}
+  .session-chip button{color:var(--ink-soft); background:var(--paper); border:1px solid var(--line);}
+  .session-chip button:hover{color:var(--ink); border-color:var(--ink-soft);}
+</style>
+</head>
+<body>
+
+<!-- Session check: the whole page stays hidden until the visitor is verified -->
+<div class="auth-gate" id="authGate">
+  <div class="auth-wrap">
+    <div class="auth-wordmark">Tools</div>
+    <div class="auth-card">
+      <p class="auth-checking" id="authChecking">Checking session…</p>
+      <button type="button" class="auth-retry" id="authRetry" style="display:none;">Try again</button>
+    </div>
+  </div>
+</div>
+<div class="session-chip" id="sessionChip">
+  <span id="sessionName"></span>
+  <a id="adminLink" href="impose/admin.html" style="display:none;">Admin</a>
+  <button type="button" id="signOutBtn">Sign out</button>
+</div>
+
+<div id="mainApp" style="display:none;width:100%;flex-direction:column;align-items:center;">
+
+  <h1><img src="cans.gif" alt="CA Logo" width="266.6" height="150"></h1>
+  <p class="subtitle">Pick a tool to get started</p>
+
+  <div class="toolbar">
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="7"/>
+        <path d="M21 21l-4.35-4.35"/>
+      </svg>
+      <input id="search" type="text" placeholder="Search tools…" autocomplete="off">
+    </div>
+  </div>
+
+  <div class="grid" id="grid">
+
+    <a class="card" href="impose/imposition.html" data-name="impose" style="animation-delay:0.05s">
+      <div class="icon-circle impose">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="4" width="9" height="9" rx="1.5"/>
+          <rect x="11" y="11" width="9" height="9" rx="1.5"/>
+        </svg>
+      </div>
+      <h3>Impose</h3>
+      <p>Arrange pages into print-ready sheets</p>
+    </a>
+
+    <a class="card" href="renametool.html" data-name="rename" style="animation-delay:0.1s">
+      <div class="icon-circle rename">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 20h4L18.5 9.5a2 2 0 0 0-3-3L5 17v3z"/>
+          <path d="M13.5 6.5l3 3"/>
+        </svg>
+      </div>
+      <h3>Rename</h3>
+      <p>Rename files and orders in bulk</p>
+    </a>
+
+    <a class="card" href="compare.html" data-name="compare" style="animation-delay:0.15s">
+      <div class="icon-circle compare">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 3v14"/>
+          <path d="M15 21V7"/>
+          <path d="M9 3l-4 4"/>
+          <path d="M9 3l4 4"/>
+          <path d="M15 21l4-4"/>
+          <path d="M15 21l-4-4"/>
+        </svg>
+      </div>
+      <h3>Compare</h3>
+      <p>Compare files side by side for differences</p>
+    </a>
+
+    <a class="card" href="colourcounter.html" data-name="colour page counter" style="animation-delay:0.2s">
+      <div class="icon-circle colorcount">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/>
+          <path d="M15 3v5h5"/>
+          <circle cx="9.5" cy="14" r="1.4" fill="currentColor" stroke="none"/>
+          <circle cx="13" cy="16.5" r="1.4" fill="currentColor" stroke="none"/>
+          <circle cx="16" cy="13" r="1.4" fill="currentColor" stroke="none"/>
+        </svg>
+      </div>
+      <h3>Colour Page Counter</h3>
+      <p>Count colour vs. black &amp; white pages in a file</p>
+    </a>
+
+    <a class="card" href="VDP.html" data-name="vdp variable data printing" style="animation-delay:0.25s">
+      <div class="icon-circle vdp">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="7" height="9" rx="1.2"/>
+          <rect x="14" y="4" width="7" height="9" rx="1.2"/>
+          <path d="M6.5 8.2v1.6"/>
+          <path d="M17.5 7.5l1 1-1 1"/>
+          <path d="M4 19h16"/>
+          <path d="M4 16.5h9"/>
+        </svg>
+      </div>
+      <h3>VDP</h3>
+      <p>Preview and validate variable data print jobs</p>
+    </a>
+
+    <a class="card" href="folding.html" data-name="folding fold" style="animation-delay:0.3s">
+      <div class="icon-circle folding">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 6l6-2v14l-6 2z"/>
+          <path d="M9 4l6 2v14l-6-2"/>
+          <path d="M15 6l6-2v14l-6 2z"/>
+        </svg>
+      </div>
+      <h3>Folding</h3>
+      <p>Plan folds and panel layouts for folded jobs</p>
+    </a>
+
+    <a class="card" href="fold-visualizer.html" data-name="folding visualizer fold 3d" style="animation-delay:0.35s">
+      <div class="icon-circle foldviz">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 8l5-3 5 3v10l-5 3-5-3z"/>
+          <path d="M8 5v13"/>
+          <path d="M13 8l8-3v10l-8 3"/>
+        </svg>
+      </div>
+      <h3>Folding Visualizer</h3>
+      <p>Preview folded jobs in 3D</p>
+    </a>
+
+    <a class="card" href="box-visualizer.html" data-name="box visualizer 3d carton" style="animation-delay:0.4s">
+      <div class="icon-circle boxviz">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/>
+          <path d="M4 7.5l8 4.5 8-4.5"/>
+          <path d="M12 12v9"/>
+        </svg>
+      </div>
+      <h3>Box Visualizer</h3>
+      <p>Preview boxes and cartons in 3D</p>
+    </a>
+
+  </div>
+
+  <p class="empty-state" id="emptyState">No tools match your search.</p>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+// ---- Session guard (Supabase Auth) ---------------------------------------
+// Same guard as the Impose tool. Sign-in happens on login.html; this page only
+// checks that the visitor has a valid, non-disabled account and otherwise
+// sends them there. The anon key is public by design — it can only do what
+// Row Level Security allows (a signed-in user reading their own profile row).
+// NOTE: this runs in the browser, so it controls who is shown the page; it
+// can't hide the HTML itself from someone who saves the file.
+(function(){
+  var SUPABASE_URL = 'https://bsmmyvslplkcdkgcysdd.supabase.co';
+  var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJzbW15dnNscGxrY2RrZ2N5c2RkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2OTQzODUsImV4cCI6MjEwODI3MDM4NX0.PSVCs5uKz6Nyb5L77_RIZevM4MvTDBcXeV6e0eW3rkE';
+
+  // login.html / admin.html live in the impose/ folder (next to imposition.html).
+  // This index sits one level up, so the paths are adjusted accordingly.
+  // If you move those pages, change these three values only.
+  var LOGIN_PAGE = 'impose/login.html';
+  var NEXT_PAGE  = '../index.html';   // where login.html should send people back to (relative to login.html)
+  var RECHECK_MS = 5 * 60 * 1000;
+
+  function $id(i){ return document.getElementById(i); }
+  var gate = $id('authGate'), checking = $id('authChecking'), retry = $id('authRetry'), chip = $id('sessionChip');
+
+  function toLogin(reason){
+    var q = '?next=' + encodeURIComponent(NEXT_PAGE) + (reason ? '&reason=' + encodeURIComponent(reason) : '');
+    location.replace(LOGIN_PAGE + q);
+  }
+
+  retry.addEventListener('click', function(){ location.reload(); });
+  function showProblem(msg){
+    checking.textContent = msg;
+    retry.style.display = '';
+  }
+
+  if (!window.supabase){
+    showProblem('Could not load the sign-in service. Check your connection and try again.');
+    return;
+  }
+  var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
+  });
+
+  var revealed = false, timer = null;
+
+  // Checks the session against the SERVER (getUser, not just the cached
+  // token) and then the profile row, so a deleted or disabled account is
+  // caught. Returns {ok, profile} | {fail:'none'|'disabled'|'missing'} | {offline:true}.
+  async function validate(){
+    var r = await sb.auth.getUser();
+    if (r.error || !r.data || !r.data.user){
+      var e = r.error;
+      if (e && (e.name === 'AuthRetryableFetchError' || (e.status === 0))) return { offline: true };
+      return { fail: 'none' };
+    }
+    var user = r.data.user;
+    var q = await sb.from('profiles').select('username,is_admin,is_disabled').eq('id', user.id).maybeSingle();
+    if (q.error) return { offline: true };
+    if (!q.data) return { fail: 'missing' };
+    if (q.data.is_disabled) return { fail: 'disabled' };
+    return { ok: true, profile: q.data };
+  }
+
+  var leaving = false;     // set while already redirecting, so the sign-out event below doesn't redirect twice
+  async function kickOut(fail){
+    leaving = true;
+    try { await sb.auth.signOut(); } catch(e){}
+    toLogin(fail === 'disabled' || fail === 'missing' ? fail : '');
+  }
+
+  function reveal(profile){
+    gate.style.display = 'none';
+    $id('sessionName').textContent = profile.username;
+    $id('adminLink').style.display = profile.is_admin ? '' : 'none';
+    chip.style.display = 'flex';
+    if (!revealed){
+      revealed = true;
+      $id('mainApp').style.display = 'flex';
+      timer = setInterval(async function(){
+        var v = await validate();
+        if (v.offline || v.ok) return;           // never kick someone out just because they went offline
+        kickOut(v.fail);
+      }, RECHECK_MS);
+    }
+  }
+
+  async function boot(){
+    var v = await validate();
+    if (v.ok) return reveal(v.profile);
+    if (v.offline) return showProblem('Can’t reach the sign-in server. Check your connection and try again.');
+    kickOut(v.fail);
+  }
+
+  $id('signOutBtn').addEventListener('click', async function(){
+    leaving = true;
+    try { await sb.auth.signOut(); } catch(e){}
+    toLogin('');
+  });
+
+  // Signed out in another tab → go to the login page here too.
+  sb.auth.onAuthStateChange(function(event){
+    if (event === 'SIGNED_OUT' && revealed && !leaving) toLogin('');
+  });
+
+  boot();
+})();
+</script>
+
+<script>
+  // --- Search / filter ---
+  const search = document.getElementById('search');
+  const cards = Array.from(document.querySelectorAll('.card'));
+  const emptyState = document.getElementById('emptyState');
+
+  search.addEventListener('input', () => {
+    const q = search.value.trim().toLowerCase();
+    let visibleCount = 0;
+    cards.forEach(card => {
+      const match = card.dataset.name.includes(q);
+      card.classList.toggle('hidden', !match);
+      if (match) visibleCount++;
+    });
+    emptyState.style.display = visibleCount === 0 ? 'block' : 'none';
+  });
+
+  // --- Subtle tilt + spotlight glow following cursor ---
+  cards.forEach(card => {
+    card.addEventListener('mousemove', (e) => {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const cx = rect.width / 2;
+      const cy = rect.height / 2;
+      const rotateX = ((y - cy) / cy) * -4;
+      const rotateY = ((x - cx) / cx) * 4;
+      card.style.transform = `perspective(600px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-2px)`;
+      card.style.setProperty('--mx', `${(x / rect.width) * 100}%`);
+      card.style.setProperty('--my', `${(y / rect.height) * 100}%`);
+    });
+    card.addEventListener('mouseleave', () => {
+      card.style.transform = '';
+    });
+
+    // --- Click ripple ---
+    card.addEventListener('click', (e) => {
+      const rect = card.getBoundingClientRect();
+      const ripple = document.createElement('span');
+      const size = Math.max(rect.width, rect.height);
+      ripple.className = 'ripple';
+      ripple.style.width = ripple.style.height = size + 'px';
+      ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
+      ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
+      card.appendChild(ripple);
+      setTimeout(() => ripple.remove(), 500);
+    });
+  });
+</script>
+
+</body>
+</html>
