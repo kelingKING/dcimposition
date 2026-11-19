@@ -21,7 +21,7 @@
 
   /* top bar */
   .topbar{background:var(--ink);border-bottom:1px solid rgba(255,255,255,.08);}
-  .topbar-inner{max-width:980px;margin:0 auto;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;}
+  .topbar-inner{max-width:980px;margin:0 auto;padding:16px 24px;display:flex;align-items:center;justify-content:flex-end;gap:16px;}
   .wordmark{font-weight:700;font-size:19px;letter-spacing:-.2px;display:flex;align-items:center;gap:11px;color:var(--white);}
   .wordmark small{font-weight:600;font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.55);margin-left:4px;}
   .mark{width:11px;height:11px;border:2.5px solid #5b8cff;border-radius:3px;position:relative;flex:none;}
@@ -117,7 +117,6 @@
 <!-- ============ Login gate (admins only) ============ -->
 <div class="auth-gate" id="authGate">
   <div class="auth-wrap">
-    <div class="wordmark"><span class="mark"></span>IMPOSE <small>Admin</small></div>
     <div class="auth-card">
       <p class="auth-checking" id="authChecking">Checking session…</p>
       <form id="authForm" hidden autocomplete="on">
@@ -138,10 +137,9 @@
 <div id="adminApp" hidden>
   <header class="topbar">
     <div class="topbar-inner">
-      <div class="wordmark"><span class="mark"></span>IMPOSE <small>Admin</small></div>
       <div class="top-actions">
         <span id="whoAmI"></span>
-        <a href="imposition.html" id="backLink">&larr; Back to app</a>
+        <a href="https://dcimposition.space/" id="backLink">&larr; Back to home</a>
         <button type="button" id="signOutBtn">Sign out</button>
       </div>
     </div>
@@ -199,7 +197,6 @@
   var APP_URL = 'imposition.html';
 
   function $(id){ return document.getElementById(id); }
-  $('backLink').setAttribute('href', APP_URL);
   function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
 
   var gate = $('authGate'), form = $('authForm'), checking = $('authChecking');
