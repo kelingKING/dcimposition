@@ -109,7 +109,7 @@ button.sm{padding:3px 8px;font-size:12px}
     <div id="hint">Drag: orbit · Right-drag: pan · Wheel: zoom · Drop a dieline PDF, then artwork</div>
     <div id="dropmask">Drop a file</div>
     <div id="toast"></div>
-    <div class="session-chip" id="sessionChip"><span id="sessionName"></span><a id="adminLink" href="../imposition/admin.html" style="display:none">Admin</a><button type="button" id="signOutBtn" class="sm">Sign out</button></div>
+    <div class="session-chip" id="sessionChip"><span id="sessionName"></span><a id="adminLink" href="/impose/admin.html" style="display:none">Admin</a><button type="button" id="signOutBtn" class="sm">Sign out</button></div>
   </main>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" integrity="sha384-0w2KAL2YHP6wKOkUDzkCDGgVvfmHnj02DHeQ6XcHOgTfFsGyonKOpShMH1x6nk9o" crossorigin="anonymous"></script>
@@ -127,8 +127,8 @@ button.sm{padding:3px 8px;font-size:12px}
   var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJzbW15dnNscGxrY2RrZ2N5c2RkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2OTQzODUsImV4cCI6MjEwODI3MDM4NX0.PSVCs5uKz6Nyb5L77_RIZevM4MvTDBcXeV6e0eW3rkE';
   var LOGIN_PAGE = 'carton-login.html';
   // Admin page lives with Impose (same users). Path is relative to THIS file; change it to match your folders,
-  // e.g. '../imposition/admin.html' or a full https://yoursite/imposition/admin.html
-  var ADMIN_PAGE = '../imposition/admin.html';
+  // e.g. '/impose/admin.html' or a full https://yoursite/imposition/admin.html
+  var ADMIN_PAGE = '/impose/admin.html';
   var RECHECK_MS = 5 * 60 * 1000;
   function $id(i){ return document.getElementById(i); }
   var gate = $id('authGate'), checking = $id('authChecking'), retry = $id('authRetry'), chip = $id('sessionChip');
