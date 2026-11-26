@@ -1,6 +1,9 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html>
+<html lang="en">
+<head>
 <title>Fold Visualiser</title>
-<meta name="claude:viewport-fit-sides" content="cover">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
@@ -84,7 +87,19 @@ details[hidden] { display: none; }
 .panel { position: absolute; left: 0; top: 0; transform-origin: 0 0; transform-style: preserve-3d; }
 .face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; border: 1px solid var(--paper-edge);
   background: var(--paper); color: var(--paper-ink); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 1px 3px var(--shadow); overflow: hidden; }
-.face.back { transform: rotateY(180deg); background: var(--paper-in); }
+.face.back { transform: translateZ(calc(var(--t, 1px) * -1)) rotateY(180deg); background: var(--paper-in); }
+.edge { position: absolute; background: var(--paper-edge); transform-origin: 0 0; pointer-events: none; }
+.edge.t, .edge.b { left: 0; width: 100%; height: var(--t, 1px); transform: rotateX(-90deg); }
+.edge.t { top: 0; } .edge.b { top: 100%; }
+.edge.l, .edge.r { top: 0; height: 100%; width: var(--t, 1px); transform: rotateY(90deg); }
+.edge.l { left: 0; } .edge.r { left: 100%; }
+.face .crease, .face .sh { position: absolute; inset: 0; pointer-events: none; }
+.face .crease { background: linear-gradient(90deg, rgba(10,20,40,.14), transparent 5%, transparent 95%, rgba(10,20,40,.14)), linear-gradient(180deg, rgba(10,20,40,.10), transparent 4%, transparent 96%, rgba(10,20,40,.10)); }
+.face .sh { background: #0a1224; opacity: 0; }
+.noshade .face .crease, .noshade .face .sh { display: none; }
+.hasart .face, .hasart .face.cover { border: 0; box-shadow: none; }
+.hasart .face .crease { display: none; }
+.hasart .edge { background: #ecebe7; }
 .face .in { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; width: 100%; height: 100%; padding: 10px 8px; }
 .face .in.turn { transform: rotate(180deg); }
 .face .head, .face .tag { font-family: var(--font-mono); font-size: 10px; letter-spacing: .07em; color: var(--muted); text-transform: uppercase; }
@@ -113,6 +128,8 @@ details[hidden] { display: none; }
 @media (prefers-reduced-motion: reduce) { .rot.ease { transition: none; } }
 </style>
 
+</head>
+<body>
 <div class="app">
   <aside class="side" aria-label="Controls">
     <header><h1>Fold Visualiser</h1><p>Fold an imposed sheet in 3D</p></header>
@@ -155,6 +172,9 @@ details[hidden] { display: none; }
 
     <details open><summary>View</summary><div class="body">
       <div class="row"><label for="zoom">Zoom</label><input type="range" id="zoom" min="0.4" max="3" step="0.05" value="1"><span><input type="number" id="zoomNum" min="0.4" max="3" step="0.05" value="1" aria-label="Zoom"></span></div>
+      <div class="row"><label for="thick">Paper thickness</label><input type="range" id="thick" min="0.5" max="8" step="0.5" value="2"><span><input type="number" id="thickNum" min="0.5" max="8" step="0.5" value="2" aria-label="Paper thickness"></span></div>
+      <label class="check"><input type="checkbox" id="realW" checked> Real panel widths (fold-in panels are narrower)</label>
+      <label class="check"><input type="checkbox" id="shade" checked> Paper shading</label>
       <label class="check"><input type="checkbox" id="showNum" checked> Show page numbers</label>
       <div class="btns"><button type="button" id="flip">Turn over</button><button type="button" id="reset">Reset view</button></div>
     </div></details>
@@ -186,25 +206,25 @@ details[hidden] { display: none; }
 
   // Pages are listed row by row from the top, as on the imposed sheet. "r" turns the page upside down.
   var FOLDS = {
-    roll6: { label: 'Roll fold · 6pp', cols: 3, rows: 1, pw: 96, ph: 200, out: '5, 6, 1', inn: '2, 3, 4',
+    roll6: { label: 'Roll fold · 6pp', cols: 3, rows: 1, cw: [97, 100, 100], pw: 96, ph: 200, out: '5, 6, 1', inn: '2, 3, 4',
       steps: [
         { axis: 'v', at: 1, title: 'Fold the left panel back', text: 'The narrow fold-in panel goes behind the middle panel.' },
         { axis: 'v', at: 2, title: 'Fold the stack back behind the cover', text: 'The cover panel stays in front. The folded pair rolls in behind it.' }],
       end: 'Closed: page 1 is the cover. Open the cover to find pages 2, 3 and 4 on the inside.' },
-    roll8: { label: 'Roll fold · 8pp', cols: 4, rows: 1, pw: 74, ph: 190, out: '6, 7, 8, 1', inn: '2, 3, 4, 5',
+    roll8: { label: 'Roll fold · 8pp', cols: 4, rows: 1, cw: [70.5, 72.5, 74.5, 77.5], pw: 74, ph: 190, out: '6, 7, 8, 1', inn: '2, 3, 4, 5',
       steps: [
         { axis: 'v', at: 1, title: 'Fold the first panel back', text: 'The narrowest panel, pages 6 and 5, goes behind its neighbour.' },
         { axis: 'v', at: 2, title: 'Roll the stack behind the next panel', text: 'The panels roll in a spiral, each a little wider than the one inside it.' },
         { axis: 'v', at: 3, title: 'Roll the stack behind the cover', text: 'The cover stays in front.' }],
       end: 'Closed: page 1 is the cover.' },
-    roll10: { label: 'Roll fold · 10pp', cols: 5, rows: 1, pw: 70, ph: 190, out: '7, 8, 9, 10, 1', inn: '2, 3, 4, 5, 6',
+    roll10: { label: 'Roll fold · 10pp', cols: 5, rows: 1, cw: [56, 58, 60, 63, 63], pw: 70, ph: 190, out: '7, 8, 9, 10, 1', inn: '2, 3, 4, 5, 6',
       steps: [
         { axis: 'v', at: 1, title: 'Fold the first panel back', text: 'The narrowest panel, the one that rolls in first, goes behind its neighbour.' },
         { axis: 'v', at: 2, title: 'Roll the stack behind the next panel', text: 'The panels roll in a spiral, each a little wider than the one inside it.' },
         { axis: 'v', at: 3, title: 'Roll the stack behind the next panel', text: 'The panels roll in a spiral, each a little wider than the one inside it.' },
         { axis: 'v', at: 4, title: 'Roll the stack behind the cover', text: 'The cover stays in front.' }],
       end: 'Closed: page 1 is the cover. The page order extends the 6pp and 8pp roll folds, check it against a dummy.' },
-    roll12: { label: 'Roll fold · 12pp', cols: 6, rows: 1, pw: 70, ph: 190, out: '8, 9, 10, 11, 12, 1', inn: '2, 3, 4, 5, 6, 7',
+    roll12: { label: 'Roll fold · 12pp', cols: 6, rows: 1, cw: [45, 47, 49, 51, 54, 54], pw: 70, ph: 190, out: '8, 9, 10, 11, 12, 1', inn: '2, 3, 4, 5, 6, 7',
       steps: [
         { axis: 'v', at: 1, title: 'Fold the first panel back', text: 'The narrowest panel, the one that rolls in first, goes behind its neighbour.' },
         { axis: 'v', at: 2, title: 'Roll the stack behind the next panel', text: 'The panels roll in a spiral, each a little wider than the one inside it.' },
@@ -217,7 +237,7 @@ details[hidden] { display: none; }
         { axis: 'h', at: 1, title: 'Fold the top row back along the middle', text: 'The upside-down row goes behind the bottom row, so the sheet is half its height.' },
         { axis: 'v', at: 1, title: 'Fold the left half back at a right angle', text: 'The second fold crosses the first. The back cover, page 8, goes behind page 1.' }],
       end: 'Closed: page 1 is the cover and page 8 the back. Open it to find 6 and 7 inside, and 4 and 5 on the other side of the middle fold.' },
-    cross12: { label: 'Cross fold + roll · 12pp', cols: 3, rows: 2, pw: 94, ph: 198, out: '4r, 3r, 2r, 11, 12, 1', inn: '5, 6, 7, 8, 9, 10',
+    cross12: { label: 'Cross fold + roll · 12pp', cols: 3, rows: 2, cw: [97, 100, 100], pw: 94, ph: 198, out: '4r, 3r, 2r, 11, 12, 1', inn: '5, 6, 7, 8, 9, 10',
       steps: [
         { axis: 'h', at: 1, title: 'Fold the top row back along the middle', text: 'The upside-down row goes behind the bottom row. The strip is now one row of three panels.' },
         { axis: 'v', at: 1, title: 'Fold the fold-in panel back', text: 'The left panel goes behind the middle one, the first turn of the roll.' },
@@ -243,64 +263,73 @@ details[hidden] { display: none; }
   function css(M) { return 'matrix3d(' + [M[0],M[4],M[8],M[12], M[1],M[5],M[9],M[13], M[2],M[6],M[10],M[14], M[3],M[7],M[11],M[15]].map(function (v) { return Math.abs(v) < 1e-9 ? 0 : +v.toFixed(5); }).join(',') + ')'; }
   function apply(M, x, y, z) { return [M[0]*x + M[1]*y + M[2]*z + M[3], M[4]*x + M[5]*y + M[6]*z + M[7], M[8]*x + M[9]*y + M[10]*z + M[11]]; }
 
-  var LIFT = 5;                     // px each fold lifts the moving layers behind the rest, so the stack does not z-fight
+  var LIFT = 2;                     // px each fold lifts the moving layers behind the rest, so the stack does not z-fight
   var cur = null, art = null, st = { key: 'cross8', p: 0, target: 0, yaw: 22, pitch: -16, zoom: 1, anim: 0, last: 0, playing: false, dur: 6, spinDur: 10, hold: 0, dragging: false };
   var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  var LX = -0.25, LY = -0.45, LZ = 0.86;   // light from the upper left, in front
   function ease(t) { return t < 0 ? 0 : t > 1 ? 1 : t * t * (3 - 2 * t); }
 
   function build(key) {
     var F = Object.assign({}, FOLDS[key]); if (custom[key]) { F.out = custom[key].out; F.inn = custom[key].inn; } if (art && art.ratio) F.pw = Math.round(F.ph * art.ratio * 10) / 10;
     var out = parse(F.out), inn = parse(F.inn), cols = F.cols, rows = F.rows;
+    // Column widths relative to the average panel. Equal when real widths are off.
+    var raw = (F.cw && F.cw.length === cols && $('realW').checked) ? F.cw : null, mean = 1, k0;
+    if (raw) { mean = raw.reduce(function (a, b) { return a + b; }, 0) / cols; }
+    F.colX = [0]; F.colW = [];
+    for (k0 = 0; k0 < cols; k0++) { F.colW.push(F.pw * (raw ? raw[k0] / mean : 1)); F.colX.push(F.colX[k0] + F.colW[k0]); }
     var panels = [], r, c;
     for (r = 0; r < rows; r++) for (c = 0; c < cols; c++) {
       var oi = r * cols + c, ii = r * cols + (cols - 1 - c);
-      panels.push({ r: r, c: c, x: c * F.pw, y: r * F.ph, front: out[oi], back: inn[ii], moves: [] });
+      panels.push({ r: r, c: c, x: F.colX[c], w: F.colW[c], y: r * F.ph, front: out[oi], back: inn[ii], moves: [] });
     }
     // Decide which panels each fold moves by folding the ones before it all the way.
     F.steps.forEach(function (S, k) {
-      var line = S.at * (S.axis === 'v' ? F.pw : F.ph);
+      var line = lineOf(F, S);
       panels.forEach(function (P) {
         var M = matFor(P, F, k, function (j) { return 1; });
-        var ctr = apply(M, F.pw / 2, F.ph / 2, 0);
+        var ctr = apply(M, P.w / 2, F.ph / 2, 0);
         P.moves[k] = (S.axis === 'v' ? ctr[0] : ctr[1]) < line;
       });
     });
     return { F: F, panels: panels, el: [] };
   }
+  function lineOf(F, S) { return S.axis === 'v' ? F.colX[S.at] : S.at * F.ph; }
   // Transform of one panel when steps before "upTo" have progress tOf(j).
   function matFor(P, F, upTo, tOf) {
     var M = trans(P.x, P.y, 0);
     for (var j = 0; j < upTo; j++) {
       if (!P.moves[j]) continue;
-      var S = F.steps[j], line = S.at * (S.axis === 'v' ? F.pw : F.ph), t = tOf(j);
+      var S = F.steps[j], line = lineOf(F, S), t = tOf(j);
       M = mul(trans(0, 0, -LIFT * t), mul(rotAbout(S.axis, line, Math.PI * t), M));
     }
     return M;
   }
 
   function faceHtml(side, tok, F, isCover, url, turn) {
-    if (tok.blank) return '<div class="face ' + side + '"><div class="in"><span class="tag">blank</span></div></div>';
-    if (url) return '<div class="face ' + side + (isCover ? ' cover' : '') + '"><div class="art' + (turn ? ' turn' : '') + '" style="background-image:url(' + url + ')"></div><span class="badge">' + tok.n + '</span></div>';
+    var fx = '<i class="crease"></i><i class="sh"></i>';
+    if (tok.blank) return '<div class="face ' + side + '"><div class="in"><span class="tag">blank</span></div>' + fx + '</div>';
+    if (url) return '<div class="face ' + side + (isCover ? ' cover' : '') + '"><div class="art' + (turn ? ' turn' : '') + '" style="background-image:url(' + url + ')"></div><span class="badge">' + tok.n + '</span>' + fx + '</div>';
     var size = Math.round(Math.min(F.pw, F.ph) * 0.52);
     var lines = '<div class="lines"><i></i><i style="width:84%"></i><i style="width:92%"></i><i style="width:60%"></i></div>';
     return '<div class="face ' + side + (isCover ? ' cover' : '') + '"><div class="in' + (tok.r ? ' turn' : '') + '">' +
       '<span class="head">&#9650; head</span><span class="num" style="font-size:' + size + 'px">' + tok.n + '</span>' +
-      '<span class="tag">' + (isCover ? 'cover' : (side === 'front' ? 'outside' : 'inside')) + '</span>' + lines + '</div></div>';
+      '<span class="tag">' + (isCover ? 'cover' : (side === 'front' ? 'outside' : 'inside')) + '</span>' + lines + '</div>' + fx + '</div>';
   }
 
   function mount(key) {
-    st.key = key; cur = build(key);
+    st.key = key; cur = build(key); $('stage').classList.toggle('hasart', !!art);
     var F = cur.F, scene = $('scene');
     scene.textContent = '';
     cur.panels.forEach(function (P) {
       var d = document.createElement('div');
-      d.className = 'panel'; d.style.width = F.pw + 'px'; d.style.height = F.ph + 'px';
+      d.className = 'panel'; d.style.width = P.w + 'px'; d.style.height = F.ph + 'px';
       var fu = null, bu = null, ft = false, bt = false;
       if (art && art.mode === 'oneup') { fu = art.pages[P.front.n - 1]; bu = art.pages[P.back.n - 1]; ft = P.front.r; bt = P.back.r; }
       else if (art && art.mode === 'imposed') { fu = art.out[P.r * F.cols + P.c]; bu = art.inn[P.r * F.cols + (F.cols - 1 - P.c)]; }
-      d.innerHTML = faceHtml('front', P.front, F, P.front.n === 1, fu, ft) + faceHtml('back', P.back, F, false, bu, bt);
+      d.innerHTML = faceHtml('front', P.front, F, P.front.n === 1, fu, ft) + faceHtml('back', P.back, F, false, bu, bt) + '<i class="edge t"></i><i class="edge b"></i><i class="edge l"></i><i class="edge r"></i>';
       scene.appendChild(d); P.el = d;
+      var sh = d.querySelectorAll('.sh'); P.sf = sh[0]; P.sb = sh[1];
     });
     st.p = 0; st.target = 0; st.playing = false;
     $('info').textContent = F.cols * F.rows * 2 + ' pages · ' + F.cols + ' × ' + F.rows + ' panels per side · ' + F.steps.length + ' fold' + (F.steps.length === 1 ? '' : 's') + '.';
@@ -309,17 +338,27 @@ details[hidden] { display: none; }
 
   function layout() {
     var m = $('stage'), F = cur.F, w = m.clientWidth || 800, h = m.clientHeight || 600;
-    var sheetW = F.cols * F.pw, sheetH = F.rows * F.ph;
+    var sheetW = F.colX[F.cols], sheetH = F.rows * F.ph;
     st.scale = Math.max(0.3, Math.min(2.2, (w - 90) / sheetW, (h - 190) / sheetH));
   }
 
   function draw() {
     var F = cur.F, n = F.steps.length, minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
     var tOf = function (j) { return ease(st.p - j); };
+    var shadeOn = $('shade').checked, ra = st.yaw * Math.PI / 180, rb = st.pitch * Math.PI / 180;
+    var cy_ = Math.cos(ra), sy_ = Math.sin(ra), cp_ = Math.cos(rb), sp_ = Math.sin(rb);
     cur.panels.forEach(function (P) {
       var M = matFor(P, F, n, tOf);
       P.el.style.transform = css(M);
-      [[0,0],[F.pw,0],[0,F.ph],[F.pw,F.ph]].forEach(function (q) {
+      if (shadeOn) {
+        var nx = M[2], ny = M[6], nz = M[10];                       // front-face normal in the sheet frame
+        var a = [nx * cy_ + nz * sy_, ny, -nx * sy_ + nz * cy_];    // turn by the orbit yaw
+        var b = [a[0], a[1] * cp_ - a[2] * sp_, a[1] * sp_ + a[2] * cp_]; // then the pitch
+        var d = b[0] * LX + b[1] * LY + b[2] * LZ;
+        P.sf.style.opacity = (0.2 * Math.max(0, 0.95 - d)).toFixed(3);
+        P.sb.style.opacity = (0.2 * Math.max(0, 0.95 + d)).toFixed(3);
+      }
+      [[0,0],[P.w,0],[0,F.ph],[P.w,F.ph]].forEach(function (q) {
         var a = apply(M, q[0], q[1], 0);
         minX = Math.min(minX, a[0]); maxX = Math.max(maxX, a[0]); minY = Math.min(minY, a[1]); maxY = Math.max(maxY, a[1]);
       });
@@ -445,7 +484,7 @@ details[hidden] { display: none; }
   function customChanged(sizeChanged) {
     var F = FOLDS.custom; fixSteps(F);
     if (sizeChanged) {
-      var n = F.cols * F.rows; F.out = seqList(1, n); F.inn = seqList(n + 1, 2 * n); delete custom.custom;
+      F.cw = null; var n = F.cols * F.rows; F.out = seqList(1, n); F.inn = seqList(n + 1, 2 * n); delete custom.custom;
       if (art && art.mode === 'imposed') { art = null; $('artClear').hidden = true; note('Imposed artwork is split for one layout, so it was cleared. Add it again.'); }
     }
     var keep = st.p; mount('custom'); st.p = st.target = Math.min(keep, F.steps.length);
@@ -509,6 +548,14 @@ details[hidden] { display: none; }
   function resetView() { smooth(function () { st.yaw = 22; st.pitch = -16; st.zoom = 1; }); }
   $('reset').addEventListener('click', resetView); $('reset2').addEventListener('click', resetView);
   $('viewFlat').addEventListener('click', function () { smooth(function () { st.yaw = Math.round(st.yaw / 360) * 360; st.pitch = 0; }); });
+  function remount() { var keep = st.p; mount(st.key); st.p = st.target = keep; }
+  pair('thick', 'thickNum', function (v) { LIFT = v; $('scene').style.setProperty('--t', (v * 0.6).toFixed(2) + 'px'); });
+  $('scene').style.setProperty('--t', '1.2px');
+  $('shade').addEventListener('change', function (e) { $('stage').classList.toggle('noshade', !e.target.checked); });
+  $('realW').addEventListener('change', function () {
+    if (art && art.mode === 'imposed') { art = null; $('artClear').hidden = true; note('Imposed artwork is split to the panel widths, so it was cleared. Add it again.'); }
+    remount();
+  });
   $('showNum').addEventListener('change', function (e) { $('stage').classList.toggle('nonum', !e.target.checked); });
   window.addEventListener('resize', layout);
   if (window.ResizeObserver) new ResizeObserver(layout).observe($('stage'));
@@ -600,9 +647,9 @@ details[hidden] { display: none; }
         note(file.name + ': ' + pages.length + ' page' + (pages.length === 1 ? '' : 's') + (pages.length < need ? '. This fold needs ' + need + ', missing pages stay blank.' : '.'), pages.length < need);
       } else {
         if (pages.length < 2) throw new Error('An imposed PDF needs two pages, the outside sheet and the inside sheet.');
-        var cols = F.cols, rows = F.rows, cells = function (p) { var l = []; for (var r = 0; r < rows; r++) for (var c = 0; c < cols; c++) l.push(cut(p, c / cols, r / rows, 1 / cols, 1 / rows)); return l; };
+        var cols = F.cols, rows = F.rows, cells = function (p) { var l = []; for (var r = 0; r < rows; r++) for (var c = 0; c < cols; c++) l.push(cut(p, F.colX[c] / F.colX[cols], r / rows, F.colW[c] / F.colX[cols], 1 / rows)); return l; };
         a = { mode: 'imposed', out: cells(pages[0]), inn: cells(pages[1]), ratio: (pages[0].w / cols) / (pages[0].h / rows), name: file.name };
-        note(file.name + ': sheet split into ' + cols + ' × ' + rows + ' equal panels.');
+        note(file.name + ': sheet split into ' + cols + ' × ' + rows + ' panels' + (F.colW.some(function (w) { return Math.abs(w - F.colW[0]) > 0.01; }) ? ' at their real widths.' : ' of equal width.'));
       }
       art = a; $('artClear').hidden = false;
       var keep = st.p; mount(st.key); st.p = st.target = keep;
@@ -627,4 +674,5 @@ details[hidden] { display: none; }
 })();
 </script>
 
-</body></html>
+</body>
+</html>
